@@ -26,6 +26,16 @@ final class MediaFetchTests: XCTestCase {
         XCTAssertEqual(BrowserCookieSource.chrome.ytDLPArguments, ["--cookies-from-browser", "chrome"])
     }
 
+    func testSafariPermissionErrorClassification() {
+        XCTAssertTrue(EngineErrorClassifier.isSafariCookiePermissionError(
+            "ERROR: [Errno 1] Operation not permitted: /Library/Cookies/Cookies.binarycookies"
+        ))
+        XCTAssertTrue(EngineErrorClassifier.isSafariCookiePermissionError(
+            "Permission denied when accessing Safari Cookies.binarycookies"
+        ))
+        XCTAssertFalse(EngineErrorClassifier.isSafariCookiePermissionError("Video unavailable"))
+    }
+
     func testProgressParser() {
         let result = ProgressParser.parse("MF_PROGRESS| 42.5%|100|200|2.5MiB/s|12")
         XCTAssertNotNil(result)

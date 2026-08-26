@@ -75,7 +75,7 @@ enum ManifestWriter {
             sidecarsRequested: job.includeSidecars,
             subtitlesRequested: job.includeSubtitles,
             tools: .init(
-                mediaFetch: "0.2.0",
+                mediaFetch: "0.2.1",
                 ytDLP: version(of: ytDLPPath, arguments: ["--version"]),
                 ffmpeg: ffmpegPath.map { version(of: $0, arguments: ["-version"], firstLineOnly: true) } ?? "not installed"
             ),

@@ -66,7 +66,9 @@ swift test
 
 ## Vimeo
 
-Vimeo 的网页客户端目前可能要求登录，即使链接本身可以在已登录浏览器中观看。遇到这种情况，在应用中勾选“使用浏览器登录状态”，并选择已经登录 Vimeo 的 Safari、Google Chrome 或 Firefox。应用不会默认读取 Cookie，也不会保存 Cookie 文件；登录状态只作为参数交给本机 `yt-dlp` 进程。
+Vimeo 的网页客户端目前可能要求登录，即使链接本身可以在已登录浏览器中观看。遇到这种情况，在应用中勾选“使用浏览器登录状态”，并选择已经登录 Vimeo 的 Safari、Google Chrome 或 Firefox。应用不会默认读取 Cookie，也不会保存 Cookie 文件；启用后，本机 `yt-dlp` 会读取所选浏览器的 Cookie 库，因此应只在确有需要时开启。
+
+macOS 会额外保护 Safari Cookie 数据。MediaFetch 会在解析前检查访问权限，并提供“打开完整磁盘访问”入口；不希望授予该权限时，推荐使用已经登录 Vimeo 的 Google Chrome。应用不会尝试绕过系统权限。
 
 ## 使用边界
 

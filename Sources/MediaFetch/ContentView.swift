@@ -7,7 +7,7 @@ struct ContentView: View {
     @State private var profile: DownloadProfile = .highest
     @State private var destination = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
     @State private var useBrowserCookies = false
-    @State private var browserCookieSource: BrowserCookieSource = .safari
+    @State private var browserCookieSource: BrowserCookieSource = .recommendedDefault
     @State private var includeSidecars = true
     @State private var includeSubtitles = true
 
@@ -40,6 +40,16 @@ struct ContentView: View {
             Button("知道了") { downloader.errorMessage = nil }
         } message: {
             Text(downloader.errorMessage ?? "未知错误")
+        }
+        .alert("Safari Cookie 受到 macOS 保护", isPresented: $downloader.safariPermissionRequired) {
+            Button("改用 Chrome") {
+                browserCookieSource = .chrome
+                useBrowserCookies = true
+            }
+            Button("打开完整磁盘访问") { openFullDiskAccessSettings() }
+            Button("稍后", role: .cancel) {}
+        } message: {
+            Text("MediaFetch 没有权限读取 Safari 登录状态。推荐改用已登录 Vimeo 的 Chrome；或者在“系统设置 → 隐私与安全性 → 完整磁盘访问”中加入并启用 MediaFetch，然后退出并重新打开应用。")
         }
     }
 
@@ -194,9 +204,19 @@ struct ContentView: View {
                         }
                         .pickerStyle(.menu)
                         Spacer()
-                        Label("Cookie 只交给本机 yt-dlp 使用", systemImage: "lock.shield")
+                        Label("本机 yt-dlp 会读取该浏览器 Cookie 库；MediaFetch 不保存 Cookie 文件", systemImage: "lock.shield")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+                    if browserCookieSource == .safari {
+                        HStack {
+                            Label("Safari Cookie 受 macOS 保护，需要为 MediaFetch 开启完整磁盘访问。", systemImage: "exclamationmark.shield")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            Spacer()
+                            Button("打开系统设置") { openFullDiskAccessSettings() }
+                                .buttonStyle(.link)
+                        }
                     }
                 }
 
@@ -421,5 +441,15 @@ struct ContentView: View {
 
     private func openPath(_ path: String) {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+    }
+
+    private func openFullDiskAccessSettings() {
+        let urls = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"
+        ]
+        for value in urls {
+            if let url = URL(string: value), NSWorkspace.shared.open(url) { return }
+        }
     }
 }

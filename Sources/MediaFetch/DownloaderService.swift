@@ -9,6 +9,7 @@ final class DownloaderService: ObservableObject {
     @Published var status = "等待链接"
     @Published var recentMessages: [String] = []
     @Published var errorMessage: String?
+    @Published var safariPermissionRequired = false
     @Published var completedFiles: [String] = []
     @Published var jobs: [DownloadJob]
 
@@ -51,6 +52,7 @@ final class DownloaderService: ObservableObject {
             errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
             return
         }
+        guard ensureCookieAccess(cookieSource) else { return }
 
         resetForNewOperation()
         isAnalyzing = true
@@ -79,6 +81,10 @@ final class DownloaderService: ObservableObject {
                     guard let self else { return }
                     self.isAnalyzing = false
                     if task.terminationStatus != 0 {
+                        if cookieSource == .safari && EngineErrorClassifier.isSafariCookiePermissionError(stderr) {
+                            self.presentSafariPermissionHelp()
+                            return
+                        }
                         self.status = "解析失败"
                         self.errorMessage = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
                         return
@@ -123,6 +129,7 @@ final class DownloaderService: ObservableObject {
             errorMessage = "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg"
             return 0
         }
+        guard ensureCookieAccess(cookieSource) else { return 0 }
 
         for url in urls {
             jobs.append(DownloadJob(
@@ -171,6 +178,12 @@ final class DownloaderService: ObservableObject {
     private func startJob(at index: Int) {
         guard let ytDLPPath else { return }
         let job = jobs[index]
+        guard ensureCookieAccess(job.browserCookieSource) else {
+            jobs[index].status = .paused
+            jobs[index].updatedAt = Date()
+            persistJobs()
+            return
+        }
         currentJobID = job.id
         cancellationRequested = false
         activeFormats = []
@@ -266,6 +279,17 @@ final class DownloaderService: ObservableObject {
             return
         }
         guard finished.terminationStatus == 0 else {
+            let engineOutput = recentMessages.joined(separator: "\n")
+            if jobs[jobIndex].browserCookieSource == .safari &&
+                EngineErrorClassifier.isSafariCookiePermissionError(engineOutput) {
+                isDownloading = false
+                jobs[jobIndex].status = .paused
+                jobs[jobIndex].updatedAt = Date()
+                presentSafariPermissionHelp()
+                persistJobs()
+                currentJobID = nil
+                return
+            }
             failCurrentJob(recentMessages.last ?? "下载引擎返回错误 \(finished.terminationStatus)")
             return
         }
@@ -399,6 +423,21 @@ final class DownloaderService: ObservableObject {
     private func persistJobs() {
         do { try JobHistoryStore.save(jobs) }
         catch { errorMessage = "任务历史无法保存：\(error.localizedDescription)" }
+    }
+
+    private func ensureCookieAccess(_ source: BrowserCookieSource?) -> Bool {
+        guard source == .safari else { return true }
+        guard SafariCookieAccess.canReadCookieStore() else {
+            presentSafariPermissionHelp()
+            return false
+        }
+        return true
+    }
+
+    private func presentSafariPermissionHelp() {
+        errorMessage = nil
+        status = "Safari Cookie 读取权限未开启"
+        safariPermissionRequired = true
     }
 
     private func resetForNewOperation() {

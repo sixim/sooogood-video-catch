@@ -18,6 +18,40 @@ enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable {
     var ytDLPArguments: [String] {
         ["--cookies-from-browser", rawValue]
     }
+
+    static var recommendedDefault: BrowserCookieSource {
+        if FileManager.default.fileExists(atPath: "/Applications/Google Chrome.app") { return .chrome }
+        if FileManager.default.fileExists(atPath: "/Applications/Firefox.app") { return .firefox }
+        return .safari
+    }
+}
+
+enum SafariCookieAccess {
+    private static let candidatePaths = [
+        NSHomeDirectory() + "/Library/Cookies/Cookies.binarycookies",
+        NSHomeDirectory() + "/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies"
+    ]
+
+    static func canReadCookieStore() -> Bool {
+        for path in candidatePaths where FileManager.default.fileExists(atPath: path) {
+            do {
+                let handle = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
+                try handle.close()
+                return true
+            } catch {
+                return false
+            }
+        }
+        return false
+    }
+}
+
+enum EngineErrorClassifier {
+    static func isSafariCookiePermissionError(_ message: String) -> Bool {
+        let lowered = message.lowercased()
+        return lowered.contains("cookies.binarycookies") &&
+            (lowered.contains("operation not permitted") || lowered.contains("permission denied"))
+    }
 }
 
 enum DownloadProfile: String, CaseIterable, Identifiable, Codable {

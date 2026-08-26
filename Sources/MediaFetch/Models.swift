@@ -1,6 +1,6 @@
 import Foundation
 
-enum BrowserCookieSource: String, CaseIterable, Identifiable {
+enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable {
     case safari
     case chrome
     case firefox
@@ -20,7 +20,7 @@ enum BrowserCookieSource: String, CaseIterable, Identifiable {
     }
 }
 
-enum DownloadProfile: String, CaseIterable, Identifiable {
+enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
     case highest = "最高画质（无损合并）"
     case sourceStreams = "保留平台原始音视频流"
     case compatibleMP4 = "兼容 MP4（无损封装）"
@@ -49,7 +49,7 @@ enum DownloadProfile: String, CaseIterable, Identifiable {
 }
 
 struct MediaMetadata: Decodable {
-    struct Format: Decodable {
+    struct Format: Decodable, Identifiable {
         let formatID: String?
         let extensionName: String?
         let height: Int?
@@ -59,6 +59,11 @@ struct MediaMetadata: Decodable {
         let audioCodec: String?
         let filesize: Int64?
         let approximateFilesize: Int64?
+        let totalBitrate: Double?
+        let videoBitrate: Double?
+        let audioBitrate: Double?
+        let dynamicRange: String?
+        let language: String?
 
         enum CodingKeys: String, CodingKey {
             case formatID = "format_id"
@@ -67,6 +72,39 @@ struct MediaMetadata: Decodable {
             case videoCodec = "vcodec"
             case audioCodec = "acodec"
             case approximateFilesize = "filesize_approx"
+            case totalBitrate = "tbr"
+            case videoBitrate = "vbr"
+            case audioBitrate = "abr"
+            case dynamicRange = "dynamic_range"
+            case language
+        }
+
+        var id: String {
+            [formatID, extensionName, videoCodec, audioCodec].compactMap { $0 }.joined(separator: "-")
+        }
+
+        var resolutionText: String {
+            if let width, let height { return "\(width)×\(height)" }
+            if videoCodec == "none" { return "纯音频" }
+            return height.map { "\($0)p" } ?? "未知"
+        }
+
+        var codecText: String {
+            [videoCodec, audioCodec, dynamicRange, language]
+                .compactMap { $0 }
+                .filter { $0 != "none" && $0 != "SDR" }
+                .joined(separator: " · ")
+        }
+
+        var sizeText: String {
+            guard let bytes = filesize ?? approximateFilesize else { return "大小未知" }
+            return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+        }
+
+        var bitrateText: String {
+            guard let bitrate = totalBitrate ?? videoBitrate ?? audioBitrate else { return "未知" }
+            if bitrate >= 1_000 { return String(format: "%.1f Mbps", bitrate / 1_000) }
+            return String(format: "%.0f kbps", bitrate)
         }
     }
 
@@ -100,6 +138,23 @@ struct MediaMetadata: Decodable {
         guard let duration else { return "时长未知" }
         let total = Int(duration.rounded())
         return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+    }
+
+    var videoFormatsForInspection: [Format] {
+        let video = (formats ?? []).filter { $0.videoCodec != nil && $0.videoCodec != "none" }
+        return video.sorted {
+            (($0.height ?? 0), ($0.fps ?? 0), ($0.filesize ?? $0.approximateFilesize ?? 0)) >
+            (($1.height ?? 0), ($1.fps ?? 0), ($1.filesize ?? $1.approximateFilesize ?? 0))
+        }
+    }
+
+    var audioFormatsForInspection: [Format] {
+        (formats ?? [])
+            .filter { $0.videoCodec == "none" && $0.audioCodec != nil && $0.audioCodec != "none" }
+            .sorted {
+                (($0.audioBitrate ?? 0), ($0.filesize ?? $0.approximateFilesize ?? 0)) >
+                (($1.audioBitrate ?? 0), ($1.filesize ?? $1.approximateFilesize ?? 0))
+            }
     }
 }
 

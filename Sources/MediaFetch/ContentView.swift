@@ -8,6 +8,8 @@ struct ContentView: View {
     @State private var destination = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
     @State private var useBrowserCookies = false
     @State private var browserCookieSource: BrowserCookieSource = .safari
+    @State private var includeSidecars = true
+    @State private var includeSubtitles = true
 
     var body: some View {
         ZStack {
@@ -25,6 +27,7 @@ struct ContentView: View {
                     if let metadata = downloader.metadata { metadataPanel(metadata) }
                     downloadPanel
                     statusPanel
+                    queuePanel
                     legalNote
                 }
                 .padding(32)
@@ -71,11 +74,22 @@ struct ContentView: View {
     private var linkPanel: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 12) {
-                    TextField("粘贴 YouTube、Vimeo 或其他受支持网站的链接", text: $mediaURL)
-                        .textFieldStyle(.roundedBorder)
+                HStack(alignment: .top, spacing: 12) {
+                    TextEditor(text: $mediaURL)
                         .font(.body)
-                        .onSubmit { analyzeMedia() }
+                        .frame(minHeight: 54, maxHeight: 90)
+                        .padding(5)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 7))
+                        .overlay(RoundedRectangle(cornerRadius: 7).stroke(.quaternary))
+                        .overlay(alignment: .topLeading) {
+                            if mediaURL.isEmpty {
+                                Text("粘贴 YouTube、Vimeo 或其他链接；多条链接用换行分隔")
+                                    .foregroundStyle(.tertiary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 13)
+                                    .allowsHitTesting(false)
+                            }
+                        }
                     Button {
                         analyzeMedia()
                     } label: {
@@ -102,32 +116,47 @@ struct ContentView: View {
 
     private func metadataPanel(_ metadata: MediaMetadata) -> some View {
         GroupBox {
-            HStack(alignment: .top, spacing: 18) {
-                if let thumbnail = metadata.thumbnail, let url = URL(string: thumbnail) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        ZStack { Color.secondary.opacity(0.1); ProgressView() }
-                    }
-                    .frame(width: 200, height: 112)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                VStack(alignment: .leading, spacing: 9) {
-                    Text(metadata.title).font(.headline).lineLimit(3)
-                    if let uploader = metadata.uploader {
-                        Label(uploader, systemImage: "person.crop.circle")
-                    }
-                    HStack(spacing: 18) {
-                        Label(metadata.maximumResolution, systemImage: "rectangle.inset.filled")
-                        Label(metadata.durationText, systemImage: "clock")
-                        if let extractor = metadata.extractor {
-                            Label(extractor, systemImage: "network")
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 18) {
+                    if let thumbnail = metadata.thumbnail, let url = URL(string: thumbnail) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            ZStack { Color.secondary.opacity(0.1); ProgressView() }
                         }
+                        .frame(width: 200, height: 112)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text(metadata.title).font(.headline).lineLimit(3)
+                        if let uploader = metadata.uploader {
+                            Label(uploader, systemImage: "person.crop.circle")
+                        }
+                        HStack(spacing: 18) {
+                            Label(metadata.maximumResolution, systemImage: "rectangle.inset.filled")
+                            Label(metadata.durationText, systemImage: "clock")
+                            if let extractor = metadata.extractor {
+                                Label(extractor, systemImage: "network")
+                            }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                    Spacer()
                 }
-                Spacer()
+
+                Divider()
+                Text("格式检查器").font(.subheadline.weight(.semibold))
+                formatHeader
+                ForEach(Array(metadata.videoFormatsForInspection.prefix(6))) { format in
+                    formatRow(format)
+                }
+                if !metadata.audioFormatsForInspection.isEmpty {
+                    Text("独立音频流").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    ForEach(Array(metadata.audioFormatsForInspection.prefix(3))) { format in
+                        formatRow(format)
+                    }
+                }
             }
             .padding(6)
         } label: {
@@ -146,6 +175,12 @@ struct ContentView: View {
                 .pickerStyle(.menu)
 
                 Text(profile.detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle("生成完整素材包（缩略图和平台 info.json）", isOn: $includeSidecars)
+                Toggle("保存可用的中英文人工字幕与自动字幕", isOn: $includeSubtitles)
+                Text("每个任务会建立独立文件夹，并生成包含 SHA-256 与格式来源的 manifest.json。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -182,14 +217,16 @@ struct ContentView: View {
                         }
                     } else {
                         Button {
-                            downloader.download(
+                            downloader.enqueue(
                                 mediaURL,
                                 profile: profile,
                                 destination: destination,
+                                includeSidecars: includeSidecars,
+                                includeSubtitles: includeSubtitles,
                                 cookieSource: selectedCookieSource
                             )
                         } label: {
-                            Label("开始下载", systemImage: "arrow.down.to.line.compact")
+                            Label("加入下载队列", systemImage: "text.badge.plus")
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
@@ -240,6 +277,71 @@ struct ContentView: View {
         }
     }
 
+    private var queuePanel: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("\(downloader.jobs.count) 个任务")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    if downloader.hasResumableJobs && !downloader.isDownloading {
+                        Button("继续队列") { downloader.resumeQueue() }
+                    }
+                    Button("清除已结束记录") { downloader.clearFinishedHistory() }
+                        .disabled(downloader.isDownloading)
+                }
+
+                if downloader.jobs.isEmpty {
+                    Text("尚无任务。任务历史会保存在本机 Application Support/MediaFetch。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(downloader.jobs.reversed()) { job in
+                        VStack(alignment: .leading, spacing: 7) {
+                            HStack {
+                                Image(systemName: statusIcon(job.status))
+                                    .foregroundStyle(statusColor(job.status))
+                                Text(job.title ?? job.sourceURL)
+                                    .font(.subheadline.weight(.medium))
+                                    .lineLimit(1)
+                                Spacer()
+                                Text(job.status.displayName)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(statusColor(job.status))
+                                Text(job.progressText).font(.caption.monospacedDigit())
+                            }
+                            ProgressView(value: job.progressFraction)
+                            HStack {
+                                Text(job.profile.rawValue)
+                                if let source = job.browserCookieSource {
+                                    Text("· \(source.displayName) 登录态")
+                                }
+                                Spacer()
+                                if let manifestPath = job.manifestPath {
+                                    Button("显示素材包") { openPath(manifestPath) }
+                                        .buttonStyle(.link)
+                                } else if let first = job.completedFiles.first {
+                                    Button("显示文件") { openPath(first) }
+                                        .buttonStyle(.link)
+                                }
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            if let error = job.errorMessage {
+                                Text(error).font(.caption).foregroundStyle(.red).lineLimit(2)
+                            }
+                        }
+                        .padding(10)
+                        .background(.background.opacity(0.55), in: RoundedRectangle(cornerRadius: 9))
+                    }
+                }
+            }
+            .padding(6)
+        } label: {
+            Text("下载队列与历史").font(.headline)
+        }
+    }
+
     private var legalNote: some View {
         Label(
             "请只下载你拥有权利、已获许可，或平台明确允许保存的内容。本应用不绕过 DRM 或付费访问控制。",
@@ -266,5 +368,58 @@ struct ContentView: View {
 
     private func analyzeMedia() {
         downloader.analyze(mediaURL, cookieSource: selectedCookieSource)
+    }
+
+    private var formatHeader: some View {
+        HStack {
+            Text("ID").frame(width: 54, alignment: .leading)
+            Text("分辨率").frame(width: 105, alignment: .leading)
+            Text("FPS").frame(width: 44, alignment: .leading)
+            Text("容器").frame(width: 52, alignment: .leading)
+            Text("编码").frame(maxWidth: .infinity, alignment: .leading)
+            Text("码率").frame(width: 70, alignment: .trailing)
+            Text("大小").frame(width: 82, alignment: .trailing)
+        }
+        .font(.caption2.weight(.semibold))
+        .foregroundStyle(.secondary)
+    }
+
+    private func formatRow(_ format: MediaMetadata.Format) -> some View {
+        HStack {
+            Text(format.formatID ?? "—").frame(width: 54, alignment: .leading)
+            Text(format.resolutionText).frame(width: 105, alignment: .leading)
+            Text(format.fps.map { String(Int($0.rounded())) } ?? "—").frame(width: 44, alignment: .leading)
+            Text(format.extensionName?.uppercased() ?? "—").frame(width: 52, alignment: .leading)
+            Text(format.codecText.isEmpty ? "—" : format.codecText)
+                .frame(maxWidth: .infinity, alignment: .leading).lineLimit(1)
+            Text(format.bitrateText).frame(width: 70, alignment: .trailing)
+            Text(format.sizeText).frame(width: 82, alignment: .trailing)
+        }
+        .font(.caption.monospaced())
+    }
+
+    private func statusIcon(_ status: DownloadJobStatus) -> String {
+        switch status {
+        case .queued, .paused: return "clock"
+        case .downloading: return "arrow.down.circle.fill"
+        case .packaging: return "checkmark.shield"
+        case .completed: return "checkmark.circle.fill"
+        case .failed: return "xmark.octagon.fill"
+        case .cancelled: return "stop.circle"
+        }
+    }
+
+    private func statusColor(_ status: DownloadJobStatus) -> Color {
+        switch status {
+        case .queued, .paused: return .secondary
+        case .downloading, .packaging: return .blue
+        case .completed: return .green
+        case .failed: return .red
+        case .cancelled: return .orange
+        }
+    }
+
+    private func openPath(_ path: String) {
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
     }
 }

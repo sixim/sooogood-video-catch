@@ -1,5 +1,25 @@
 import Foundation
 
+enum BrowserCookieSource: String, CaseIterable, Identifiable {
+    case safari
+    case chrome
+    case firefox
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .safari: return "Safari"
+        case .chrome: return "Google Chrome"
+        case .firefox: return "Firefox"
+        }
+    }
+
+    var ytDLPArguments: [String] {
+        ["--cookies-from-browser", rawValue]
+    }
+}
+
 enum DownloadProfile: String, CaseIterable, Identifiable {
     case highest = "最高画质（无损合并）"
     case sourceStreams = "保留平台原始音视频流"
@@ -119,5 +139,10 @@ enum URLValidator {
               ["http", "https"].contains(scheme),
               url.host != nil else { return nil }
         return url
+    }
+
+    static func isVimeoURL(_ input: String) -> Bool {
+        guard let host = validatedMediaURL(from: input)?.host?.lowercased() else { return false }
+        return host == "vimeo.com" || host.hasSuffix(".vimeo.com")
     }
 }

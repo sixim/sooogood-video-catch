@@ -6,6 +6,8 @@ struct ContentView: View {
     @State private var mediaURL = ""
     @State private var profile: DownloadProfile = .highest
     @State private var destination = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
+    @State private var useBrowserCookies = false
+    @State private var browserCookieSource: BrowserCookieSource = .safari
 
     var body: some View {
         ZStack {
@@ -68,22 +70,29 @@ struct ContentView: View {
 
     private var linkPanel: some View {
         GroupBox {
-            HStack(spacing: 12) {
-                TextField("粘贴 YouTube 或其他受支持网站的链接", text: $mediaURL)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body)
-                    .onSubmit { downloader.analyze(mediaURL) }
-                Button {
-                    downloader.analyze(mediaURL)
-                } label: {
-                    if downloader.isAnalyzing {
-                        ProgressView().controlSize(.small)
-                    } else {
-                        Label("解析", systemImage: "sparkle.magnifyingglass")
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    TextField("粘贴 YouTube、Vimeo 或其他受支持网站的链接", text: $mediaURL)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body)
+                        .onSubmit { analyzeMedia() }
+                    Button {
+                        analyzeMedia()
+                    } label: {
+                        if downloader.isAnalyzing {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Label("解析", systemImage: "sparkle.magnifyingglass")
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(downloader.isAnalyzing || downloader.isDownloading)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(downloader.isAnalyzing || downloader.isDownloading)
+                if URLValidator.isVimeoURL(mediaURL) && !useBrowserCookies {
+                    Label("Vimeo 目前经常要求登录。若解析失败，请在下方启用浏览器登录状态。", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
             }
             .padding(6)
         } label: {
@@ -140,6 +149,22 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                Toggle("使用浏览器登录状态（Vimeo 私有或登录可见内容）", isOn: $useBrowserCookies)
+                if useBrowserCookies {
+                    HStack {
+                        Picker("读取登录状态", selection: $browserCookieSource) {
+                            ForEach(BrowserCookieSource.allCases) { browser in
+                                Text(browser.displayName).tag(browser)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        Spacer()
+                        Label("Cookie 只交给本机 yt-dlp 使用", systemImage: "lock.shield")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 HStack {
                     Label(destination.path, systemImage: "folder")
                         .lineLimit(1)
@@ -157,7 +182,12 @@ struct ContentView: View {
                         }
                     } else {
                         Button {
-                            downloader.download(mediaURL, profile: profile, destination: destination)
+                            downloader.download(
+                                mediaURL,
+                                profile: profile,
+                                destination: destination,
+                                cookieSource: selectedCookieSource
+                            )
                         } label: {
                             Label("开始下载", systemImage: "arrow.down.to.line.compact")
                         }
@@ -228,5 +258,13 @@ struct ContentView: View {
         if panel.runModal() == .OK, let selected = panel.url {
             destination = selected
         }
+    }
+
+    private var selectedCookieSource: BrowserCookieSource? {
+        useBrowserCookies ? browserCookieSource : nil
+    }
+
+    private func analyzeMedia() {
+        downloader.analyze(mediaURL, cookieSource: selectedCookieSource)
     }
 }

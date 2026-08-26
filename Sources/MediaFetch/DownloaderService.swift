@@ -34,7 +34,7 @@ final class DownloaderService: ObservableObject {
         return environment
     }
 
-    func analyze(_ input: String) {
+    func analyze(_ input: String, cookieSource: BrowserCookieSource? = nil) {
         guard !isAnalyzing && !isDownloading else { return }
         guard let url = URLValidator.validatedMediaURL(from: input) else {
             errorMessage = "请输入完整的 http:// 或 https:// 链接。"
@@ -54,10 +54,13 @@ final class DownloaderService: ObservableObject {
         let errors = Pipe()
         task.executableURL = URL(fileURLWithPath: ytDLPPath)
         task.environment = Self.toolEnvironment()
-        task.arguments = [
+        var arguments = [
             "--dump-single-json", "--skip-download", "--no-playlist",
-            "--no-warnings", url.absoluteString
+            "--no-warnings"
         ]
+        if let cookieSource { arguments += cookieSource.ytDLPArguments }
+        arguments.append(url.absoluteString)
+        task.arguments = arguments
         task.standardOutput = output
         task.standardError = errors
 
@@ -95,7 +98,12 @@ final class DownloaderService: ObservableObject {
         }
     }
 
-    func download(_ input: String, profile: DownloadProfile, destination: URL) {
+    func download(
+        _ input: String,
+        profile: DownloadProfile,
+        destination: URL,
+        cookieSource: BrowserCookieSource? = nil
+    ) {
         guard !isDownloading && !isAnalyzing else { return }
         guard let url = URLValidator.validatedMediaURL(from: input) else {
             errorMessage = "媒体链接无效。"
@@ -145,6 +153,9 @@ final class DownloaderService: ObservableObject {
         }
         if let ffmpegPath {
             arguments += ["--ffmpeg-location", ffmpegPath]
+        }
+        if let cookieSource {
+            arguments += cookieSource.ytDLPArguments
         }
         arguments.append(url.absoluteString)
 

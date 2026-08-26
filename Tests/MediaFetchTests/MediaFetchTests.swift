@@ -15,6 +15,17 @@ final class MediaFetchTests: XCTestCase {
         XCTAssertNil(URLValidator.validatedMediaURL(from: "not a link"))
     }
 
+    func testVimeoDetection() {
+        XCTAssertTrue(URLValidator.isVimeoURL("https://vimeo.com/1084537"))
+        XCTAssertTrue(URLValidator.isVimeoURL("https://player.vimeo.com/video/1084537"))
+        XCTAssertFalse(URLValidator.isVimeoURL("https://example.com/vimeo.com/1084537"))
+    }
+
+    func testBrowserCookieArgumentsAreExplicit() {
+        XCTAssertEqual(BrowserCookieSource.safari.ytDLPArguments, ["--cookies-from-browser", "safari"])
+        XCTAssertEqual(BrowserCookieSource.chrome.ytDLPArguments, ["--cookies-from-browser", "chrome"])
+    }
+
     func testProgressParser() {
         let result = ProgressParser.parse("MF_PROGRESS| 42.5%|100|200|2.5MiB/s|12")
         XCTAssertNotNil(result)

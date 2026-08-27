@@ -52,6 +52,7 @@ final class DownloaderService: ObservableObject {
             errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
             return
         }
+        guard ensurePlatformAllowed(url) else { return }
         guard ensureCookieAccess(cookieSource) else { return }
 
         resetForNewOperation()
@@ -83,6 +84,11 @@ final class DownloaderService: ObservableObject {
                     if task.terminationStatus != 0 {
                         if cookieSource == .safari && EngineErrorClassifier.isSafariCookiePermissionError(stderr) {
                             self.presentSafariPermissionHelp()
+                            return
+                        }
+                        if EngineErrorClassifier.isDRMError(stderr) {
+                            self.status = "检测到 DRM 保护"
+                            self.errorMessage = "该媒体流受 DRM 保护，MediaFetch 不会尝试绕过。"
                             return
                         }
                         self.status = "解析失败"
@@ -125,7 +131,13 @@ final class DownloaderService: ObservableObject {
             errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
             return 0
         }
-        guard ffmpegPath != nil || profile == .sourceStreams else {
+        if let blockedURL = urls.first(where: { !StreamingPlatform.detect($0).downloadAllowed }) {
+            let platform = StreamingPlatform.detect(blockedURL)
+            status = "\(platform.displayName) 使用受保护媒体流"
+            errorMessage = platform.restrictionMessage
+            return 0
+        }
+        guard ffmpegPath != nil || !profile.requiresFFmpeg else {
             errorMessage = "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg"
             return 0
         }
@@ -178,6 +190,14 @@ final class DownloaderService: ObservableObject {
     private func startJob(at index: Int) {
         guard let ytDLPPath else { return }
         let job = jobs[index]
+        if let url = URL(string: job.sourceURL), !StreamingPlatform.detect(url).downloadAllowed {
+            jobs[index].status = .failed
+            jobs[index].updatedAt = Date()
+            jobs[index].errorMessage = StreamingPlatform.detect(url).restrictionMessage
+            persistJobs()
+            startNextIfNeeded()
+            return
+        }
         guard ensureCookieAccess(job.browserCookieSource) else {
             jobs[index].status = .paused
             jobs[index].updatedAt = Date()
@@ -288,6 +308,10 @@ final class DownloaderService: ObservableObject {
                 presentSafariPermissionHelp()
                 persistJobs()
                 currentJobID = nil
+                return
+            }
+            if EngineErrorClassifier.isDRMError(engineOutput) {
+                failCurrentJob("该媒体流受 DRM 保护，MediaFetch 不会尝试绕过。")
                 return
             }
             failCurrentJob(recentMessages.last ?? "下载引擎返回错误 \(finished.terminationStatus)")
@@ -429,6 +453,16 @@ final class DownloaderService: ObservableObject {
         guard source == .safari else { return true }
         guard SafariCookieAccess.canReadCookieStore() else {
             presentSafariPermissionHelp()
+            return false
+        }
+        return true
+    }
+
+    private func ensurePlatformAllowed(_ url: URL) -> Bool {
+        let platform = StreamingPlatform.detect(url)
+        guard platform.downloadAllowed else {
+            status = "\(platform.displayName) 使用受保护媒体流"
+            errorMessage = platform.restrictionMessage
             return false
         }
         return true

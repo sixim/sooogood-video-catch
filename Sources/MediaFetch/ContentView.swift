@@ -93,7 +93,7 @@ struct ContentView: View {
                         .overlay(RoundedRectangle(cornerRadius: 7).stroke(.quaternary))
                         .overlay(alignment: .topLeading) {
                             if mediaURL.isEmpty {
-                                Text("粘贴 YouTube、Vimeo 或其他链接；多条链接用换行分隔")
+                                Text("粘贴 YouTube、哔哩哔哩、优酷、Vimeo 或其他媒体链接")
                                     .foregroundStyle(.tertiary)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 13)
@@ -110,12 +110,39 @@ struct ContentView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(downloader.isAnalyzing || downloader.isDownloading)
+                    .disabled(downloader.isAnalyzing || downloader.isDownloading || containsBlockedPlatform)
                 }
-                if URLValidator.isVimeoURL(mediaURL) && !useBrowserCookies {
-                    Label("Vimeo 目前经常要求登录。若解析失败，请在下方启用浏览器登录状态。", systemImage: "info.circle")
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 7) {
+                        ForEach(StreamingPlatform.featuredDownloadable) { platform in
+                            Label(platform.displayName, systemImage: platform.systemImage)
+                                .font(.caption2.weight(.medium))
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 4)
+                                .background(.quaternary.opacity(0.55), in: Capsule())
+                        }
+                    }
+                }
+
+                if let platform = detectedPlatform {
+                    Label("已识别：\(platform.displayName)", systemImage: platform.systemImage)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(platformColor(platform))
+                    if let restriction = platform.restrictionMessage {
+                        Text(restriction)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else if let hint = platform.loginHint, !useBrowserCookies {
+                        Text(hint)
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+                }
+                if inputURLs.count > 1 {
+                    Label("已检测到 \(inputURLs.count) 条有效链接，将依次加入队列。", systemImage: "list.number")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding(6)
@@ -194,7 +221,7 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("使用浏览器登录状态（Vimeo 私有或登录可见内容）", isOn: $useBrowserCookies)
+                Toggle("使用浏览器登录状态（高画质、私有或账户可见内容）", isOn: $useBrowserCookies)
                 if useBrowserCookies {
                     HStack {
                         Picker("读取登录状态", selection: $browserCookieSource) {
@@ -250,7 +277,7 @@ struct ContentView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
-                        .disabled(mediaURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(mediaURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || containsBlockedPlatform)
                     }
                     Spacer()
                 }
@@ -450,6 +477,27 @@ struct ContentView: View {
         ]
         for value in urls {
             if let url = URL(string: value), NSWorkspace.shared.open(url) { return }
+        }
+    }
+
+    private var inputURLs: [URL] {
+        LinkInputParser.URLs(from: mediaURL)
+    }
+
+    private var detectedPlatform: StreamingPlatform? {
+        inputURLs.first.map(StreamingPlatform.detect)
+    }
+
+    private var containsBlockedPlatform: Bool {
+        inputURLs.contains { !StreamingPlatform.detect($0).downloadAllowed }
+    }
+
+    private func platformColor(_ platform: StreamingPlatform) -> Color {
+        switch platform.supportLevel {
+        case .supported: return .green
+        case .loginRecommended: return .orange
+        case .generic: return .blue
+        case .drmBlocked: return .red
         }
     }
 }

@@ -52,12 +52,19 @@ enum EngineErrorClassifier {
         return lowered.contains("cookies.binarycookies") &&
             (lowered.contains("operation not permitted") || lowered.contains("permission denied"))
     }
+
+    static func isDRMError(_ message: String) -> Bool {
+        let lowered = message.lowercased()
+        return lowered.contains("known to use drm protection") ||
+            lowered.contains("drm protected") || lowered.contains("has_drm")
+    }
 }
 
 enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
     case highest = "最高画质（无损合并）"
     case sourceStreams = "保留平台原始音视频流"
     case compatibleMP4 = "兼容 MP4（无损封装）"
+    case audioOnly = "仅保存最佳原始音频"
 
     var id: String { rawValue }
 
@@ -69,6 +76,8 @@ enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
             return "分别保存平台直接提供的视频流和音频流，内容不转码、不合并。"
         case .compatibleMP4:
             return "优先选择 H.264 + M4A 并无损封装为 MP4；为兼容剪辑软件，画质可能低于最高画质模式。"
+        case .audioOnly:
+            return "只保存平台直接提供的最佳音频流，不转换为 MP3，不伪装来源。"
         }
     }
 
@@ -78,6 +87,14 @@ enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
         case .sourceStreams: return "bv,ba"
         case .compatibleMP4:
             return "bv*[vcodec^=avc1][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*[ext=mp4]+ba[ext=m4a]/bv*+ba/b"
+        case .audioOnly: return "ba/b"
+        }
+    }
+
+    var requiresFFmpeg: Bool {
+        switch self {
+        case .highest, .compatibleMP4: return true
+        case .sourceStreams, .audioOnly: return false
         }
     }
 }

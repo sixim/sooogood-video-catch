@@ -36,6 +36,25 @@ final class MediaFetchTests: XCTestCase {
         XCTAssertFalse(EngineErrorClassifier.isSafariCookiePermissionError("Video unavailable"))
     }
 
+    func testDRMErrorClassification() {
+        XCTAssertTrue(EngineErrorClassifier.isDRMError("The requested site is known to use DRM protection"))
+        XCTAssertTrue(EngineErrorClassifier.isDRMError("This format is DRM protected"))
+        XCTAssertFalse(EngineErrorClassifier.isDRMError("Requested format is not available"))
+    }
+
+    func testStreamingPlatformDetectionAndDRMPolicy() {
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://youtu.be/abc")!), .youtube)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://www.bilibili.com/video/BV1")!), .bilibili)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://v.youku.com/v_show/id_X.html")!), .youku)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://cdn.example.com/master.m3u8")!), .directStream)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://www.netflix.com/title/1")!), .netflix)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://open.spotify.com/track/1")!), .spotify)
+        XCTAssertEqual(StreamingPlatform.detect(URL(string: "https://netflix.com.evil.example/video")!), .generic)
+        XCTAssertFalse(StreamingPlatform.netflix.downloadAllowed)
+        XCTAssertFalse(StreamingPlatform.spotify.downloadAllowed)
+        XCTAssertTrue(StreamingPlatform.bilibili.downloadAllowed)
+    }
+
     func testProgressParser() {
         let result = ProgressParser.parse("MF_PROGRESS| 42.5%|100|200|2.5MiB/s|12")
         XCTAssertNotNil(result)
@@ -49,6 +68,8 @@ final class MediaFetchTests: XCTestCase {
         XCTAssertEqual(DownloadProfile.highest.formatSelector, "bv*+ba/b")
         XCTAssertEqual(DownloadProfile.sourceStreams.formatSelector, "bv,ba")
         XCTAssertTrue(DownloadProfile.compatibleMP4.formatSelector.contains("vcodec^=avc1"))
+        XCTAssertEqual(DownloadProfile.audioOnly.formatSelector, "ba/b")
+        XCTAssertFalse(DownloadProfile.audioOnly.requiresFFmpeg)
     }
 
     func testLinkInputParserHandlesMultipleLinksAndDeduplicates() {

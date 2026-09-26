@@ -185,6 +185,8 @@ if [[ ! -d "$app_dir" ]]; then
 fi
 
 [[ -x "$app_dir/Contents/MacOS/MediaFetch" ]] || { print -u2 "应用主程序不存在或不可执行"; exit 2; }
+bundle_executable="$(plutil -extract CFBundleExecutable raw -o - "$app_dir/Contents/Info.plist")"
+[[ -x "$app_dir/Contents/MacOS/$bundle_executable" ]] || { print -u2 "CFBundleExecutable=$bundle_executable 在 Contents/MacOS 中不存在，应用无法启动"; exit 2; }
 [[ -f "$app_dir/Contents/Resources/AppIcon.icns" ]] || { print -u2 "应用图标未编译为 AppIcon.icns"; exit 2; }
 [[ -f "$app_dir/Contents/Resources/Assets.car" ]] || { print -u2 "应用图标 Assets.car 缺失"; exit 2; }
 [[ -f "$app_dir/Contents/Resources/PrivacyInfo.xcprivacy" ]] || { print -u2 "PrivacyInfo.xcprivacy 未放入 Contents/Resources"; exit 2; }

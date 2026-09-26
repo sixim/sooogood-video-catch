@@ -39,6 +39,9 @@ struct ContentView: View {
         .tint(MediaFetchTheme.videoAccent)
 #if !MEDIAFETCH_STORE_PROFILE
         .onAppear {
+            if DependencyRegistry.providers.isEmpty {
+                DependencyRegistry.providers.append(TorrentDefaults.dependencyItem)
+            }
             downloader.inAppCookieProvider = { url in
                 try await streamingLogins.exportSession(for: url)
             }

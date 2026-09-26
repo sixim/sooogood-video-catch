@@ -44,6 +44,12 @@ struct DependencyStatusPanel: View {
                     Button("重新检测") { Task { await refresh() } }
                         .buttonStyle(.bordered)
                 }
+                if items.isEmpty {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("正在检测本机工具…").font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
+                    }
+                }
                 ForEach(items) { item in row(item) }
                 if let copied {
                     Text("已复制：\(copied)，请在终端运行后点“重新检测”")

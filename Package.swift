@@ -8,7 +8,8 @@ let package = Package(
         .executable(name: "MediaFetch", targets: ["MediaFetch"]),
         .library(name: "MediaFetchCore", targets: ["MediaFetchCore"]),
         .library(name: "MediaFetchVideo", targets: ["MediaFetchVideo"]),
-        .library(name: "MediaFetchMusic", targets: ["MediaFetchMusic"])
+        .library(name: "MediaFetchMusic", targets: ["MediaFetchMusic"]),
+        .library(name: "MediaFetchTorrent", targets: ["MediaFetchTorrent"])
     ],
     targets: [
         .target(
@@ -28,14 +29,19 @@ let package = Package(
                 .linkedFramework("AVFoundation")
             ]
         ),
+        .target(
+            name: "MediaFetchTorrent",
+            dependencies: ["MediaFetchCore"],
+            path: "Sources/MediaFetchTorrent"
+        ),
         .executableTarget(
             name: "MediaFetch",
-            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic"],
+            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent"],
             path: "Sources/MediaFetch"
         ),
         .testTarget(
             name: "MediaFetchTests",
-            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic"],
+            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent"],
             path: "Tests/MediaFetchTests"
         )
     ],

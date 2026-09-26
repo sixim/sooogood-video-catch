@@ -2,6 +2,9 @@ import SwiftUI
 import MediaFetchCore
 import MediaFetchMusic
 import MediaFetchVideo
+#if !MEDIAFETCH_STORE_PROFILE
+import MediaFetchTorrent
+#endif
 
 enum AppRoute: String, Hashable {
     case home
@@ -9,12 +12,16 @@ enum AppRoute: String, Hashable {
     case music
     case tasks
     case settings
+    case torrent
 }
 
 struct ContentView: View {
     @StateObject private var downloader = DownloaderService()
     @StateObject private var spotify = SpotifyBridgeViewModel()
     @StateObject private var streamingLogins = StreamingSiteLoginStore()
+#if !MEDIAFETCH_STORE_PROFILE
+    @StateObject private var torrents = TorrentService(defaultDownloadDirectory: TorrentDefaults.downloadDirectory)
+#endif
     @State private var path: [AppRoute] = []
 
     var body: some View {
@@ -38,6 +45,10 @@ struct ContentView: View {
         }
         .sheet(item: $streamingLogins.requestedLogin) { platform in
             InAppSiteLoginView(session: streamingLogins.session(for: platform), store: streamingLogins)
+        }
+        .onOpenURL(perform: handleOpenURL)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            torrents.shutdown()
         }
 #endif
     }
@@ -67,6 +78,13 @@ struct ContentView: View {
                 openSettings: { replaceTop(with: .settings) }
             )
                 .navigationBarBackButtonHidden()
+        case .torrent:
+#if !MEDIAFETCH_STORE_PROFILE
+            TorrentView(service: torrents, onBack: goHome)
+                .navigationBarBackButtonHidden()
+#else
+            EmptyView()
+#endif
         case .settings:
             SettingsView(
                 viewModel: spotify,
@@ -76,6 +94,25 @@ struct ContentView: View {
                 .navigationBarBackButtonHidden()
         }
     }
+
+#if !MEDIAFETCH_STORE_PROFILE
+    /// `magnet:` links and `.torrent` files opened from Finder or a browser.
+    private func handleOpenURL(_ url: URL) {
+        let source: TorrentSource?
+        if url.scheme?.lowercased() == "magnet" {
+            source = TorrentSource.magnet(from: url.absoluteString)
+        } else if url.isFileURL, url.pathExtension.lowercased() == "torrent" {
+            source = try? TorrentSource.metainfo(fileAt: url)
+        } else {
+            source = nil
+        }
+        guard let source else { return }
+        if path.last != .torrent { path.append(.torrent) }
+        // The first-use notice must be accepted before anything is added.
+        guard UserDefaults.standard.bool(forKey: "MediaFetch.torrent.noticeAccepted") else { return }
+        Task { try? await torrents.add(source) }
+    }
+#endif
 
     private func navigate(_ route: AppRoute) {
         guard route != .home else {

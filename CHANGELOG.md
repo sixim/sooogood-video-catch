@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (build 10)
+
+- 新增 Torrent（仅 Local 版）：独立模块 `MediaFetchTorrent`，由 Homebrew 的 `transmission-daemon` 4.1 驱动（JSON-RPC 2.0）。应用启动私有守护进程：RPC 只监听 127.0.0.1 的随机端口，每次启动生成新的随机凭据，配置目录权限 0700。
+- 支持磁力链接、.torrent 文件（选择、拖入、Finder 打开），系统里的 `magnet:` 链接也能交给本应用；可在开始前选择文件、标记优先文件、顺序下载，设置做种策略（完成即停 / 分享率 / 空闲时长）。
+- 完成后生成 `torrent-manifest.json`（infohash、每个文件的 SHA-256）；拒绝会跳出下载目录的文件路径；「移出列表」不删除任何已下载文件。
+- 首次使用需要确认合法使用说明；不提供种子搜索或索引。
+- 共享的 `JSONValue`（Core）供 Transmission RPC 和后续 MCP 复用。
+- Store 预检新增：Info-Store.plist 不得注册 magnet/.torrent；Local 专属模块必须有编译边界；Store 二进制中不得出现 Torrent/MCP/工具箱相关字符串。
+
 ## 0.6.0 (build 9)
 
 - 下载失败自动重试（最多 3 次）：429 指数退避并降低分片并发；YouTube SABR / 人机验证 / 签名失败按实测可用的 `player_client` 附加列表（`default,mweb` → `default,android` → `mweb,android`）切换；403 改用 IPv4；字幕单独被限流时去掉字幕重试；已删除、私有、404 等终止型错误不重试。

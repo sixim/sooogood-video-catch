@@ -102,6 +102,16 @@ struct HomeView: View {
                 action: { navigate(.tasks) }
             )
 
+#if !MEDIAFETCH_STORE_PROFILE
+            CompactNavigationCard(
+                title: "Torrent",
+                subtitle: "磁力链接与 .torrent 文件",
+                systemImage: "point.3.connected.trianglepath.dotted",
+                badge: nil,
+                action: { navigate(.torrent) }
+            )
+#endif
+
             CompactNavigationCard(
                 title: "设置",
                 subtitle: settingsCardSubtitle,

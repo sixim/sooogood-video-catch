@@ -9,6 +9,8 @@ enum MediaFetchTheme {
     static let videoAccent = Color(hex: 0x4B8DFF)
     static let musicPurple = Color(hex: 0x8067FF)
     static let musicGreen = Color(hex: 0x32C7A0)
+    static let torrentAccent = Color(hex: 0xF08A4B)
+    static let toolsAccent = Color(hex: 0x3FC1D9)
     static let success = Color(hex: 0x57D397)
     static let warning = Color(hex: 0xF4B860)
     static let danger = Color(hex: 0xFF6B79)

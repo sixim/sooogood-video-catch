@@ -6,7 +6,9 @@
 Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetch）
 ├── MediaFetchVideo（视频队列与下载引擎适配）
 │   └── MediaFetchCore（领域模型、平台策略、manifest、历史）
-└── MediaFetchMusic（Spotify OAuth/API、扫描、匹配、素材桥接）
+├── MediaFetchMusic（Spotify OAuth/API、扫描、匹配、素材桥接）
+│   └── MediaFetchCore
+└── MediaFetchTorrent（仅 Local：Transmission 守护进程、RPC、做种策略、torrent 清单）
     └── MediaFetchCore
 ```
 
@@ -27,6 +29,9 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 - `InAppSiteSession`：App 层的 WebKit 会话生命周期与 HTTPS 导航策略，每个平台稳定的独立 WKWebsiteDataStore 标识不可随意更改；清除会话时关闭读取并删除该平台全部 WebKit 数据。Google 内嵌登录明确不可用，不注入脚本或伪装 UA。
 - `StreamingSiteLoginStore`：组合层持久化非敏感偏好，并通过异步会话 provider 注入 `DownloaderService`。Video 模块不依赖 WebKit；`TemporaryCookieFile` 管理权限受限的临时引擎文件，直到进程结束才释放。重启恢复任务只记住会话方式，需要当前配置仍启用才能导出凭据。Store profile 编译排除 WebKit 登录与 provider。
 - Debug 预览使用固定 Spotify 场景和不可交互的宿主；预览初始化关闭 UserDefaults、bookmark、Keychain、网络和文件写入，避免 UI 验收污染开发者状态。
+
+- `MediaFetchTorrent`：`TransmissionDaemon` 管理私有子进程（只监听 loopback、随机端口、每次启动新凭据），`TransmissionRPCClient` 只使用 4.1 的 snake_case JSON-RPC 2.0；`TorrentService` 是 UI façade，种子的续传状态由引擎自己保存在配置目录，应用只在 `torrent-history.json` 里记录策略和清单路径。整个模块以 `#if !MEDIAFETCH_STORE_PROFILE` 包裹，Store 预检会强制检查。
+- Local 专属模块（Torrent，以及后续的 MCP、工具箱）每个源文件都必须带编译边界，App 层的入口也放在同样的条件编译里。
 
 ## 版本与迁移策略
 

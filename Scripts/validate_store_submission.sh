@@ -165,6 +165,20 @@ if rg -n '(/opt/homebrew|/usr/local/bin|/usr/bin/ffprobe)' "$project_dir/Sources
     print "Confirm the Store build selects AudioToolchain.native() and NativeAudioScanner()."
 fi
 
+# Local-only capabilities (BitTorrent, MCP, creator tools) must stay out of the Store profile.
+for key in CFBundleURLTypes CFBundleDocumentTypes UTImportedTypeDeclarations; do
+    if plutil -extract "$key" raw -o - "$project_dir/Resources/Info-Store.plist" >/dev/null 2>&1; then
+        print -u2 "Info-Store.plist 不得注册 $key（magnet / .torrent 关联仅限 Local profile）"
+        exit 2
+    fi
+done
+for dir in MediaFetchTorrent MediaFetchControl MediaFetchTools; do
+    [[ -d "$project_dir/Sources/$dir" ]] || continue
+    for file in "$project_dir/Sources/$dir"/*.swift(N); do
+        rg -q '^#if !MEDIAFETCH_STORE_PROFILE' "$file" || { print -u2 "$file 缺少 #if !MEDIAFETCH_STORE_PROFILE 编译边界"; exit 2; }
+    done
+done
+
 if [[ ! -d "$app_dir" ]]; then
     print "Store preflight source checks passed; bundle not found: $app_dir"
     exit 0
@@ -194,6 +208,11 @@ bundle_category="$(plutil -extract LSApplicationCategoryType raw -o - "$app_dir/
 [[ "$bundle_category" == "public.app-category.music" ]] || { print -u2 "Store bundle 必须使用音乐分类，当前为：$bundle_category"; exit 2; }
 [[ "$bundle_non_exempt_encryption" == "false" ]] || { print -u2 "Store bundle 必须明确声明仅使用豁免加密：ITSAppUsesNonExemptEncryption=false"; exit 2; }
 [[ -f "$app_dir/Contents/embedded.provisionprofile" ]] || { print -u2 "Store bundle 缺少 embedded.provisionprofile"; exit 2; }
+if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n -i 'transmission|magnet:|torrent_add|sooogood-mcp|whisper-cli|control\.sock' >/dev/null; then
+    print -u2 "Store bundle 包含 Torrent / MCP / 工具箱等 Local 专属实现"
+    exit 2
+fi
+[[ ! -e "$app_dir/Contents/MacOS/sooogood-mcp" ]] || { print -u2 "Store bundle 不得包含 sooogood-mcp"; exit 2; }
 if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n '/opt/homebrew|/usr/local/bin|/usr/bin/ffprobe|Cookies\.binarycookies|cookies-from-browser|ffprobeURL|ffprobe helper unavailable|ffmpegURL|ytDLPURL|Contents/Helpers' >/dev/null; then
     print -u2 "Store bundle 包含外部工具、Cookie 或 Local toolchain 实现标记；确认使用 NativeAudioScanner() 并排除 LocalAudioScanner/VideoToolchain"
     exit 2

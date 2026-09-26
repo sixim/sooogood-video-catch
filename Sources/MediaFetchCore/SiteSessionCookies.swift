@@ -9,6 +9,7 @@ public enum SiteSessionCookies {
         case .youtube: return ["youtube.com"]
         case .bilibili: return ["bilibili.com", "bilibili.tv"]
         case .youku: return ["youku.com"]
+        case .udemy: return ["udemy.com"]
         default: return []
         }
     }

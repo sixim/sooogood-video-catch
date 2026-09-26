@@ -26,6 +26,19 @@ public enum YtDLPArgumentBuilder {
         return host == "youtu.be" || host.hasSuffix("youtube.com") || host.hasSuffix("youtube-nocookie.com")
     }
 
+    public static func isCoursePlatform(_ url: String) -> Bool {
+        guard let parsed = URL(string: url) else { return false }
+        let host = parsed.host?.lowercased() ?? ""
+        return host.hasSuffix("udemy.com") || (host.hasSuffix("bilibili.com") && parsed.path.hasPrefix("/cheese"))
+    }
+
+    /// `--flat-playlist` listing for courses and playlists.
+    public static func expansionArguments(url: String, cookieArguments: [String]) -> [String] {
+        ["--flat-playlist", "--dump-single-json", "--no-warnings", "--socket-timeout", "30", "--extractor-retries", "3"]
+            + (isCoursePlatform(url) ? ["--sleep-requests", "1"] : [])
+            + cookieArguments + [url]
+    }
+
     public static func concurrentFragments(isYouTube: Bool, sessionRateLimitCount: Int) -> Int {
         guard isYouTube else { return defaultFragments }
         switch sessionRateLimitCount {
@@ -47,7 +60,9 @@ public enum YtDLPArgumentBuilder {
             arguments += ["--extractor-args", "youtube:player_client=\(client)"]
         }
         if state.forceIPv4 { arguments.append("--force-ipv4") }
-        if youtube && sessionRateLimitCount > 0 {
+        // Course platforms watch request rates per account: always pace them.
+        let paced = isCoursePlatform(url)
+        if (youtube && sessionRateLimitCount > 0) || paced {
             arguments += ["--sleep-requests", "1", "--sleep-interval", "2", "--max-sleep-interval", "5"]
         }
         return arguments
@@ -94,11 +109,15 @@ public enum YtDLPArgumentBuilder {
         ]
         if youtube { arguments += ["--throttled-rate", "100K"] }
 
-        let packageName = "%(title).180B [%(id)s]"
-        if job.profile == .sourceStreams {
-            arguments += ["--output", "\(packageName)/\(packageName).f%(format_id)s.%(ext)s"]
+        if let collection = job.collection {
+            arguments += ["--output", CollectionPaths.outputTemplate(for: collection, separateStreams: job.profile == .sourceStreams)]
         } else {
-            arguments += ["--output", "\(packageName)/\(packageName).%(ext)s"]
+            let packageName = "%(title).180B [%(id)s]"
+            if job.profile == .sourceStreams {
+                arguments += ["--output", "\(packageName)/\(packageName).f%(format_id)s.%(ext)s"]
+            } else {
+                arguments += ["--output", "\(packageName)/\(packageName).%(ext)s"]
+            }
         }
         if job.profile == .highest {
             arguments += ["--merge-output-format", "mkv"]

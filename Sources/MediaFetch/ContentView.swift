@@ -22,6 +22,7 @@ struct VideoDownloadView: View {
     @State private var showsPreflight = false
     @State private var preflightReport: BatchPreflight.Report?
     @State private var preflightTask: Task<Void, Never>?
+    @State private var collectionPhase: CollectionSheet.Phase?
 #endif
 
     var body: some View {
@@ -100,6 +101,23 @@ struct VideoDownloadView: View {
             consumePendingInput()
         }
         .onChange(of: intake?.pendingVideoInput) { _, _ in consumePendingInput() }
+        .sheet(isPresented: Binding(get: { collectionPhase != nil }, set: { if !$0 { collectionPhase = nil } })) {
+            if let phase = collectionPhase {
+                CollectionSheet(phase: phase) { outline, entries in
+                    collectionPhase = nil
+                    let url = URL(string: entries.first?.url ?? "")
+                    let login = url.map { (cookieSource(for: $0), inAppLoginURLs.contains($0.absoluteString)) }
+                    downloader.enqueueCollection(
+                        outline, entries: entries, profile: profile, destination: destination,
+                        includeSidecars: includeSidecars, includeSubtitles: includeSubtitles,
+                        cookieSource: collectionCookieSource ?? login?.0,
+                        usesInAppLogin: collectionUsesInApp || (login?.1 ?? false)
+                    )
+                } onCancel: {
+                    collectionPhase = nil
+                }
+            }
+        }
         .sheet(isPresented: $showsPreflight) {
             BatchPreflightSheet(report: preflightReport) { urls in
                 showsPreflight = false
@@ -361,6 +379,14 @@ struct VideoDownloadView: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         .disabled(mediaURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || containsBlockedPlatform)
+                        if let collectionURL {
+                            Button {
+                                expandCollection(collectionURL)
+                            } label: {
+                                Label("展开课程 / 播放列表", systemImage: "list.bullet.indent")
+                            }
+                            .controlSize(.large)
+                        }
                         if inputURLs.count > 1 {
                             Button {
                                 runPreflight()
@@ -534,6 +560,38 @@ struct VideoDownloadView: View {
             return genericUseBrowserCookies ? genericBrowserCookieSource : nil
         }
         return cookieSource(for: url)
+    }
+
+    /// The list URL to expand, if the input is a course/playlist (or a watch URL with `list=`).
+    private var collectionURL: URL? {
+        guard inputURLs.count == 1, let url = inputURLs.first else { return nil }
+        if CollectionDetector.looksLikeCollection(url) { return url }
+        if CollectionDetector.hasPlaylistContext(url),
+           let list = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "list" })?.value {
+            return URL(string: "https://www.youtube.com/playlist?list=\(list)")
+        }
+        return nil
+    }
+
+    private var collectionCookieSource: BrowserCookieSource? { collectionURL.flatMap(cookieSource(for:)) }
+    private var collectionUsesInApp: Bool { collectionURL.map { inAppLoginURLs.contains($0.absoluteString) || isInAppPlatform($0) } ?? false }
+
+    private func isInAppPlatform(_ url: URL) -> Bool {
+        let platform = StreamingPlatform.detect(url)
+        return loginStore.isEnabled(for: platform) && loginStore.method(for: platform) == .inApp
+    }
+
+    private func expandCollection(_ url: URL) {
+        collectionPhase = .loading
+        Task {
+            do {
+                let outline = try await downloader.expandCollection(url, cookieSource: cookieSource(for: url),
+                                                                    usesInAppLogin: isInAppPlatform(url))
+                if collectionPhase != nil { collectionPhase = .loaded(outline) }
+            } catch {
+                if collectionPhase != nil { collectionPhase = .failed(error.localizedDescription) }
+            }
+        }
     }
 
     private func runPreflight() {

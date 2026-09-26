@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.0 (build 15)
+
+- 新增课程与播放列表下载：视频页识别到 YouTube 播放列表（包括带 `list=` 的观看链接）、Udemy 课程、B 站课堂、B 站合集 / 收藏夹时，会出现「展开课程 / 播放列表」，按章节列出课时，可以整章或逐个选择。
+- 选中的条目下载到同一个文件夹：`课程名/NN 章节名/NNN - 标题 [id]/`，每个课时依然是带 SHA-256 清单的素材包；课程根目录生成 `collection-manifest.json`，记录每一项是已完成、失败，还是因 DRM 被跳过。
+- 新增 Udemy 平台，支持应用内 / 浏览器登录；Udemy 和 B 站课堂的请求始终放慢节奏，降低账号受限风险；有 DRM 保护的课时一律跳过，不做任何绕过。
+- MCP 新增 `expand_collection`、`enqueue_collection`，agent 也能整课下载。
+
 ## 0.11.0 (build 14)
 
 - 新增 MCP server（仅 Local 版）：打包进应用的 `sooogood-mcp`（stdio，JSON-RPC 2.0，支持协议版本 2025-06-18 / 2025-03-26 / 2024-11-05），让 Claude Code、Hermes 等 agent 调用本应用。

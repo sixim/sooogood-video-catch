@@ -425,6 +425,67 @@ public final class DownloaderService: ObservableObject {
         return try JSONDecoder().decode(MediaMetadata.self, from: output)
     }
 
+    /// Lists the entries of a course or playlist without downloading anything.
+    public func expandCollection(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> CollectionOutline {
+        guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError("未找到 yt-dlp，请执行 brew install yt-dlp") }
+        var cookieFile: TemporaryCookieFile?
+        var cookieArguments = cookieSource?.ytDLPArguments ?? []
+        if usesInAppLogin, let provider = inAppCookieProvider {
+            let file = try TemporaryCookieFile(data: await provider(url))
+            cookieFile = file
+            cookieArguments = ["--cookies", file.url.path]
+        }
+        defer { cookieFile?.remove() }
+        let arguments = YtDLPArgumentBuilder.expansionArguments(url: url.absoluteString, cookieArguments: cookieArguments)
+        let environment = toolchain.processEnvironment
+        let (status, output, errors) = await Task.detached(priority: .userInitiated) {
+            ProcessRunner.run(ytDLP, arguments, environment: environment)
+        }.value
+        guard status == 0 else {
+            let text = String(decoding: errors, as: UTF8.self)
+            let diagnosis = EngineDiagnostics.diagnose(text)
+            throw EngineCallError([diagnosis?.title, diagnosis?.guidance, EngineDiagnostics.lastErrorLine(in: text)]
+                .compactMap { $0 }.joined(separator: "\n"))
+        }
+        guard let json = try? JSONDecoder().decode(JSONValue.self, from: output),
+              let outline = CollectionOutline.parse(json) else {
+            throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
+        }
+        return outline
+    }
+
+    /// Queues selected entries of a course/playlist; each keeps its place in
+    /// the collection folder structure and the collection manifest.
+    @discardableResult
+    public func enqueueCollection(
+        _ outline: CollectionOutline, entries: [CollectionEntry], profile: DownloadProfile, destination: URL,
+        includeSidecars: Bool, includeSubtitles: Bool, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool
+    ) -> Int {
+        guard ytDLPPath != nil else {
+            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            return 0
+        }
+        guard ffmpegPath != nil || !profile.requiresFFmpeg else {
+            errorMessage = "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg"
+            return 0
+        }
+        guard ensureCookieAccess(usesInAppLogin ? nil : cookieSource) else { return 0 }
+        for entry in entries {
+            var job = DownloadJob(
+                sourceURL: entry.url, profile: profile, destination: destination,
+                includeSidecars: includeSidecars, includeSubtitles: includeSubtitles,
+                browserCookieSource: usesInAppLogin ? nil : cookieSource, usesInAppLogin: usesInAppLogin
+            )
+            job.title = entry.title
+            job.collection = outline.context(for: entry)
+            jobs.append(job)
+        }
+        persistJobs()
+        status = "已加入「\(outline.title)」的 \(entries.count) 个条目"
+        startNextIfNeeded()
+        return entries.count
+    }
+
     /// Cancels a specific job: the running one is interrupted, waiting ones are marked cancelled.
     public func cancelJob(_ id: UUID) {
         if currentJobID == id || preparingJobID == id {
@@ -705,6 +766,13 @@ public final class DownloaderService: ObservableObject {
                     (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true
                 }
                 #endif
+                #if !MEDIAFETCH_STORE_PROFILE
+                if let collection = job.collection {
+                    try? CollectionManifestWriter.record(
+                        destination: URL(fileURLWithPath: job.destinationPath, isDirectory: true), context: collection,
+                        sourceURL: job.sourceURL, title: job.title, status: .completed, packageManifest: finalManifest)
+                }
+                #endif
                 DispatchQueue.main.async {
                     guard let self else { return }
                     self.updateJob(job.id) {
@@ -767,6 +835,15 @@ public final class DownloaderService: ObservableObject {
 
     private func failCurrentJob(_ message: String) {
         if let currentJobID { attemptStates[currentJobID] = nil }
+        #if !MEDIAFETCH_STORE_PROFILE
+        if let currentJobID, let job = jobs.first(where: { $0.id == currentJobID }), let collection = job.collection {
+            let drm = job.diagnosis?.cause == .drmProtected || message.contains("DRM")
+            try? CollectionManifestWriter.record(
+                destination: URL(fileURLWithPath: job.destinationPath, isDirectory: true), context: collection,
+                sourceURL: job.sourceURL, title: job.title, status: drm ? .drmSkipped : .failed,
+                packageManifest: nil, note: message)
+        }
+        #endif
         activeCookieFile?.remove()
         activeCookieFile = nil
         isDownloading = false

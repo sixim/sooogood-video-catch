@@ -54,6 +54,8 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     /// Last engine command with credential paths redacted, for the audit view.
     public var lastCommand: String?
     public var retryNote: String?
+    /// Set when the job belongs to a course or playlist.
+    public var collection: CollectionContext?
 
     public init(
         sourceURL: String,

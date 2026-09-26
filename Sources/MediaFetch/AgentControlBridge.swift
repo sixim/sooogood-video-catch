@@ -34,6 +34,8 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         case "analyze_url": return try await analyze(args)
         case "preflight_batch": return try await preflight(args)
         case "enqueue_download": return try await enqueue(args)
+        case "expand_collection": return try await expandCollection(args)
+        case "enqueue_collection": return try await enqueueCollection(args)
         case "list_tasks": return await listTasks(args)
         case "get_task": return try await getTask(args.string("id"))
         case "pause_task": return try await control(args.string("id"), action: .pause)
@@ -138,6 +140,41 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         let created = downloader.jobs.filter { !before.contains($0.id) }
         return ["enqueued": .number(Double(count)), "destination": .string(destination.path),
                 "tasks": .array(created.map(videoSummary))]
+    }
+
+    @MainActor private func outline(for url: URL) async throws -> CollectionOutline {
+        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        let login = loginRouting(for: url)
+        return try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
+    }
+
+    @MainActor private func expandCollection(_ args: Arguments) async throws -> JSONValue {
+        let outline = try await outline(for: try args.url("url"))
+        return [
+            "id": .string(outline.id), "title": .string(outline.title), "kind": .string(outline.isCourse ? "course" : "playlist"),
+            "entries": .array(outline.entries.map { entry in
+                ["index": .number(Double(entry.index)), "title": .string(entry.title), "url": .string(entry.url),
+                 "chapter": entry.chapterTitle.map(JSONValue.string) ?? .null,
+                 "duration_seconds": entry.duration.map(JSONValue.number) ?? .null]
+            })
+        ]
+    }
+
+    @MainActor private func enqueueCollection(_ args: Arguments) async throws -> JSONValue {
+        let url = try args.url("url")
+        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        let outline = try await outline(for: url)
+        let wanted: Set<Int>? = args.raw["indices"]?.arrayValue.map { Set($0.compactMap(\.intValue)) }
+        let entries = outline.entries.filter { wanted?.contains($0.index) ?? true }
+        guard !entries.isEmpty else { throw ControlError.invalidParams("没有匹配的条目") }
+        let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? AgentPaths.defaultDestination
+        let login = loginRouting(for: url)
+        let count = downloader.enqueueCollection(
+            outline, entries: entries, profile: try args.profile(), destination: destination,
+            includeSidecars: true, includeSubtitles: true, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
+        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有任务被加入队列") }
+        return ["enqueued": .number(Double(count)), "title": .string(outline.title),
+                "folder": .string(destination.appendingPathComponent(outline.rootFolderName).path)]
     }
 
     // MARK: Tasks

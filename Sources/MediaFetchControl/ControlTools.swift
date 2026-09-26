@@ -41,6 +41,17 @@ public struct ControlTool: Sendable, Equatable {
                 "destination": ["type": "string", "description": "Absolute folder path; defaults to the app's current download folder"],
                 "subtitles": ["type": "boolean"], "sidecars": ["type": "boolean", "description": "Thumbnail and info.json"]
               ], required: ["urls"])),
+        .init(name: "expand_collection",
+              description: "List the entries of a playlist or course (YouTube playlist, Udemy course, Bilibili 课堂) with chapters, without downloading.",
+              inputSchema: schema(["url": string], required: ["url"])),
+        .init(name: "enqueue_collection",
+              description: "Queue entries of a playlist or course into one folder with chapter sub-folders and a collection-manifest.json. Omit indices to take every entry. DRM-protected lectures are skipped and recorded.",
+              inputSchema: schema([
+                "url": string,
+                "indices": ["type": "array", "items": ["type": "integer"], "description": "Entry indices from expand_collection"],
+                "profile": profileSchema,
+                "destination": ["type": "string"]
+              ], required: ["url"])),
         .init(name: "list_tasks",
               description: "List video downloads, torrents and toolbox jobs with status and progress.",
               inputSchema: schema([

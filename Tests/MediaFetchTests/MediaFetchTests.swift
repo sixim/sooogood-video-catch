@@ -93,8 +93,8 @@ final class MediaFetchTests: XCTestCase {
     func testReleaseMetadataUsesExpectedSchemaVersions() {
         XCTAssertEqual(MediaFetchRelease.bundleIdentifier, "com.simon.mediafetch")
         XCTAssertEqual(MediaFetchRelease.displayName, "Sooogood Video Catch")
-        XCTAssertEqual(MediaFetchRelease.version, "0.11.0")
-        XCTAssertEqual(MediaFetchRelease.build, "14")
+        XCTAssertEqual(MediaFetchRelease.version, "0.12.0")
+        XCTAssertEqual(MediaFetchRelease.build, "15")
         XCTAssertEqual(MediaFetchRelease.videoManifestSchema, 2)
         XCTAssertEqual(MediaFetchRelease.musicManifestSchema, 2)
     }
@@ -202,7 +202,8 @@ final class MediaFetchTests: XCTestCase {
             .youtube: "www.youtube.com",
             .vimeo: "vimeo.com",
             .bilibili: "passport.bilibili.com",
-            .youku: "account.youku.com"
+            .youku: "account.youku.com",
+            .udemy: "www.udemy.com"
         ]
 
         XCTAssertEqual(Set(StreamingPlatform.browserLoginPlatforms), Set(expectedHosts.keys))

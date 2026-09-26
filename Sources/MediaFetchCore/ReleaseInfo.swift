@@ -13,8 +13,8 @@ public enum MediaFetchRelease {
     /// Change this together with the Apple Developer/App Store record; the
     /// Store preflight blocks partial identifier updates.
     public static let bundleIdentifier = "com.simon.mediafetch"
-    public static let version = "0.11.0"
-    public static let build = "14"
+    public static let version = "0.12.0"
+    public static let build = "15"
     public static let videoManifestSchema = 2
     public static let musicManifestSchema = 2
 }

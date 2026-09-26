@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 (build 14)
+
+- 新增 MCP server（仅 Local 版）：打包进应用的 `sooogood-mcp`（stdio，JSON-RPC 2.0，支持协议版本 2025-06-18 / 2025-03-26 / 2024-11-05），让 Claude Code、Hermes 等 agent 调用本应用。
+  - 15 个工具：`app_status`、`analyze_url`、`preflight_batch`、`enqueue_download`、`list_tasks`、`get_task`、`pause_task`、`resume_task`、`cancel_task`、`retry_task`、`read_manifest`、`add_torrent`、`run_tool`、`get_transcript`、`send_to_resolve`。**没有任何删除类工具。**
+  - 应用内的本地控制端口（Unix socket，权限 0600，只接受当前用户的进程）；应用没开时 helper 会在后台自动启动它。
+  - agent 走和界面完全相同的服务：受保护平台阻断、DRM 拒绝、登录方式、不覆盖文件、清单审计全部生效。agent 只能读写「下载」「影片」和你在应用里选择的文件夹；Torrent 必须先由你在应用内确认使用说明。
+- 设置页新增「AI Agent（MCP）」卡片：开关（默认开启），以及可直接复制的 `claude mcp add …` 命令和通用 JSON 配置。
+- 新模块 `MediaFetchControl`（协议、socket、MCP 会话，不依赖任何引擎模块）和可执行文件 `sooogood-mcp`；应用侧由 `AgentControlBridge` 实现。
+
 ## 0.10.0 (build 13)
 
 - 新增创作者工具箱（仅 Local 版，独立模块 `MediaFetchTools`）：ProRes Proxy / LT / 422（VideoToolbox 硬件编码，不可用时自动退回软件 `prores_ks`）、DNxHR LB 代理、H.264 代理、HEVC 压缩、无损提取音轨、WAV 24-bit/48 kHz、GIF 预览，以及基于 whisper.cpp 的本机转录（输出 SRT / VTT / TXT）。

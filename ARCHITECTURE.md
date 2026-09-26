@@ -12,8 +12,12 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 │   └── MediaFetchCore
 ├── MediaFetchResolve（仅 Local：DaVinci Resolve 官方脚本 API 桥接）
 │   └── MediaFetchCore
-└── MediaFetchTools（仅 Local：ffmpeg / whisper.cpp 工具箱）
+├── MediaFetchTools（仅 Local：ffmpeg / whisper.cpp 工具箱）
+│   └── MediaFetchCore
+└── MediaFetchControl（仅 Local：控制协议、Unix socket、MCP 会话）
     └── MediaFetchCore
+sooogood-mcp（可执行文件，stdio MCP → 应用控制端口）
+└── MediaFetchControl
 ```
 
 依赖只向下：Core 不依赖 SwiftUI、AppKit 或网络；Video 和 Music 可以单独编译、单独测试；`MediaFetch` 只负责页面、导航和依赖注入。新增平台或替换服务时，优先在对应模块添加适配器，不把平台判断散落到页面代码中。
@@ -37,6 +41,7 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 - `MediaFetchTorrent`：`TransmissionDaemon` 管理私有子进程（只监听 loopback、随机端口、每次启动新凭据），`TransmissionRPCClient` 只使用 4.1 的 snake_case JSON-RPC 2.0；`TorrentService` 是 UI façade，种子的续传状态由引擎自己保存在配置目录，应用只在 `torrent-history.json` 里记录策略和清单路径。整个模块以 `#if !MEDIAFETCH_STORE_PROFILE` 包裹，Store 预检会强制检查。
 - `MediaFetchResolve`：`ResolveImportPlanner` 是纯函数（素材包 → 导入请求，读取 manifest 里的来源信息）；`ResolveBridge` 用内嵌 Python 脚本调用 `DaVinciResolveScript`，请求经 stdin 传入、JSON 从 stdout 返回；`ResolveService` 是 UI façade，并负责写 `resolve-imports.json`。测试用假的 `DaVinciResolveScript` 模块驱动真实的 Python 脚本；设置 `MF_LIVE_RESOLVE=1` 可以对真实达芬奇做只读连接测试。
 - `MediaFetchTools`：`FFmpegCommandBuilder`（纯函数，负责预设 → 参数）、`ToolEngine`（探测、执行、转录）、`ToolService`（单并发队列，因为 ffmpeg 和 whisper 都会占满机器）。衍生文件记录 `DerivativeLog` 放在 Core，所以达芬奇模块不依赖工具箱也能读到代理关系。
+- `MediaFetchControl`：`ControlTool.all` 是工具清单的唯一来源，应用和 helper 共用；`ControlServer` / `ControlClient` 使用按行分隔的 JSON，走 0600 Unix socket，并用 `getpeereid` 校验调用方是同一用户；`MCPSession` 是可单测的纯协议层。应用侧的 `AgentControlBridge` 只调用现有服务，不另写一套业务逻辑；路径限制集中在 `AgentPaths`。新增工具时先改 `ControlTool.all`，再在 bridge 里实现，并在测试里确认仍然没有删除类工具。
 - Local 专属模块（Torrent，以及后续的 MCP、工具箱）每个源文件都必须带编译边界，App 层的入口也放在同样的条件编译里。
 
 ## 版本与迁移策略

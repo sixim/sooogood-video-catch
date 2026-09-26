@@ -57,6 +57,10 @@ swift build "${build_arguments[@]}"
 
 mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
 rsync -a --delete "$scratch_path/release/MediaFetch" "$contents_dir/MacOS/MediaFetch"
+if [[ "$build_profile" == "local" ]]; then
+    # MCP helper for AI agents (Local only; the Store validator rejects it).
+    rsync -a "$scratch_path/release/sooogood-mcp" "$contents_dir/MacOS/sooogood-mcp"
+fi
 plist_source="Resources/Info.plist"
 if [[ "$build_profile" == "store" ]]; then
     plist_source="Resources/Info-Store.plist"

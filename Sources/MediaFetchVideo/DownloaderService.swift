@@ -397,6 +397,61 @@ public final class DownloaderService: ObservableObject {
     }
 #endif
 
+#if !MEDIAFETCH_STORE_PROFILE
+    /// Resolves one URL without touching UI state (for agents and automation).
+    public func inspect(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MediaMetadata {
+        guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError("未找到 yt-dlp，请执行 brew install yt-dlp") }
+        let platform = StreamingPlatform.detect(url)
+        guard platform.downloadAllowed else { throw EngineCallError(platform.restrictionMessage ?? "受保护平台") }
+        var cookieFile: TemporaryCookieFile?
+        var cookieArguments = cookieSource?.ytDLPArguments ?? []
+        if usesInAppLogin, let provider = inAppCookieProvider {
+            let file = try TemporaryCookieFile(data: await provider(url))
+            cookieFile = file
+            cookieArguments = ["--cookies", file.url.path]
+        }
+        let arguments = YtDLPArgumentBuilder.analysisArguments(
+            url: url.absoluteString, sessionRateLimitCount: sessionRateLimitCount, cookieArguments: cookieArguments)
+        let environment = toolchain.processEnvironment
+        defer { cookieFile?.remove() }
+        let (status, output, errors) = await Task.detached(priority: .userInitiated) {
+            ProcessRunner.run(ytDLP, arguments, environment: environment)
+        }.value
+        guard status == 0 else {
+            let text = String(decoding: errors, as: UTF8.self)
+            let diagnosis = EngineDiagnostics.diagnose(text)
+            throw EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
+        }
+        return try JSONDecoder().decode(MediaMetadata.self, from: output)
+    }
+
+    /// Cancels a specific job: the running one is interrupted, waiting ones are marked cancelled.
+    public func cancelJob(_ id: UUID) {
+        if currentJobID == id || preparingJobID == id {
+            cancel()
+            return
+        }
+        guard let index = jobs.firstIndex(where: { $0.id == id }),
+              [.queued, .paused, .retrying].contains(jobs[index].status) else { return }
+        jobs[index].status = .cancelled
+        jobs[index].updatedAt = Date()
+        persistJobs()
+    }
+
+    /// Resumes a suspended running job in place, or re-queues a stopped one.
+    public func resumeJob(_ id: UUID) {
+        if currentJobID == id, isSuspended {
+            resumeCurrent()
+            return
+        }
+        guard let index = jobs.firstIndex(where: { $0.id == id }), jobs[index].status == .paused else { return }
+        jobs[index].status = .queued
+        jobs[index].updatedAt = Date()
+        persistJobs()
+        startNextIfNeeded()
+    }
+#endif
+
     /// Puts a failed or cancelled job back in the queue with a fresh attempt budget.
     public func retryJob(_ id: UUID) {
 #if !MEDIAFETCH_STORE_PROFILE
@@ -866,4 +921,11 @@ public final class DownloaderService: ObservableObject {
         progress = DownloadProgress()
     }
 #endif
+}
+
+/// Error surfaced to agents and automation callers.
+public struct EngineCallError: LocalizedError, Sendable {
+    public let message: String
+    public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
 }

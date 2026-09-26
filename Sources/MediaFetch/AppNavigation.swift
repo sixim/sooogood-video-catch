@@ -27,6 +27,7 @@ struct ContentView: View {
     @StateObject private var torrents = TorrentService(defaultDownloadDirectory: TorrentDefaults.downloadDirectory)
     @StateObject private var resolve = ResolveService()
     @StateObject private var tools = ToolService()
+    @StateObject private var agentHost = AgentControlHost()
     @State private var autoSentJobs: Set<UUID> = []
     /// Only jobs finishing after launch are auto-sent; history is never replayed.
     @State private var appLaunchDate = Date()
@@ -54,6 +55,8 @@ struct ContentView: View {
                 DependencyRegistry.providers.append(TorrentDefaults.dependencyItem)
                 DependencyRegistry.providers.append(TorrentDefaults.whisperItem)
             }
+            agentHost.configure(bridge: AgentControlBridge(
+                downloader: downloader, torrents: torrents, tools: tools, resolve: resolve, logins: streamingLogins))
             GlobalHotKey.shared.onTrigger = handleHotKey
             GlobalHotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: GlobalHotKey.preferenceKey))
             downloader.inAppCookieProvider = { url in
@@ -65,10 +68,12 @@ struct ContentView: View {
         }
         .environmentObject(resolve)
         .environmentObject(torrents)
+        .environmentObject(agentHost)
         .onReceive(downloader.$jobs) { jobs in autoSendToResolve(jobs) }
         .onOpenURL(perform: handleOpenURL)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             torrents.shutdown()
+            agentHost.stop()
         }
 #endif
     }

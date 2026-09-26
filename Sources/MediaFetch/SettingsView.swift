@@ -22,6 +22,7 @@ struct SettingsView: View {
                     DependencyStatusPanel()
                     ResolveSettingsPanel()
                     ShortcutSettingsPanel()
+                    AgentSettingsPanelContainer()
                     WebsiteLoginSettingsView(loginStore: loginStore)
 #endif
                     spotifySettings

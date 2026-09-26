@@ -86,7 +86,7 @@ public struct BatchPreflightRunner: Sendable {
         let insertAt = max(0, arguments.count - 1)
         var withFormat = arguments
         withFormat.insert(contentsOf: ["--format", profile.formatSelector], at: insertAt)
-        let (status, stdout, stderr) = Self.execute(ytDLP, withFormat, environment: toolchain.processEnvironment)
+        let (status, stdout, stderr) = ProcessRunner.run(ytDLP, withFormat, environment: toolchain.processEnvironment)
         guard status == 0, let json = try? JSONDecoder().decode(JSONValue.self, from: stdout) else {
             let output = String(decoding: stderr, as: UTF8.self)
             return .init(url: source, problem: BatchPreflight.problem(forEngineOutput: output),
@@ -108,30 +108,6 @@ public struct BatchPreflightRunner: Sendable {
             return sizes.count == requested.count ? Int64(sizes.reduce(0, +)) : nil
         }
         return size(json).map { Int64($0) }
-    }
-
-    private static func execute(_ executable: URL, _ arguments: [String], environment: [String: String]) -> (Int32, Data, Data) {
-        let process = Process()
-        let output = Pipe()
-        let errors = Pipe()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.environment = environment
-        process.standardOutput = output
-        process.standardError = errors
-        do { try process.run() } catch { return (-1, Data(), Data(error.localizedDescription.utf8)) }
-        // Drain stderr concurrently so a chatty failure cannot fill the pipe and block.
-        var errorData = Data()
-        let group = DispatchGroup()
-        group.enter()
-        DispatchQueue.global(qos: .utility).async {
-            errorData = errors.fileHandleForReading.readDataToEndOfFile()
-            group.leave()
-        }
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        group.wait()
-        process.waitUntilExit()
-        return (process.terminationStatus, data, errorData)
     }
 }
 #endif

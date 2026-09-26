@@ -6,12 +6,14 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "MediaFetch", targets: ["MediaFetch"]),
+        .executable(name: "sooogood-mcp", targets: ["SooogoodMCP"]),
         .library(name: "MediaFetchCore", targets: ["MediaFetchCore"]),
         .library(name: "MediaFetchVideo", targets: ["MediaFetchVideo"]),
         .library(name: "MediaFetchMusic", targets: ["MediaFetchMusic"]),
         .library(name: "MediaFetchTorrent", targets: ["MediaFetchTorrent"]),
         .library(name: "MediaFetchResolve", targets: ["MediaFetchResolve"]),
-        .library(name: "MediaFetchTools", targets: ["MediaFetchTools"])
+        .library(name: "MediaFetchTools", targets: ["MediaFetchTools"]),
+        .library(name: "MediaFetchControl", targets: ["MediaFetchControl"])
     ],
     targets: [
         .target(
@@ -46,14 +48,24 @@ let package = Package(
             dependencies: ["MediaFetchCore"],
             path: "Sources/MediaFetchTools"
         ),
+        .target(
+            name: "MediaFetchControl",
+            dependencies: ["MediaFetchCore"],
+            path: "Sources/MediaFetchControl"
+        ),
+        .executableTarget(
+            name: "SooogoodMCP",
+            dependencies: ["MediaFetchCore", "MediaFetchControl"],
+            path: "Sources/SooogoodMCP"
+        ),
         .executableTarget(
             name: "MediaFetch",
-            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve", "MediaFetchTools"],
+            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve", "MediaFetchTools", "MediaFetchControl"],
             path: "Sources/MediaFetch"
         ),
         .testTarget(
             name: "MediaFetchTests",
-            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve", "MediaFetchTools"],
+            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve", "MediaFetchTools", "MediaFetchControl"],
             path: "Tests/MediaFetchTests"
         )
     ],

@@ -1,13 +1,27 @@
 import Foundation
 
-enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable {
+#if MEDIAFETCH_STORE_PROFILE
+/// Store builds retain the persisted field shape for compatibility, but expose
+/// no browser choices or cookie arguments.
+public enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable, Sendable {
     case safari
     case chrome
     case firefox
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
+    public var displayName: String { "不适用（商店版）" }
+    public var ytDLPArguments: [String] { [] }
+    public static var recommendedDefault: BrowserCookieSource { .safari }
+}
+#else
+public enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable, Sendable {
+    case safari
+    case chrome
+    case firefox
 
-    var displayName: String {
+    public var id: String { rawValue }
+
+    public var displayName: String {
         switch self {
         case .safari: return "Safari"
         case .chrome: return "Google Chrome"
@@ -15,24 +29,26 @@ enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var ytDLPArguments: [String] {
+    public var ytDLPArguments: [String] {
         ["--cookies-from-browser", rawValue]
     }
 
-    static var recommendedDefault: BrowserCookieSource {
+    public static var recommendedDefault: BrowserCookieSource {
         if FileManager.default.fileExists(atPath: "/Applications/Google Chrome.app") { return .chrome }
         if FileManager.default.fileExists(atPath: "/Applications/Firefox.app") { return .firefox }
         return .safari
     }
 }
+#endif
 
-enum SafariCookieAccess {
+#if !MEDIAFETCH_STORE_PROFILE
+public enum SafariCookieAccess {
     private static let candidatePaths = [
         NSHomeDirectory() + "/Library/Cookies/Cookies.binarycookies",
         NSHomeDirectory() + "/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies"
     ]
 
-    static func canReadCookieStore() -> Bool {
+    public static func canReadCookieStore() -> Bool {
         for path in candidatePaths where FileManager.default.fileExists(atPath: path) {
             do {
                 let handle = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
@@ -45,30 +61,49 @@ enum SafariCookieAccess {
         return false
     }
 }
+#endif
 
-enum EngineErrorClassifier {
-    static func isSafariCookiePermissionError(_ message: String) -> Bool {
+public enum EngineErrorClassifier {
+#if MEDIAFETCH_STORE_PROFILE
+    public static func isSafariCookiePermissionError(_ message: String) -> Bool { false }
+#else
+    public static func isSafariCookiePermissionError(_ message: String) -> Bool {
         let lowered = message.lowercased()
         return lowered.contains("cookies.binarycookies") &&
             (lowered.contains("operation not permitted") || lowered.contains("permission denied"))
     }
+#endif
 
-    static func isDRMError(_ message: String) -> Bool {
+    public static func isDRMError(_ message: String) -> Bool {
         let lowered = message.lowercased()
         return lowered.contains("known to use drm protection") ||
             lowered.contains("drm protected") || lowered.contains("has_drm")
     }
+
+    /// Detects extractor responses that mean the requested media is visible
+    /// only to an authenticated account. Keeping this classification in Core
+    /// lets the UI and download queue present the same actionable guidance.
+    public static func isAuthenticationRequiredError(_ message: String) -> Bool {
+        let lowered = message.lowercased()
+        return lowered.contains("only works when logged-in") ||
+            lowered.contains("only works when logged in") ||
+            lowered.contains("requires login") ||
+            lowered.contains("login required") ||
+            lowered.contains("not logged-in") ||
+            lowered.contains("not logged in") ||
+            lowered.contains("authentication required")
+    }
 }
 
-enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
+public enum DownloadProfile: String, CaseIterable, Identifiable, Codable, Sendable {
     case highest = "最高画质（无损合并）"
     case sourceStreams = "保留平台原始音视频流"
     case compatibleMP4 = "兼容 MP4（无损封装）"
     case audioOnly = "仅保存最佳原始音频"
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var detail: String {
+    public var detail: String {
         switch self {
         case .highest:
             return "选择最佳视频流 + 最佳音频流，仅重新封装为 MKV，不重新编码。"
@@ -81,7 +116,7 @@ enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var formatSelector: String {
+    public var formatSelector: String {
         switch self {
         case .highest: return "bv*+ba/b"
         case .sourceStreams: return "bv,ba"
@@ -91,7 +126,7 @@ enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var requiresFFmpeg: Bool {
+    public var requiresFFmpeg: Bool {
         switch self {
         case .highest, .compatibleMP4: return true
         case .sourceStreams, .audioOnly: return false
@@ -99,22 +134,22 @@ enum DownloadProfile: String, CaseIterable, Identifiable, Codable {
     }
 }
 
-struct MediaMetadata: Decodable {
-    struct Format: Decodable, Identifiable {
-        let formatID: String?
-        let extensionName: String?
-        let height: Int?
-        let width: Int?
-        let fps: Double?
-        let videoCodec: String?
-        let audioCodec: String?
-        let filesize: Int64?
-        let approximateFilesize: Int64?
-        let totalBitrate: Double?
-        let videoBitrate: Double?
-        let audioBitrate: Double?
-        let dynamicRange: String?
-        let language: String?
+public struct MediaMetadata: Decodable, Sendable {
+    public struct Format: Decodable, Identifiable, Sendable {
+        public let formatID: String?
+        public let extensionName: String?
+        public let height: Int?
+        public let width: Int?
+        public let fps: Double?
+        public let videoCodec: String?
+        public let audioCodec: String?
+        public let filesize: Int64?
+        public let approximateFilesize: Int64?
+        public let totalBitrate: Double?
+        public let videoBitrate: Double?
+        public let audioBitrate: Double?
+        public let dynamicRange: String?
+        public let language: String?
 
         enum CodingKeys: String, CodingKey {
             case formatID = "format_id"
@@ -130,44 +165,44 @@ struct MediaMetadata: Decodable {
             case language
         }
 
-        var id: String {
+        public var id: String {
             [formatID, extensionName, videoCodec, audioCodec].compactMap { $0 }.joined(separator: "-")
         }
 
-        var resolutionText: String {
+        public var resolutionText: String {
             if let width, let height { return "\(width)×\(height)" }
             if videoCodec == "none" { return "纯音频" }
             return height.map { "\($0)p" } ?? "未知"
         }
 
-        var codecText: String {
+        public var codecText: String {
             [videoCodec, audioCodec, dynamicRange, language]
                 .compactMap { $0 }
                 .filter { $0 != "none" && $0 != "SDR" }
                 .joined(separator: " · ")
         }
 
-        var sizeText: String {
+        public var sizeText: String {
             guard let bytes = filesize ?? approximateFilesize else { return "大小未知" }
             return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         }
 
-        var bitrateText: String {
+        public var bitrateText: String {
             guard let bitrate = totalBitrate ?? videoBitrate ?? audioBitrate else { return "未知" }
             if bitrate >= 1_000 { return String(format: "%.1f Mbps", bitrate / 1_000) }
             return String(format: "%.0f kbps", bitrate)
         }
     }
 
-    let id: String
-    let title: String
-    let uploader: String?
-    let duration: Double?
-    let thumbnail: String?
-    let extractor: String?
-    let formats: [Format]?
+    public let id: String
+    public let title: String
+    public let uploader: String?
+    public let duration: Double?
+    public let thumbnail: String?
+    public let extractor: String?
+    public let formats: [Format]?
 
-    var maximumResolution: String {
+    public var maximumResolution: String {
         guard let format = formats?
             .filter({ ($0.height ?? 0) > 0 })
             .max(by: { ($0.height ?? 0, $0.fps ?? 0) < ($1.height ?? 0, $1.fps ?? 0) })
@@ -185,13 +220,13 @@ struct MediaMetadata: Decodable {
         return dimensions
     }
 
-    var durationText: String {
+    public var durationText: String {
         guard let duration else { return "时长未知" }
         let total = Int(duration.rounded())
         return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
     }
 
-    var videoFormatsForInspection: [Format] {
+    public var videoFormatsForInspection: [Format] {
         let video = (formats ?? []).filter { $0.videoCodec != nil && $0.videoCodec != "none" }
         return video.sorted {
             (($0.height ?? 0), ($0.fps ?? 0), ($0.filesize ?? $0.approximateFilesize ?? 0)) >
@@ -199,7 +234,7 @@ struct MediaMetadata: Decodable {
         }
     }
 
-    var audioFormatsForInspection: [Format] {
+    public var audioFormatsForInspection: [Format] {
         (formats ?? [])
             .filter { $0.videoCodec == "none" && $0.audioCodec != nil && $0.audioCodec != "none" }
             .sorted {
@@ -209,15 +244,22 @@ struct MediaMetadata: Decodable {
     }
 }
 
-struct DownloadProgress: Equatable {
-    var fraction: Double = 0
-    var percentText = "0%"
-    var speedText = ""
-    var etaText = ""
+public struct DownloadProgress: Equatable, Sendable {
+    public var fraction: Double
+    public var percentText: String
+    public var speedText: String
+    public var etaText: String
+
+    public init(fraction: Double = 0, percentText: String = "0%", speedText: String = "", etaText: String = "") {
+        self.fraction = fraction
+        self.percentText = percentText
+        self.speedText = speedText
+        self.etaText = etaText
+    }
 }
 
-enum ProgressParser {
-    static func parse(_ line: String) -> DownloadProgress? {
+public enum ProgressParser {
+    public static func parse(_ line: String) -> DownloadProgress? {
         guard line.hasPrefix("MF_PROGRESS|") else { return nil }
         let parts = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
         guard parts.count >= 6 else { return nil }
@@ -237,8 +279,8 @@ enum ProgressParser {
     }
 }
 
-enum URLValidator {
-    static func validatedMediaURL(from input: String) -> URL? {
+public enum URLValidator {
+    public static func validatedMediaURL(from input: String) -> URL? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmed),
               let scheme = url.scheme?.lowercased(),
@@ -247,7 +289,7 @@ enum URLValidator {
         return url
     }
 
-    static func isVimeoURL(_ input: String) -> Bool {
+    public static func isVimeoURL(_ input: String) -> Bool {
         guard let host = validatedMediaURL(from: input)?.host?.lowercased() else { return false }
         return host == "vimeo.com" || host.hasSuffix(".vimeo.com")
     }

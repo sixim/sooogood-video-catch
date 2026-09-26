@@ -1,0 +1,56 @@
+# Changelog
+
+## 0.5.1 (build 7)
+
+- 新增真正的应用内 WebKit 登录窗口：Vimeo、哔哩哔哩和优酷分别保存独立网站会话，支持清除与重启复用。
+- 解析和队列任务通过注入的会话 provider 获取当前平台 Cookie，以 0600 临时文件交给引擎，结束后清理；历史和清单仅记录会话方式。旧视频历史与旧浏览器登录偏好兼容。
+- Google/YouTube 内嵌登录明确显示平台限制，保留用户主动选择的浏览器兼容登录，不伪装浏览器或获取官网表单密码。
+- 新增域名隔离、过期与 HttpOnly Cookie、临时文件权限/清理、旧配置兼容及非持久化 WebKit 会话测试。
+
+## 0.5.0 (build 6)
+
+- 新增独立的“流媒体网站登录”设置，为 YouTube、Vimeo、哔哩哔哩和优酷分别选择已登录浏览器并打开官方登录页。
+- 视频页按识别到的平台自动读取对应登录配置；混合粘贴多平台链接时，每个任务保留自己的浏览器 Cookie 来源。
+- 登录偏好拆为 Core 数据模型、App 持久化 Store 和可复用 SwiftUI 卡片；新增平台只需注册配置，不改下载核心。
+- 只保存平台、浏览器类型和显式启用状态，不保存账号、密码、Cookie 或网站 Token；Safari 继续使用完整磁盘访问的显式权限流程。
+- Vimeo/其他站点需要登录时显示可操作的中文错误，不再直接展示下载引擎的英文原始提示。
+
+## 0.4.0 (build 5)
+
+- 新增电影感深色首页和独立音乐页面。
+- Spotify 使用 OAuth PKCE 读取身份/曲序；音频只允许本地文件或授权 DRM-free 直链。
+- 增加本地扫描、版本敏感匹配、逐字节复制、M3U8 和 schema v2 manifest。
+- 将代码拆为 `MediaFetchCore`、`MediaFetchVideo`、`MediaFetchMusic` 和 SwiftUI App 组合层。
+- 增加品牌标志、macOS AppIcon、隐私清单、Store entitlements、商店文案和可重复 preflight。
+- 保留视频历史/manifest v1，不迁移 Spotify 历史。
+- 将视频工具链与音乐 metadata 探针分别封装为可替换的 toolchain；Store 使用 AVFoundation 原生扫描器，不嵌入 `yt-dlp`、`ffmpeg` 或其他第三方 helper。
+- 增加 Store bundle 版本漂移、第三方 helper 排除检查，以及固定 UI 预览状态和本地回归夹具。
+- 根据 Apple 审核中的第三方音视频下载限制，Store profile 将视频入口编译为说明页；完整视频下载保留在 Local profile，商店与本地渠道各自使用独立封面文案。
+- 增加 `Info-Store.plist` 音乐分类、未知 profile 拒绝，以及 Store 前置失败时不覆盖现有 Local bundle 的保护。
+- 设置页增加应用内隐私政策入口，并为 Reduce Transparency 使用不透明状态胶囊回退样式。
+- 增加 Store 真实截图采集清单，明确固定夹具、无个人数据和 Store/Local 素材隔离要求。
+- 在两个发行 plist 中声明豁免加密并由 Store preflight 校验，减少出口合规字段漂移。
+- 增加 Store “查看演示”入口，使用音乐模块内的合成元数据夹具，降低 App Review 对第三方登录状态的依赖。
+- 预览/测试 ViewModel 在关闭持久化时不写入 Spotify 历史，避免 UI 验收污染用户状态；Store 演示保存回归覆盖音频、M3U8 和 manifest 输出。
+- 发布脚本改为 staging bundle 原子晋级，并将 VI 源稿、品牌规范、1440×900 商店封面和真实截图验收脚本纳入 Store 发布流程，降低升级时留下半成品或漏交素材的风险。
+- 增加商店元数据字符/UTF-8 字节限制校验，并接入 Store 发布总检查，避免后续本地化或改文案时在 App Store Connect 才发现字段超限。
+- 截图验收增加 alpha/transparency 通道检查，跟随 Apple 当前 Mac 截图规范，避免尺寸正确但上传被拒。
+- Store 总预检增加可选硬门槛：上传前设置 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1`，强制检查真实截图和公开网页模板占位符。
+- Store profile 进一步在编译期排除 Local ffprobe/Process 扫描器，降低静态审核误判和未来 profile 泄漏风险；对应 Local-only 测试同步隔离。
+- 增加可直接部署的隐私政策与支持页 HTML 模板；发布前仍必须替换法律主体/邮箱并部署到自己的 HTTPS 域名。
+- Store 总预检增加无障碍源码回归门槛（主路由 accessibility label/hint、Reduce Motion/Transparency）；同时把 Accessibility Nutrition Labels 留给签名包人工验收，避免把静态检查误报为 Apple 表单已完成。
+- 提交文档改用 Apple 当前提交、截图、审核和 build 上传入口，后续 Xcode/App Store Connect 更新时只需复核链接与清单，不改动模块边界。
+- 封面渲染器改为直接输出无 alpha 的 RGB PNG，并由 Store 总预检锁定 1440×900 与无 alpha 约束，避免品牌物料在后续复用时被透明通道影响。
+- 上架清单补充 Apple App Information 的 Content Rights 核对，并明确第三方内容授权证据必须由发布主体保留，不能以本地工程审计替代。
+- 增加可版本控制的 `StoreAssets/Screenshots/README.md`，固定五张截图文件名并明确封面与应用截图的目录隔离。
+- Store `.pkg` 构建改为 staging + 验签后原子替换，并拒绝非 `.pkg` 或含空格的输出文件名，避免升级发布留下半成品。
+- `.pkg` 构建现在强制先通过真实 Store 截图和公网页面预检；VI 文档补充源稿到派生资产的唯一生成流程，并增加英文封面说明，降低后续改版漏同步风险。
+- 增加 `validate_brand_assets.sh`，在打包前逐项锁定 Logo、AppIcon 尺寸、两套封面和双语封面说明，降低视觉资产升级时的漂移风险。
+- 将 Bundle ID 收敛到 Core 单一来源，并在 plist、Spotify Keychain service、发布 bundle 和 Store 预检之间建立漂移检查，降低换团队或升级标识时的维护风险。
+- 明确 Spotify 回环 Redirect URI 的维护约束：Dashboard 注册无端口地址，授权请求使用临时端口，并同步到设置页和 Store 提交清单。
+- 发布脚本现在在写入 `dist` 前验证 Mac App/Installer Distribution identity 是否存在于当前钥匙串，避免把非空字符串误当成可用签名凭据。
+- 增加 `Scripts/verify_release.sh`，集中运行两种 profile 测试、Shell/VI/元数据审计和 Store 预检；`REQUIRE_RELEASE_ARTIFACTS=1` 可在上传前强制校验真实截图、公网页面和签名 `.pkg`。
+## 0.5.2 (build 8)
+
+- 对外产品名称更新为 **Sooogood Video Catch**；应用显示名称、主界面、隐私说明、安装包、商店文案和品牌封面保持一致。
+- 保留既有 `com.simon.mediafetch` Bundle ID、Swift 模块、历史记录和本地设置键，避免品牌改名造成数据或升级迁移断裂。

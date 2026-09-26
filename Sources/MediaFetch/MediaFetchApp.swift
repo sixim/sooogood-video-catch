@@ -5,9 +5,9 @@ struct MediaFetchApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .frame(minWidth: 760, minHeight: 620)
+                .frame(minWidth: 960, minHeight: 680)
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 860, height: 700)
+        .defaultSize(width: 1120, height: 780)
     }
 }

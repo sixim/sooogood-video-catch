@@ -25,14 +25,15 @@ struct MediaManifest: Codable {
     let formatSelector: String
     let selectedFormats: [SelectedFormatInfo]
     let browserSessionSource: String?
+    let inAppSessionUsed: Bool?
     let sidecarsRequested: Bool
     let subtitlesRequested: Bool
     let tools: ToolVersions
     let files: [FileRecord]
 }
 
-enum ManifestWriter {
-    static func write(
+public enum ManifestWriter {
+    public static func write(
         job: DownloadJob,
         packageDirectory: URL,
         platform: String?,
@@ -61,7 +62,7 @@ enum ManifestWriter {
             }
 
         let manifest = MediaManifest(
-            schemaVersion: 1,
+            schemaVersion: MediaFetchRelease.videoManifestSchema,
             jobID: job.id,
             sourceURL: job.sourceURL,
             platform: platform,
@@ -72,10 +73,11 @@ enum ManifestWriter {
             formatSelector: job.profile.formatSelector,
             selectedFormats: selectedFormats,
             browserSessionSource: job.browserCookieSource?.displayName,
+            inAppSessionUsed: job.usesInAppLogin,
             sidecarsRequested: job.includeSidecars,
             subtitlesRequested: job.includeSubtitles,
             tools: .init(
-                mediaFetch: "0.3.0",
+                mediaFetch: MediaFetchRelease.version,
                 ytDLP: version(of: ytDLPPath, arguments: ["--version"]),
                 ffmpeg: ffmpegPath.map { version(of: $0, arguments: ["-version"], firstLineOnly: true) } ?? "not installed"
             ),
@@ -90,7 +92,7 @@ enum ManifestWriter {
         return url
     }
 
-    static func sha256(_ url: URL) throws -> String {
+    public static func sha256(_ url: URL) throws -> String {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var hasher = SHA256()

@@ -1,20 +1,76 @@
 import AppKit
 import SwiftUI
+import MediaFetchCore
+import MediaFetchVideo
 
-struct ContentView: View {
-    @StateObject private var downloader = DownloaderService()
+struct VideoDownloadView: View {
+    @ObservedObject var downloader: DownloaderService
+    @ObservedObject var loginStore: StreamingSiteLoginStore
+    let onBack: () -> Void
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+#if !MEDIAFETCH_STORE_PROFILE
     @State private var mediaURL = ""
     @State private var profile: DownloadProfile = .highest
-    @State private var destination = FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
-    @State private var useBrowserCookies = false
-    @State private var browserCookieSource: BrowserCookieSource = .recommendedDefault
+    @State private var destination = Self.initialDestination()
+    @State private var scopedDestination: URL?
+    @State private var didRestoreDestination = false
+    @State private var genericUseBrowserCookies = false
+    @State private var genericBrowserCookieSource: BrowserCookieSource = .recommendedDefault
     @State private var includeSidecars = true
     @State private var includeSubtitles = true
+#endif
 
     var body: some View {
+#if MEDIAFETCH_STORE_PROFILE
+        storeRestrictedBody
+#else
+        localDownloadBody
+#endif
+    }
+
+#if MEDIAFETCH_STORE_PROFILE
+    private var storeRestrictedBody: some View {
+        ZStack {
+            CinematicBackground(accent: MediaFetchTheme.videoAccent)
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 14) {
+                    PageBackButton(action: onBack)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("视频素材")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundStyle(MediaFetchTheme.primaryText)
+                        Text("Mac App Store 版本")
+                            .font(.caption)
+                            .foregroundStyle(MediaFetchTheme.secondaryText)
+                    }
+                }
+
+                MediaFetchPanel {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Label("商店版未启用第三方站点音视频下载", systemImage: "checkmark.shield.fill")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(MediaFetchTheme.primaryText)
+                        Text("为了符合 Mac App Store 的第三方媒体与自包含要求，商店版不运行通用站点提取器、不读取浏览器 Cookie，也不下载或执行外部工具。请使用本地完整版处理你有权保存的站点媒体。")
+                            .font(.body)
+                            .foregroundStyle(MediaFetchTheme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text("音乐页面仍可使用 Spotify 曲目顺序整理你拥有的本地音频，并生成可复核的素材包。")
+                            .font(.subheadline)
+                            .foregroundStyle(MediaFetchTheme.secondaryText)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .frame(maxWidth: 880)
+            .padding(38)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+#else
+    private var localDownloadBody: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(nsColor: .windowBackgroundColor), Color.blue.opacity(0.07)],
+                colors: [MediaFetchTheme.background, MediaFetchTheme.videoAccent.opacity(0.12)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -31,7 +87,15 @@ struct ContentView: View {
                     legalNote
                 }
                 .padding(32)
+                .frame(maxWidth: 1180)
+                .frame(maxWidth: .infinity)
             }
+        }
+        .onAppear {
+            restoreDestinationBookmarkIfNeeded()
+        }
+        .onDisappear {
+            releaseDestinationScope()
         }
         .alert("操作未完成", isPresented: Binding(
             get: { downloader.errorMessage != nil },
@@ -43,26 +107,43 @@ struct ContentView: View {
         }
         .alert("Safari Cookie 受到 macOS 保护", isPresented: $downloader.safariPermissionRequired) {
             Button("改用 Chrome") {
-                browserCookieSource = .chrome
-                useBrowserCookies = true
+                useChromeForCurrentPlatform()
             }
             Button("打开完整磁盘访问") { openFullDiskAccessSettings() }
             Button("稍后", role: .cancel) {}
         } message: {
-            Text("MediaFetch 没有权限读取 Safari 登录状态。推荐改用已登录 Vimeo 的 Chrome；或者在“系统设置 → 隐私与安全性 → 完整磁盘访问”中加入并启用 MediaFetch，然后退出并重新打开应用。")
+            Text("\(MediaFetchRelease.displayName) 没有权限读取 Safari 登录状态。推荐改用已登录 Vimeo 的 Chrome；或者在“系统设置 → 隐私与安全性 → 完整磁盘访问”中加入并启用 \(MediaFetchRelease.displayName)，然后退出并重新打开应用。")
         }
     }
+#endif
 
+#if !MEDIAFETCH_STORE_PROFILE
     private var header: some View {
         HStack(alignment: .center, spacing: 16) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 14, weight: .bold))
+                    .frame(width: 34, height: 34)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .background(MediaFetchTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(MediaFetchTheme.border, lineWidth: 1)
+            }
+            .help("返回首页")
+            .accessibilityLabel("返回首页")
+
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 44))
-                .foregroundStyle(.blue)
+                .foregroundStyle(MediaFetchTheme.videoAccent)
             VStack(alignment: .leading, spacing: 4) {
-                Text("MediaFetch")
+                Text(MediaFetchRelease.displayName)
                     .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(MediaFetchTheme.primaryText)
                 Text("把平台实际提供的最高质量媒体保存到本机")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(MediaFetchTheme.secondaryText)
             }
             Spacer()
             dependencyBadge
@@ -78,7 +159,13 @@ struct ContentView: View {
         .foregroundStyle(downloader.dependenciesReady ? .green : .orange)
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(.thinMaterial, in: Capsule())
+        .background {
+            if reduceTransparency {
+                Capsule().fill(MediaFetchTheme.surfaceSecondary)
+            } else {
+                Capsule().fill(.thinMaterial)
+            }
+        }
     }
 
     private var linkPanel: some View {
@@ -133,7 +220,7 @@ struct ContentView: View {
                         Text(restriction)
                             .font(.caption)
                             .foregroundStyle(.red)
-                    } else if let hint = platform.loginHint, !useBrowserCookies {
+                    } else if let hint = platform.loginHint, selectedCookieSource == nil {
                         Text(hint)
                             .font(.caption)
                             .foregroundStyle(.orange)
@@ -221,31 +308,7 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Toggle("使用浏览器登录状态（高画质、私有或账户可见内容）", isOn: $useBrowserCookies)
-                if useBrowserCookies {
-                    HStack {
-                        Picker("读取登录状态", selection: $browserCookieSource) {
-                            ForEach(BrowserCookieSource.allCases) { browser in
-                                Text(browser.displayName).tag(browser)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        Spacer()
-                        Label("本机 yt-dlp 会读取该浏览器 Cookie 库；MediaFetch 不保存 Cookie 文件", systemImage: "lock.shield")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if browserCookieSource == .safari {
-                        HStack {
-                            Label("Safari Cookie 受 macOS 保护，需要为 MediaFetch 开启完整磁盘访问。", systemImage: "exclamationmark.shield")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                            Spacer()
-                            Button("打开系统设置") { openFullDiskAccessSettings() }
-                                .buttonStyle(.link)
-                        }
-                    }
-                }
+                siteLoginControls
 
                 HStack {
                     Label(destination.path, systemImage: "folder")
@@ -270,7 +333,8 @@ struct ContentView: View {
                                 destination: destination,
                                 includeSidecars: includeSidecars,
                                 includeSubtitles: includeSubtitles,
-                                cookieSource: selectedCookieSource
+                                cookieSourceByURL: cookieSourcesByURL,
+                                inAppLoginURLs: inAppLoginURLs
                             )
                         } label: {
                             Label("加入下载队列", systemImage: "text.badge.plus")
@@ -339,7 +403,7 @@ struct ContentView: View {
                 }
 
                 if downloader.jobs.isEmpty {
-                    Text("尚无任务。任务历史会保存在本机 Application Support/MediaFetch。")
+                    Text("尚无任务。任务历史会保存在本机应用支持目录。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
@@ -406,15 +470,172 @@ struct ContentView: View {
         panel.directoryURL = destination
         if panel.runModal() == .OK, let selected = panel.url {
             destination = selected
+            beginDestinationScope(selected)
+            try? SecurityScopedBookmarkStore(key: "MediaFetch.video.destination").save(selected)
         }
     }
 
+    private func restoreDestinationBookmarkIfNeeded() {
+        guard !didRestoreDestination else { return }
+        didRestoreDestination = true
+        let store = SecurityScopedBookmarkStore(key: "MediaFetch.video.destination")
+        guard let restored = store.resolve() else { return }
+        beginDestinationScope(restored)
+        destination = restored
+    }
+
+    private func beginDestinationScope(_ url: URL) {
+        guard url.isFileURL, scopedDestination != url else { return }
+        releaseDestinationScope()
+        if url.startAccessingSecurityScopedResource() {
+            scopedDestination = url
+        }
+    }
+
+    private func releaseDestinationScope() {
+        guard let scopedDestination else { return }
+        scopedDestination.stopAccessingSecurityScopedResource()
+        self.scopedDestination = nil
+    }
+
+    private static func initialDestination() -> URL {
+        return FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask)[0]
+    }
+
     private var selectedCookieSource: BrowserCookieSource? {
-        useBrowserCookies ? browserCookieSource : nil
+        guard let url = inputURLs.first else {
+            return genericUseBrowserCookies ? genericBrowserCookieSource : nil
+        }
+        return cookieSource(for: url)
     }
 
     private func analyzeMedia() {
-        downloader.analyze(mediaURL, cookieSource: selectedCookieSource)
+        downloader.analyze(mediaURL, cookieSource: selectedCookieSource,
+                           usesInAppLogin: inputURLs.first.map { inAppLoginURLs.contains($0.absoluteString) } ?? false)
+    }
+
+    private var inAppLoginURLs: Set<String> {
+        Set(inputURLs.filter {
+            let platform = StreamingPlatform.detect($0)
+            return loginStore.isEnabled(for: platform) && loginStore.method(for: platform) == .inApp
+        }.map(\.absoluteString))
+    }
+
+    private var cookieSourcesByURL: [String: BrowserCookieSource] {
+        inputURLs.reduce(into: [:]) { result, url in
+            if let source = cookieSource(for: url) {
+                result[url.absoluteString] = source
+            }
+        }
+    }
+
+    private func cookieSource(for url: URL) -> BrowserCookieSource? {
+        let platform = StreamingPlatform.detect(url)
+        if StreamingPlatform.browserLoginPlatforms.contains(platform) {
+            return loginStore.cookieSource(for: platform)
+        }
+        return genericUseBrowserCookies ? genericBrowserCookieSource : nil
+    }
+
+    private func useChromeForCurrentPlatform() {
+        if let platform = detectedPlatform,
+           StreamingPlatform.browserLoginPlatforms.contains(platform) {
+            loginStore.setBrowser(.chrome, for: platform)
+            loginStore.setMethod(.browser, for: platform)
+            loginStore.setEnabled(true, for: platform)
+        } else {
+            genericBrowserCookieSource = .chrome
+            genericUseBrowserCookies = true
+        }
+    }
+
+    @ViewBuilder
+    private var siteLoginControls: some View {
+        if let platform = detectedPlatform,
+           StreamingPlatform.browserLoginPlatforms.contains(platform) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Button {
+                        loginStore.beginInAppLogin(for: platform)
+                    } label: {
+                        Label("登录 " + platform.displayName, systemImage: "person.crop.rectangle")
+                    }.buttonStyle(.borderedProminent)
+                    Text(loginStore.method(for: platform) == .inApp ? "应用内会话" : "外部浏览器兼容方式")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                }
+                Toggle(
+                    "使用 \(platform.displayName) 登录会话",
+                    isOn: Binding(
+                        get: { loginStore.isEnabled(for: platform) },
+                        set: { loginStore.setEnabled($0, for: platform) }
+                    )
+                )
+
+                if loginStore.isEnabled(for: platform) && loginStore.method(for: platform) == .inApp {
+                    Text("使用 \(MediaFetchRelease.displayName) 登录窗口中的会话；若解析提示需要登录，请重新打开登录窗口。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if loginStore.isEnabled(for: platform) && loginStore.method(for: platform) == .browser {
+                    HStack(spacing: 12) {
+                        Picker(
+                            "读取登录状态",
+                            selection: Binding(
+                                get: { loginStore.browser(for: platform) },
+                                set: { loginStore.setBrowser($0, for: platform) }
+                            )
+                        ) {
+                            ForEach(BrowserCookieSource.allCases) { browser in
+                                Text(browser.displayName).tag(browser)
+                            }
+                        }
+                        .pickerStyle(.menu)
+
+                        Button {
+                            loginStore.openLoginPage(for: platform)
+                        } label: {
+                            Label("打开 \(platform.displayName) 登录页", systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.bordered)
+
+                        Spacer()
+                    }
+
+                    Label(
+                        "下载引擎将读取所选浏览器的 Cookie 库，\(MediaFetchRelease.displayName) 不持久化导出的 Cookie。",
+                        systemImage: "lock.shield"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    if loginStore.browser(for: platform) == .safari {
+                        HStack {
+                            Label("Safari Cookie 受 macOS 保护，需要为 \(MediaFetchRelease.displayName) 开启完整磁盘访问。", systemImage: "exclamationmark.shield")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                            Spacer()
+                            Button("打开系统设置") { openFullDiskAccessSettings() }
+                                .buttonStyle(.link)
+                        }
+                    }
+                }
+            }
+        } else if detectedPlatform?.downloadAllowed != false {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("为通用链接使用浏览器登录状态", isOn: $genericUseBrowserCookies)
+                if genericUseBrowserCookies {
+                    Picker("读取登录状态", selection: $genericBrowserCookieSource) {
+                        ForEach(BrowserCookieSource.allCases) { browser in
+                            Text(browser.displayName).tag(browser)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    Label("通用登录设置只作用于未识别的网站链接。", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var formatHeader: some View {
@@ -497,7 +718,9 @@ struct ContentView: View {
         case .supported: return .green
         case .loginRecommended: return .orange
         case .generic: return .blue
+        case .spotifyBridge: return MediaFetchTheme.musicPurple
         case .drmBlocked: return .red
         }
     }
+#endif
 }

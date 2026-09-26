@@ -1,6 +1,6 @@
 import Foundation
 
-enum DownloadJobStatus: String, Codable {
+public enum DownloadJobStatus: String, Codable, Sendable {
     case queued
     case downloading
     case packaging
@@ -9,7 +9,7 @@ enum DownloadJobStatus: String, Codable {
     case cancelled
     case paused
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .queued: return "等待中"
         case .downloading: return "下载中"
@@ -22,31 +22,34 @@ enum DownloadJobStatus: String, Codable {
     }
 }
 
-struct DownloadJob: Codable, Identifiable {
-    let id: UUID
-    let sourceURL: String
-    let profile: DownloadProfile
-    let destinationPath: String
-    let includeSidecars: Bool
-    let includeSubtitles: Bool
-    let browserCookieSource: BrowserCookieSource?
-    let createdAt: Date
-    var updatedAt: Date
-    var title: String?
-    var status: DownloadJobStatus
-    var progressFraction: Double
-    var progressText: String
-    var completedFiles: [String]
-    var manifestPath: String?
-    var errorMessage: String?
+public struct DownloadJob: Codable, Identifiable, Sendable {
+    public let id: UUID
+    public let sourceURL: String
+    public let profile: DownloadProfile
+    public let destinationPath: String
+    public let includeSidecars: Bool
+    public let includeSubtitles: Bool
+    public let browserCookieSource: BrowserCookieSource?
+    /// Optional for backwards-compatible decoding of existing history.
+    public var usesInAppLogin: Bool?
+    public let createdAt: Date
+    public var updatedAt: Date
+    public var title: String?
+    public var status: DownloadJobStatus
+    public var progressFraction: Double
+    public var progressText: String
+    public var completedFiles: [String]
+    public var manifestPath: String?
+    public var errorMessage: String?
 
-    init(
+    public init(
         sourceURL: String,
         profile: DownloadProfile,
         destination: URL,
         includeSidecars: Bool,
         includeSubtitles: Bool,
-        browserCookieSource: BrowserCookieSource?
+        browserCookieSource: BrowserCookieSource?,
+        usesInAppLogin: Bool = false
     ) {
         id = UUID()
         self.sourceURL = sourceURL
@@ -55,6 +58,7 @@ struct DownloadJob: Codable, Identifiable {
         self.includeSidecars = includeSidecars
         self.includeSubtitles = includeSubtitles
         self.browserCookieSource = browserCookieSource
+        self.usesInAppLogin = usesInAppLogin ? true : nil
         createdAt = Date()
         updatedAt = Date()
         title = nil
@@ -67,16 +71,24 @@ struct DownloadJob: Codable, Identifiable {
     }
 }
 
-struct SelectedFormatInfo: Codable, Equatable {
-    var formatID: String
-    var resolution: String
-    var videoCodec: String
-    var audioCodec: String
-    var container: String
+public struct SelectedFormatInfo: Codable, Equatable, Sendable {
+    public var formatID: String
+    public var resolution: String
+    public var videoCodec: String
+    public var audioCodec: String
+    public var container: String
+
+    public init(formatID: String, resolution: String, videoCodec: String, audioCodec: String, container: String) {
+        self.formatID = formatID
+        self.resolution = resolution
+        self.videoCodec = videoCodec
+        self.audioCodec = audioCodec
+        self.container = container
+    }
 }
 
-enum LinkInputParser {
-    static func URLs(from input: String) -> [URL] {
+public enum LinkInputParser {
+    public static func URLs(from input: String) -> [URL] {
         input
             .components(separatedBy: .whitespacesAndNewlines)
             .compactMap(URLValidator.validatedMediaURL)
@@ -86,20 +98,25 @@ enum LinkInputParser {
     }
 }
 
-enum JobHistoryStore {
-    static var historyURL: URL {
+public enum JobHistoryStore {
+    public static var historyURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+#if MEDIAFETCH_STORE_PROFILE
+        let filename = "store-video-history.json"
+#else
+        let filename = "history.json"
+#endif
         return base.appendingPathComponent("MediaFetch", isDirectory: true)
-            .appendingPathComponent("history.json")
+            .appendingPathComponent(filename)
     }
 
-    static func load() -> [DownloadJob] {
+    public static func load() -> [DownloadJob] {
         guard let data = try? Data(contentsOf: historyURL),
               let jobs = try? restoredJobs(from: data) else { return [] }
         return jobs
     }
 
-    static func restoredJobs(from data: Data) throws -> [DownloadJob] {
+    public static func restoredJobs(from data: Data) throws -> [DownloadJob] {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var jobs = try decoder.decode([DownloadJob].self, from: data)
@@ -110,14 +127,14 @@ enum JobHistoryStore {
         return jobs
     }
 
-    static func encoded(_ jobs: [DownloadJob]) throws -> Data {
+    public static func encoded(_ jobs: [DownloadJob]) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         return try encoder.encode(jobs)
     }
 
-    static func save(_ jobs: [DownloadJob]) throws {
+    public static func save(_ jobs: [DownloadJob]) throws {
         let directory = historyURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try encoded(jobs).write(to: historyURL, options: .atomic)

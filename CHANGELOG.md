@@ -3,6 +3,7 @@
 ## 0.12.1 (build 16)
 
 - YouTube 下载改用分片 DASH（`youtube:formats=dashy`），让 8 路并发分片真正生效。2026-09-26 在 Mac Studio（Wi-Fi）上实测 1440p60（355 MB）：yt-dlp 默认 31.7–35.8 MB/s，本应用 38.7–40.9 MB/s，快 15–25%；16 路反而更慢，保持 8 路。解析阶段不启用，格式列表保持不变。
+- 修复：应用崩溃、强制退出或被 kill 后，私有 transmission-daemon 会继续运行并做种。现在守护进程由一个 sh 看门狗托管，应用进程消失后会自动停止（已实测父进程 SIGKILL 后守护进程随之退出）。
 - 新增只在显式开启时运行的实网基准测试 `LiveBenchmarkTests`（`MF_LIVE_NETWORK=1`）：4K 完整流程、工具箱、转录、Torrent。
 - 实测结论（同一台机器）：4K60 最高画质下载 + 合并 + SHA-256 清单 23.9 秒（927 MB，全程 38.8 MB/s）；ProRes Proxy 2.9× 实时（瓶颈是 M1 Max 没有 AV1 硬件解码），H.264 代理 3.7×，无损提取音轨 422×；whisper small-q5_1 转录 20.7× 实时；Debian ISO 种子 756 MB 用时 64.5 秒（平均 11.7 MB/s，峰值 36 MB/s）。VideoToolbox 硬件解码在这台机器上比软件解码更慢（VP9 3.2× 对 7.0×），所以不启用。
 

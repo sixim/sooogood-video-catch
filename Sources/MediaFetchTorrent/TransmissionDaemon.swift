@@ -61,11 +61,13 @@ public final class TransmissionDaemon: @unchecked Sendable {
         try writeSettings(port: port, username: username, password: password)
 
         let task = Process()
-        task.executableURL = configuration.executable
-        task.arguments = [
-            "--foreground", "--config-dir", dir.path,
-            "--log-level=warn", "--logfile", dir.appendingPathComponent("daemon.log").path
-        ]
+        // A small sh watchdog owns the daemon: if the app dies (crash, force quit,
+        // SIGKILL) the daemon is stopped too instead of seeding on as an orphan.
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", Self.watchdogScript, "mediafetch-transmission",
+                          configuration.executable.path,
+                          "--foreground", "--config-dir", dir.path,
+                          "--log-level=warn", "--logfile", dir.appendingPathComponent("daemon.log").path]
         task.standardOutput = FileHandle.nullDevice
         task.standardError = FileHandle.nullDevice
         do { try task.run() } catch { throw TorrentError.engineFailedToStart(error.localizedDescription) }
@@ -155,6 +157,20 @@ public final class TransmissionDaemon: @unchecked Sendable {
         try encoder.encode(JSONValue.object(settings)).write(to: url, options: .atomic)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
     }
+
+    /// `$@` is the daemon command line; nothing is interpolated into the script.
+    static let watchdogScript = """
+    "$@" &
+    child=$!
+    parent=$PPID
+    trap 'kill -TERM "$child" 2>/dev/null; wait "$child"; exit 0' TERM INT HUP
+    while kill -0 "$parent" 2>/dev/null; do
+        if ! kill -0 "$child" 2>/dev/null; then wait "$child"; exit $?; fi
+        sleep 1
+    done
+    kill -TERM "$child" 2>/dev/null
+    wait "$child"
+    """
 
     static func freeLoopbackPort() throws -> Int {
         let fd = socket(AF_INET, SOCK_STREAM, 0)

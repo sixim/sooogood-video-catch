@@ -9,7 +9,8 @@ let package = Package(
         .library(name: "MediaFetchCore", targets: ["MediaFetchCore"]),
         .library(name: "MediaFetchVideo", targets: ["MediaFetchVideo"]),
         .library(name: "MediaFetchMusic", targets: ["MediaFetchMusic"]),
-        .library(name: "MediaFetchTorrent", targets: ["MediaFetchTorrent"])
+        .library(name: "MediaFetchTorrent", targets: ["MediaFetchTorrent"]),
+        .library(name: "MediaFetchResolve", targets: ["MediaFetchResolve"])
     ],
     targets: [
         .target(
@@ -34,14 +35,19 @@ let package = Package(
             dependencies: ["MediaFetchCore"],
             path: "Sources/MediaFetchTorrent"
         ),
+        .target(
+            name: "MediaFetchResolve",
+            dependencies: ["MediaFetchCore"],
+            path: "Sources/MediaFetchResolve"
+        ),
         .executableTarget(
             name: "MediaFetch",
-            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent"],
+            dependencies: ["MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve"],
             path: "Sources/MediaFetch"
         ),
         .testTarget(
             name: "MediaFetchTests",
-            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent"],
+            dependencies: ["MediaFetch", "MediaFetchCore", "MediaFetchVideo", "MediaFetchMusic", "MediaFetchTorrent", "MediaFetchResolve"],
             path: "Tests/MediaFetchTests"
         )
     ],

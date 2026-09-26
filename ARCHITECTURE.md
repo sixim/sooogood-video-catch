@@ -8,7 +8,9 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 │   └── MediaFetchCore（领域模型、平台策略、manifest、历史）
 ├── MediaFetchMusic（Spotify OAuth/API、扫描、匹配、素材桥接）
 │   └── MediaFetchCore
-└── MediaFetchTorrent（仅 Local：Transmission 守护进程、RPC、做种策略、torrent 清单）
+├── MediaFetchTorrent（仅 Local：Transmission 守护进程、RPC、做种策略、torrent 清单）
+│   └── MediaFetchCore
+└── MediaFetchResolve（仅 Local：DaVinci Resolve 官方脚本 API 桥接）
     └── MediaFetchCore
 ```
 
@@ -31,6 +33,7 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 - Debug 预览使用固定 Spotify 场景和不可交互的宿主；预览初始化关闭 UserDefaults、bookmark、Keychain、网络和文件写入，避免 UI 验收污染开发者状态。
 
 - `MediaFetchTorrent`：`TransmissionDaemon` 管理私有子进程（只监听 loopback、随机端口、每次启动新凭据），`TransmissionRPCClient` 只使用 4.1 的 snake_case JSON-RPC 2.0；`TorrentService` 是 UI façade，种子的续传状态由引擎自己保存在配置目录，应用只在 `torrent-history.json` 里记录策略和清单路径。整个模块以 `#if !MEDIAFETCH_STORE_PROFILE` 包裹，Store 预检会强制检查。
+- `MediaFetchResolve`：`ResolveImportPlanner` 是纯函数（素材包 → 导入请求，读取 manifest 里的来源信息）；`ResolveBridge` 用内嵌 Python 脚本调用 `DaVinciResolveScript`，请求经 stdin 传入、JSON 从 stdout 返回；`ResolveService` 是 UI façade，并负责写 `resolve-imports.json`。测试用假的 `DaVinciResolveScript` 模块驱动真实的 Python 脚本；设置 `MF_LIVE_RESOLVE=1` 可以对真实达芬奇做只读连接测试。
 - Local 专属模块（Torrent，以及后续的 MCP、工具箱）每个源文件都必须带编译边界，App 层的入口也放在同样的条件编译里。
 
 ## 版本与迁移策略

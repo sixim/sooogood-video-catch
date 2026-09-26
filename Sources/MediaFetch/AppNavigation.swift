@@ -4,6 +4,7 @@ import MediaFetchMusic
 import MediaFetchVideo
 #if !MEDIAFETCH_STORE_PROFILE
 import MediaFetchTorrent
+import MediaFetchResolve
 #endif
 
 enum AppRoute: String, Hashable {
@@ -21,6 +22,10 @@ struct ContentView: View {
     @StateObject private var streamingLogins = StreamingSiteLoginStore()
 #if !MEDIAFETCH_STORE_PROFILE
     @StateObject private var torrents = TorrentService(defaultDownloadDirectory: TorrentDefaults.downloadDirectory)
+    @StateObject private var resolve = ResolveService()
+    @State private var autoSentJobs: Set<UUID> = []
+    /// Only jobs finishing after launch are auto-sent; history is never replayed.
+    @State private var appLaunchDate = Date()
 #endif
     @State private var path: [AppRoute] = []
 
@@ -49,6 +54,8 @@ struct ContentView: View {
         .sheet(item: $streamingLogins.requestedLogin) { platform in
             InAppSiteLoginView(session: streamingLogins.session(for: platform), store: streamingLogins)
         }
+        .environmentObject(resolve)
+        .onReceive(downloader.$jobs) { jobs in autoSendToResolve(jobs) }
         .onOpenURL(perform: handleOpenURL)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             torrents.shutdown()
@@ -99,6 +106,18 @@ struct ContentView: View {
     }
 
 #if !MEDIAFETCH_STORE_PROFILE
+    /// Sends each newly completed package once, when the user enabled it.
+    private func autoSendToResolve(_ jobs: [DownloadJob]) {
+        guard UserDefaults.standard.bool(forKey: ResolvePreferences.autoSendKey) else { return }
+        let createTimeline = UserDefaults.standard.bool(forKey: ResolvePreferences.createTimelineKey)
+        for job in jobs where job.status == .completed && !autoSentJobs.contains(job.id) {
+            guard let manifest = job.manifestPath, job.updatedAt > appLaunchDate else { continue }
+            autoSentJobs.insert(job.id)
+            let package = URL(fileURLWithPath: manifest).deletingLastPathComponent()
+            Task { await resolve.send(packageDirectory: package, timelineName: createTimeline ? package.lastPathComponent : nil) }
+        }
+    }
+
     /// `magnet:` links and `.torrent` files opened from Finder or a browser.
     private func handleOpenURL(_ url: URL) {
         let source: TorrentSource?

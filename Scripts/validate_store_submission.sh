@@ -172,7 +172,7 @@ for key in CFBundleURLTypes CFBundleDocumentTypes UTImportedTypeDeclarations; do
         exit 2
     fi
 done
-for dir in MediaFetchTorrent MediaFetchControl MediaFetchTools; do
+for dir in MediaFetchTorrent MediaFetchControl MediaFetchTools MediaFetchResolve; do
     [[ -d "$project_dir/Sources/$dir" ]] || continue
     for file in "$project_dir/Sources/$dir"/*.swift(N); do
         rg -q '^#if !MEDIAFETCH_STORE_PROFILE' "$file" || { print -u2 "$file 缺少 #if !MEDIAFETCH_STORE_PROFILE 编译边界"; exit 2; }
@@ -210,7 +210,7 @@ bundle_category="$(plutil -extract LSApplicationCategoryType raw -o - "$app_dir/
 [[ "$bundle_category" == "public.app-category.music" ]] || { print -u2 "Store bundle 必须使用音乐分类，当前为：$bundle_category"; exit 2; }
 [[ "$bundle_non_exempt_encryption" == "false" ]] || { print -u2 "Store bundle 必须明确声明仅使用豁免加密：ITSAppUsesNonExemptEncryption=false"; exit 2; }
 [[ -f "$app_dir/Contents/embedded.provisionprofile" ]] || { print -u2 "Store bundle 缺少 embedded.provisionprofile"; exit 2; }
-if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n -i 'transmission|magnet:|torrent_add|sooogood-mcp|whisper-cli|control\.sock' >/dev/null; then
+if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n -i 'transmission|magnet:|torrent_add|sooogood-mcp|whisper-cli|control\.sock|DaVinciResolveScript|fusionscript' >/dev/null; then
     print -u2 "Store bundle 包含 Torrent / MCP / 工具箱等 Local 专属实现"
     exit 2
 fi

@@ -20,6 +20,7 @@ struct SettingsView: View {
                     header
 #if !MEDIAFETCH_STORE_PROFILE
                     DependencyStatusPanel()
+                    ResolveSettingsPanel()
                     WebsiteLoginSettingsView(loginStore: loginStore)
 #endif
                     spotifySettings

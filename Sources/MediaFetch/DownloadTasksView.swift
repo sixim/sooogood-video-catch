@@ -160,6 +160,9 @@ struct DownloadTasksView: View {
                     Spacer()
 
                     if let manifestPath = job.manifestPath {
+#if !MEDIAFETCH_STORE_PROFILE
+                        ResolveSendButton(target: .package(URL(fileURLWithPath: manifestPath).deletingLastPathComponent()))
+#endif
                         Button("显示素材包") { reveal(manifestPath) }
                             .buttonStyle(.link)
                     } else if let first = job.completedFiles.first {

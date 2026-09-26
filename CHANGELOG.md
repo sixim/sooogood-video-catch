@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0 (build 11)
+
+- 新增 DaVinci Resolve 对接（仅 Local 版，独立模块 `MediaFetchResolve`）：通过 Blackmagic 官方脚本 API，把素材包导入当前项目媒体池「Sooogood › 素材包名」。
+  - Comments 写来源 URL，Description 写标题，Keywords 写平台；SHA-256、媒体 ID、来源写入第三方元数据。
+  - SRT 字幕一起导入；工具箱生成的代理用 `LinkProxyMedia` 关联，不会重复导入成独立片段；可选同时建立时间线。
+  - 同一素材包重复发送时复用已有片段和媒体夹，不会重复导入。
+- 任务页和 Torrent 页的已完成项新增「发送到达芬奇」；单文件种子只导入该文件，不会导入整个下载文件夹。
+- 设置页新增 DaVinci Resolve 卡片：连接状态、打开达芬奇、「下载完成后自动发送」（默认关闭，只处理本次启动后完成的任务）、「同时建立时间线」。
+- 每次发送都会在素材包内追加 `resolve-imports.json`（项目、媒体夹、片段、失败项）。
+- 桥接方式：请求走 stdin 传给内嵌 Python 脚本，不经过 shell；连接失败时会分别提示「达芬奇未运行」「需要把外部脚本设为本地」「没有打开的项目」。
+
 ## 0.7.0 (build 10)
 
 - 新增 Torrent（仅 Local 版）：独立模块 `MediaFetchTorrent`，由 Homebrew 的 `transmission-daemon` 4.1 驱动（JSON-RPC 2.0）。应用启动私有守护进程：RPC 只监听 127.0.0.1 的随机端口，每次启动生成新的随机凭据，配置目录权限 0700。

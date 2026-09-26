@@ -316,6 +316,7 @@ private struct TorrentRow: View {
                     }
                     Spacer()
                     if let manifest = record?.manifestPath {
+                        ResolveSendButton(target: resolveTarget(manifest: URL(fileURLWithPath: manifest)))
                         Button("显示清单") {
                             NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: manifest)])
                         }
@@ -335,6 +336,17 @@ private struct TorrentRow: View {
                 }
             }
         }
+    }
+
+    /// Folder torrents import their folder; single-file torrents only their file.
+    private func resolveTarget(manifest: URL) -> ResolveSendButton.Target {
+        if manifest.lastPathComponent == "torrent-manifest.json" {
+            return .package(manifest.deletingLastPathComponent())
+        }
+        let files = snapshot.files.filter(\.wanted).map {
+            URL(fileURLWithPath: snapshot.downloadDirectory).appendingPathComponent($0.name)
+        }
+        return .files(files, binName: snapshot.name, manifest: manifest)
     }
 
     private var awaitingSelection: Bool { record?.awaitingFileSelection == true && snapshot.state == .stopped }

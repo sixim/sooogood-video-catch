@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 (build 13)
+
+- 新增创作者工具箱（仅 Local 版，独立模块 `MediaFetchTools`）：ProRes Proxy / LT / 422（VideoToolbox 硬件编码，不可用时自动退回软件 `prores_ks`）、DNxHR LB 代理、H.264 代理、HEVC 压缩、无损提取音轨、WAV 24-bit/48 kHz、GIF 预览，以及基于 whisper.cpp 的本机转录（输出 SRT / VTT / TXT）。
+- 代理自动半分辨率（超过 1080p 时）；输出永远不覆盖已有文件；每个结果连同源文件和输出的 SHA-256、完整命令、耗时写入 `derivatives.json`，不改动原 manifest。
+- 发送到达芬奇时自动把工具箱生成的代理关联到原片段（同一片段有多个代理时，优先顺序为 ProRes → DNxHR → H.264）。
+- 转录模型：可从 Hugging Face 或 hf-mirror（国内）下载，下载前显示来源、大小和保存位置，并校验 ggml 文件头；也可以直接链接电脑上已有的模型文件，不复制。
+- 任务页已完成项新增「处理…」，首页新增「工具箱」入口，拖入本地媒体文件会自动进入工具箱；每个任务显示耗时和「N× 实时」速度。
+- 设置页「本机工具」新增 whisper.cpp 状态。
+
 ## 0.9.0 (build 12)
 
 - 首页新增统一输入框：粘贴或拖入视频链接、磁力链接、.torrent 或本地媒体文件，自动识别并打开对应页面（`InputClassifier`，纯逻辑，位于 Core）。Finder 打开 .torrent 和系统里的 magnet 链接也走同一套路由。

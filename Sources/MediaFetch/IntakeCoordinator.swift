@@ -7,6 +7,7 @@ import MediaFetchCore
 final class IntakeCoordinator: ObservableObject {
     @Published var pendingVideoInput: String?
     @Published var pendingTorrentInputs: [RoutedInput] = []
+    @Published var pendingToolInputs: [URL] = []
     @Published var notice: String?
 
     /// Routes a batch and returns the page to open.
@@ -23,6 +24,10 @@ final class IntakeCoordinator: ObservableObject {
         }
         if !web.isEmpty { pendingVideoInput = web.joined(separator: "\n") }
         if !torrents.isEmpty { pendingTorrentInputs += torrents }
+        pendingToolInputs += items.compactMap { item -> URL? in
+            if case .localMedia(let url) = item { return url }
+            return nil
+        }
         if !unsupported.isEmpty {
             notice = "无法识别：" + unsupported.prefix(3).joined(separator: "、") + (unsupported.count > 3 ? " 等" : "")
         }

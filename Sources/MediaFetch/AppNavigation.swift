@@ -6,6 +6,7 @@ import MediaFetchVideo
 #if !MEDIAFETCH_STORE_PROFILE
 import MediaFetchTorrent
 import MediaFetchResolve
+import MediaFetchTools
 #endif
 
 enum AppRoute: String, Hashable {
@@ -25,6 +26,7 @@ struct ContentView: View {
 #if !MEDIAFETCH_STORE_PROFILE
     @StateObject private var torrents = TorrentService(defaultDownloadDirectory: TorrentDefaults.downloadDirectory)
     @StateObject private var resolve = ResolveService()
+    @StateObject private var tools = ToolService()
     @State private var autoSentJobs: Set<UUID> = []
     /// Only jobs finishing after launch are auto-sent; history is never replayed.
     @State private var appLaunchDate = Date()
@@ -50,6 +52,7 @@ struct ContentView: View {
         .onAppear {
             if DependencyRegistry.providers.isEmpty {
                 DependencyRegistry.providers.append(TorrentDefaults.dependencyItem)
+                DependencyRegistry.providers.append(TorrentDefaults.whisperItem)
             }
             GlobalHotKey.shared.onTrigger = handleHotKey
             GlobalHotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: GlobalHotKey.preferenceKey))
@@ -94,7 +97,11 @@ struct ContentView: View {
                 onBack: goHome,
                 openVideo: { replaceTop(with: .video) },
                 openSettings: { replaceTop(with: .settings) },
-                openTorrent: { replaceTop(with: .torrent) }
+                openTorrent: { replaceTop(with: .torrent) },
+                openTools: { files in
+                    intake.pendingToolInputs += files
+                    replaceTop(with: .tools)
+                }
             )
                 .navigationBarBackButtonHidden()
         case .torrent:
@@ -105,8 +112,12 @@ struct ContentView: View {
             EmptyView()
 #endif
         case .tools:
-            ToolsPlaceholderView(onBack: goHome)
+#if !MEDIAFETCH_STORE_PROFILE
+            ToolsView(service: tools, onBack: goHome, intake: intake)
                 .navigationBarBackButtonHidden()
+#else
+            EmptyView()
+#endif
         case .settings:
             SettingsView(
                 viewModel: spotify,

@@ -1,5 +1,6 @@
 #if !MEDIAFETCH_STORE_PROFILE
 import Foundation
+import MediaFetchTools
 import MediaFetchTorrent
 
 enum TorrentDefaults {
@@ -18,6 +19,16 @@ enum TorrentDefaults {
             level: path == nil ? .missing : .ready,
             detail: path ?? "未安装，Torrent 功能不可用",
             command: "brew install transmission-cli"
+        )
+    }
+
+    static func whisperItem() -> DependencyItem {
+        let path = ToolToolchain.local().whisper?.path
+        return DependencyItem(
+            id: "whisper", name: "whisper.cpp", purpose: "工具箱本机转录",
+            level: path == nil ? .attention : .ready,
+            detail: path ?? "未安装，转录功能不可用",
+            command: "brew install whisper-cpp"
         )
     }
 }

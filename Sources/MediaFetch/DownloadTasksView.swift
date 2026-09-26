@@ -9,6 +9,7 @@ struct DownloadTasksView: View {
     let openVideo: () -> Void
     var openSettings: () -> Void = {}
     var openTorrent: () -> Void = {}
+    var openTools: ([URL]) -> Void = { _ in }
 
     var body: some View {
         ZStack {
@@ -166,6 +167,8 @@ struct DownloadTasksView: View {
 
                     if let manifestPath = job.manifestPath {
 #if !MEDIAFETCH_STORE_PROFILE
+                        Button("处理…") { openTools(mediaFiles(of: job)) }
+                            .buttonStyle(.link)
                         ResolveSendButton(target: .package(URL(fileURLWithPath: manifestPath).deletingLastPathComponent()))
 #endif
                         Button("显示素材包") { reveal(manifestPath) }
@@ -228,6 +231,11 @@ struct DownloadTasksView: View {
 #endif
     }
 
+
+    /// Media files of a finished package (not sidecars), for the toolbox.
+    private func mediaFiles(of job: DownloadJob) -> [URL] {
+        job.completedFiles.map(URL.init(fileURLWithPath:)).filter(MediaSignature.expectsMedia)
+    }
 
     private func reveal(_ path: String) {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])

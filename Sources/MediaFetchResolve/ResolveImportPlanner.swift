@@ -58,7 +58,8 @@ public enum ResolveImportPlanner {
             files: try regularFiles(in: packageDirectory),
             binName: binName(for: packageDirectory),
             provenance: provenance ?? manifestProvenance(in: packageDirectory),
-            proxies: proxies,
+            // Proxies made by the toolbox are linked automatically.
+            proxies: DerivativeLog.proxies(in: packageDirectory).merging(proxies) { _, explicit in explicit },
             timelineName: timelineName
         )
     }

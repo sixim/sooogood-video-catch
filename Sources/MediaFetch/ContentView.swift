@@ -410,15 +410,15 @@ struct VideoDownloadView: View {
                     ForEach(downloader.jobs.reversed()) { job in
                         VStack(alignment: .leading, spacing: 7) {
                             HStack {
-                                Image(systemName: statusIcon(job.status))
-                                    .foregroundStyle(statusColor(job.status))
+                                Image(systemName: job.status.symbolName)
+                                    .foregroundStyle(job.status.tint)
                                 Text(job.title ?? job.sourceURL)
                                     .font(.subheadline.weight(.medium))
                                     .lineLimit(1)
                                 Spacer()
                                 Text(job.status.displayName)
                                     .font(.caption.weight(.semibold))
-                                    .foregroundStyle(statusColor(job.status))
+                                    .foregroundStyle(job.status.tint)
                                 Text(job.progressText).font(.caption.monospacedDigit())
                             }
                             ProgressView(value: job.progressFraction)
@@ -666,26 +666,7 @@ struct VideoDownloadView: View {
         .font(.caption.monospaced())
     }
 
-    private func statusIcon(_ status: DownloadJobStatus) -> String {
-        switch status {
-        case .queued, .paused: return "clock"
-        case .downloading: return "arrow.down.circle.fill"
-        case .packaging: return "checkmark.shield"
-        case .completed: return "checkmark.circle.fill"
-        case .failed: return "xmark.octagon.fill"
-        case .cancelled: return "stop.circle"
-        }
-    }
 
-    private func statusColor(_ status: DownloadJobStatus) -> Color {
-        switch status {
-        case .queued, .paused: return .secondary
-        case .downloading, .packaging: return .blue
-        case .completed: return .green
-        case .failed: return .red
-        case .cancelled: return .orange
-        }
-    }
 
     private func openPath(_ path: String) {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])

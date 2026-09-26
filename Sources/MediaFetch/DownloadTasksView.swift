@@ -7,6 +7,7 @@ struct DownloadTasksView: View {
     @ObservedObject var downloader: DownloaderService
     let onBack: () -> Void
     let openVideo: () -> Void
+    var openSettings: () -> Void = {}
 
     var body: some View {
         ZStack {
@@ -51,6 +52,14 @@ struct DownloadTasksView: View {
             }
 
             if downloader.isDownloading {
+                Button {
+                    downloader.isSuspended ? downloader.resumeCurrent() : downloader.suspendCurrent()
+                } label: {
+                    Label(downloader.isSuspended ? "继续" : "暂停",
+                          systemImage: downloader.isSuspended ? "play.fill" : "pause.fill")
+                }
+                .buttonStyle(.bordered)
+
                 Button(role: .destructive) {
                     downloader.cancel()
                 } label: {
@@ -107,11 +116,11 @@ struct DownloadTasksView: View {
         MediaFetchPanel {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
-                    Image(systemName: statusIcon(job.status))
+                    Image(systemName: job.status.symbolName)
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(statusColor(job.status))
+                        .foregroundStyle(job.status.tint)
                         .frame(width: 34, height: 34)
-                        .background(statusColor(job.status).opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                        .background(job.status.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(job.title ?? job.sourceURL)
@@ -129,8 +138,8 @@ struct DownloadTasksView: View {
 
                     StatusPill(
                         text: job.status.displayName,
-                        systemImage: statusIcon(job.status),
-                        color: statusColor(job.status)
+                        systemImage: job.status.symbolName,
+                        color: job.status.tint
                     )
 
                     Text(job.progressText)
@@ -140,7 +149,7 @@ struct DownloadTasksView: View {
                 }
 
                 ProgressView(value: job.progressFraction)
-                    .tint(statusColor(job.status))
+                    .tint(job.status.tint)
 
                 HStack(spacing: 7) {
                     Text(job.profile.rawValue)
@@ -161,30 +170,23 @@ struct DownloadTasksView: View {
                 .font(.caption)
                 .foregroundStyle(MediaFetchTheme.secondaryText)
 
-                if let error = job.errorMessage {
+                if job.status == .failed || job.status == .retrying || job.lastCommand != nil {
+                    JobInsightView(
+                        job: job,
+                        onRetry: { downloader.retryJob(job.id) },
+                        openSettings: openSettings
+                    )
+                } else if let error = job.errorMessage {
                     Label(error, systemImage: "exclamationmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(MediaFetchTheme.danger)
                         .lineLimit(3)
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(MediaFetchTheme.danger.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 }
             }
         }
         .accessibilityElement(children: .contain)
     }
 
-    private func statusIcon(_ status: DownloadJobStatus) -> String {
-        switch status {
-        case .queued, .paused: return "clock.fill"
-        case .downloading: return "arrow.down.circle.fill"
-        case .packaging: return "checkmark.shield.fill"
-        case .completed: return "checkmark.circle.fill"
-        case .failed: return "xmark.octagon.fill"
-        case .cancelled: return "stop.circle.fill"
-        }
-    }
 
     private var pageTitle: String {
 #if MEDIAFETCH_STORE_PROFILE
@@ -218,15 +220,6 @@ struct DownloadTasksView: View {
 #endif
     }
 
-    private func statusColor(_ status: DownloadJobStatus) -> Color {
-        switch status {
-        case .queued, .paused: return MediaFetchTheme.secondaryText
-        case .downloading, .packaging: return MediaFetchTheme.videoAccent
-        case .completed: return MediaFetchTheme.success
-        case .failed: return MediaFetchTheme.danger
-        case .cancelled: return MediaFetchTheme.warning
-        }
-    }
 
     private func reveal(_ path: String) {
         NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])

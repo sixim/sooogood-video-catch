@@ -6,7 +6,9 @@ import MediaFetchCore
 public final class DownloaderService: ObservableObject {
     @Published public var metadata: MediaMetadata?
     @Published public var isAnalyzing = false
-    @Published public var isDownloading = false
+    @Published public var isDownloading = false {
+        didSet { updateSleepAssertion() }
+    }
     @Published public var progress = DownloadProgress()
     @Published public var status = "等待链接"
     @Published public var recentMessages: [String] = []
@@ -26,6 +28,16 @@ public final class DownloaderService: ObservableObject {
     private var activeMediaID: String?
     private var activePlatform: String?
     private var cancellationRequested = false
+    /// Full engine output of the current attempt, for diagnosis. `recentMessages`
+    /// keeps only the last few lines for display.
+    private var engineLog: [String] = []
+    private var attemptStates: [UUID: EngineAttemptState] = [:]
+    /// 429s seen this app session; later requests slow down and use fewer fragments.
+    private var sessionRateLimitCount = 0
+    private var retryTask: Task<Void, Never>?
+    private var sleepActivity: NSObjectProtocol?
+    /// Tests shorten retry waits; production waits real seconds.
+    var retryNanosecondsPerSecond: UInt64 = 1_000_000_000
     private let toolchain: VideoToolchain
     private let packageExporter: VideoPackageExporter
     private let historyWriter: ([DownloadJob]) throws -> Void
@@ -152,11 +164,14 @@ public final class DownloaderService: ObservableObject {
         let errors = Pipe()
         task.executableURL = URL(fileURLWithPath: ytDLPPath)
         task.environment = toolchain.processEnvironment
-        var arguments = ["--dump-single-json", "--skip-download", "--no-playlist", "--no-warnings"]
-        if let cookieSource { arguments += cookieSource.ytDLPArguments }
-        if let cookieFile { arguments += ["--cookies", cookieFile.url.path] }
-        arguments.append(url.absoluteString)
-        task.arguments = arguments
+        var cookieArguments: [String] = []
+        if let cookieSource { cookieArguments += cookieSource.ytDLPArguments }
+        if let cookieFile { cookieArguments += ["--cookies", cookieFile.url.path] }
+        task.arguments = YtDLPArgumentBuilder.analysisArguments(
+            url: url.absoluteString,
+            sessionRateLimitCount: sessionRateLimitCount,
+            cookieArguments: cookieArguments
+        )
         task.standardOutput = output
         task.standardError = errors
 
@@ -188,8 +203,14 @@ public final class DownloaderService: ObservableObject {
                                 : self.authenticationRequiredMessage(for: cookieSource)
                             return
                         }
-                        self.status = "解析失败"
-                        self.errorMessage = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let trimmed = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let diagnosis = EngineDiagnostics.diagnose(stderr) {
+                            self.status = diagnosis.title
+                            self.errorMessage = "\(diagnosis.guidance)\n\n\(Self.lastErrorLine(in: trimmed))"
+                        } else {
+                            self.status = "解析失败"
+                            self.errorMessage = trimmed
+                        }
                         return
                     }
                     do {
@@ -296,11 +317,78 @@ public final class DownloaderService: ObservableObject {
             startNextIfNeeded()
             return
         }
+        if let retryTask, let id = currentJobID {
+            retryTask.cancel()
+            self.retryTask = nil
+            attemptStates[id] = nil
+            updateJob(id) { $0.status = .cancelled; $0.updatedAt = Date(); $0.retryNote = nil }
+            isDownloading = false
+            status = "下载已取消"
+            finishCurrentJobAndContinue()
+            return
+        }
 #endif
         guard let process, process.isRunning else { return }
         cancellationRequested = true
+        if isSuspended { process.resume() }
         process.interrupt()
         status = "正在取消…"
+    }
+
+    /// True while the engine process is stopped in place (SIGSTOP).
+    public var isSuspended: Bool {
+        guard let id = currentJobID else { return false }
+        return jobs.first(where: { $0.id == id })?.status == .suspended
+    }
+
+    /// Stops the running engine in place without losing connections' progress;
+    /// `resumeCurrent()` continues exactly where it stopped.
+    public func suspendCurrent() {
+        guard let process, process.isRunning, let id = currentJobID, !isSuspended else { return }
+        guard process.suspend() else { return }
+        updateJob(id) { $0.status = .suspended; $0.updatedAt = Date() }
+        status = "下载已暂停"
+        updateSleepAssertion()
+        persistJobs()
+    }
+
+    public func resumeCurrent() {
+        guard let process, process.isRunning, let id = currentJobID, isSuspended else { return }
+        guard process.resume() else { return }
+        updateJob(id) { $0.status = .downloading; $0.updatedAt = Date() }
+        status = "正在下载…"
+        updateSleepAssertion()
+        persistJobs()
+    }
+
+    /// Keeps the Mac from idle-sleeping while the queue is actively downloading.
+    private func updateSleepAssertion() {
+        let shouldHold = isDownloading && !isSuspended
+        if shouldHold, sleepActivity == nil {
+            sleepActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiated, .idleSystemSleepDisabled],
+                reason: "Sooogood Video Catch 正在下载"
+            )
+        } else if !shouldHold, let activity = sleepActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            sleepActivity = nil
+        }
+    }
+
+    /// Puts a failed or cancelled job back in the queue with a fresh attempt budget.
+    public func retryJob(_ id: UUID) {
+#if !MEDIAFETCH_STORE_PROFILE
+        guard let index = jobs.firstIndex(where: { $0.id == id }),
+              [.failed, .cancelled].contains(jobs[index].status) else { return }
+        attemptStates[id] = nil
+        jobs[index].status = .queued
+        jobs[index].errorMessage = nil
+        jobs[index].diagnosis = nil
+        jobs[index].retryNote = nil
+        jobs[index].updatedAt = Date()
+        persistJobs()
+        startNextIfNeeded()
+#endif
     }
 
     public func clearFinishedHistory() {
@@ -386,6 +474,7 @@ public final class DownloaderService: ObservableObject {
         completedFiles = []
         progress = DownloadProgress()
         recentMessages = []
+        engineLog = []
         lineBuffer = ""
         isDownloading = true
         status = "正在准备下载…"
@@ -393,6 +482,7 @@ public final class DownloaderService: ObservableObject {
             $0.status = .downloading
             $0.updatedAt = Date()
             $0.errorMessage = nil
+            $0.diagnosis = nil
         }
         persistJobs()
 
@@ -401,41 +491,24 @@ public final class DownloaderService: ObservableObject {
         task.executableURL = URL(fileURLWithPath: ytDLPPath)
         task.environment = toolchain.processEnvironment
         let engineDestination = engineDestination(for: job)
-        var arguments = [
-            "--newline", "--no-playlist", "--continue",
-            "--format", job.profile.formatSelector,
-            "--paths", engineDestination.path,
-            "--progress-template", "download:MF_PROGRESS|%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
-            "--progress-template", "postprocess:MF_POSTPROCESS|%(info.title)s",
-            "--print", "before_dl:MF_ID|%(id)s",
-            "--print", "before_dl:MF_TITLE|%(title)s",
-            "--print", "before_dl:MF_PLATFORM|%(extractor)s",
-            "--print", "before_dl:MF_FORMAT|%(format_id)s|%(resolution)s|%(vcodec)s|%(acodec)s|%(ext)s",
-            "--print", "after_move:MF_FILE|%(filepath)s"
-        ]
-
-        let packageName = "%(title).180B [%(id)s]"
-        if job.profile == .sourceStreams {
-            arguments += ["--output", "\(packageName)/\(packageName).f%(format_id)s.%(ext)s"]
-        } else {
-            arguments += ["--output", "\(packageName)/\(packageName).%(ext)s"]
+        let state = attemptStates[job.id] ?? EngineAttemptState()
+        attemptStates[job.id] = state
+        var cookieArguments: [String] = []
+        if cookieFile == nil, let cookieSource = job.browserCookieSource { cookieArguments += cookieSource.ytDLPArguments }
+        if let cookieFile { cookieArguments += ["--cookies", cookieFile.url.path] }
+        let arguments = YtDLPArgumentBuilder.downloadArguments(
+            job: job,
+            destination: engineDestination,
+            ffmpegPath: ffmpegPath,
+            state: state,
+            sessionRateLimitCount: sessionRateLimitCount,
+            cookieArguments: cookieArguments
+        )
+        updateJob(job.id) {
+            $0.attempts = state.attempt
+            $0.youtubePlayerClient = state.youtubePlayerClient
+            $0.lastCommand = YtDLPArgumentBuilder.redactedCommandLine(executable: ytDLPPath, arguments: arguments)
         }
-        if job.profile == .highest {
-            arguments += ["--merge-output-format", "mkv"]
-        } else if job.profile == .compatibleMP4 {
-            arguments += ["--merge-output-format", "mp4"]
-        }
-        if job.includeSidecars { arguments += ["--write-info-json", "--write-thumbnail"] }
-        if job.includeSubtitles {
-            arguments += [
-                "--write-subs", "--write-auto-subs", "--sub-langs",
-                "en,zh,zh-CN,zh-TW,zh-Hans,zh-Hant,-live_chat"
-            ]
-        }
-        if let ffmpegPath { arguments += ["--ffmpeg-location", ffmpegPath] }
-        if cookieFile == nil, let cookieSource = job.browserCookieSource { arguments += cookieSource.ytDLPArguments }
-        if let cookieFile { arguments += ["--cookies", cookieFile.url.path] }
-        arguments.append(job.sourceURL)
 
         task.arguments = arguments
         task.standardOutput = output
@@ -476,7 +549,7 @@ public final class DownloaderService: ObservableObject {
             return
         }
         guard finished.terminationStatus == 0 else {
-            let engineOutput = recentMessages.joined(separator: "\n")
+            let engineOutput = engineLog.joined(separator: "\n")
             if jobs[jobIndex].browserCookieSource == .safari &&
                 EngineErrorClassifier.isSafariCookiePermissionError(engineOutput) {
                 isDownloading = false
@@ -487,6 +560,8 @@ public final class DownloaderService: ObservableObject {
                 currentJobID = nil
                 return
             }
+            let diagnosis = EngineDiagnostics.diagnose(engineOutput)
+            jobs[jobIndex].diagnosis = diagnosis
             if EngineErrorClassifier.isDRMError(engineOutput) {
                 failCurrentJob("该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。")
                 return
@@ -497,9 +572,13 @@ public final class DownloaderService: ObservableObject {
                     : authenticationRequiredMessage(for: jobs[jobIndex].browserCookieSource))
                 return
             }
-            failCurrentJob(recentMessages.last ?? "下载引擎返回错误 \(finished.terminationStatus)")
+            if scheduleRetryIfUseful(jobIndex: jobIndex, output: engineOutput) { return }
+            let lastLine = Self.lastErrorLine(in: engineOutput)
+            let fallback = lastLine.isEmpty ? "下载引擎返回错误 \(finished.terminationStatus)" : lastLine
+            failCurrentJob(diagnosis.map { "\($0.title)：\($0.guidance)\n\(fallback)" } ?? fallback)
             return
         }
+        attemptStates[jobID] = nil
 
         progress = DownloadProgress(fraction: 1, percentText: "100%", speedText: "", etaText: "")
         jobs[jobIndex].progressFraction = 1
@@ -569,7 +648,52 @@ public final class DownloaderService: ObservableObject {
         }
     }
 
+    /// Applies `RetryPolicy`; returns true when another attempt was scheduled.
+    private func scheduleRetryIfUseful(jobIndex: Int, output: String) -> Bool {
+        let job = jobs[jobIndex]
+        let state = attemptStates[job.id] ?? EngineAttemptState()
+        guard let decision = RetryPolicy.next(
+            after: output,
+            state: state,
+            isYouTube: YtDLPArgumentBuilder.isYouTube(job.sourceURL),
+            sessionRateLimitCount: sessionRateLimitCount
+        ) else {
+            attemptStates[job.id] = nil
+            return false
+        }
+        if decision.countsAsRateLimit { sessionRateLimitCount += 1 }
+        attemptStates[job.id] = decision.nextState
+        jobs[jobIndex].status = .retrying
+        jobs[jobIndex].retryNote = "第 \(decision.nextState.attempt)/\(RetryPolicy.maxAttempts) 次尝试：\(decision.reason)"
+        jobs[jobIndex].updatedAt = Date()
+        status = jobs[jobIndex].retryNote ?? "等待自动重试"
+        persistJobs()
+        let jobID = job.id
+        let waitNanoseconds = UInt64(decision.delaySeconds) * retryNanosecondsPerSecond
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: waitNanoseconds)
+            guard !Task.isCancelled, let self else { return }
+            self.retryTask = nil
+            guard let index = self.jobs.firstIndex(where: { $0.id == jobID }),
+                  self.jobs[index].status == .retrying else { return }
+            self.jobs[index].status = .queued
+            self.currentJobID = nil
+            self.isDownloading = false
+            self.startJob(at: index)
+        }
+        return true
+    }
+
+    static func lastErrorLine(in output: String) -> String {
+        let lines = output.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let line = lines.last(where: { $0.uppercased().hasPrefix("ERROR") }) ?? lines.last ?? ""
+        return String(line.prefix(400))
+    }
+
     private func failCurrentJob(_ message: String) {
+        if let currentJobID { attemptStates[currentJobID] = nil }
         activeCookieFile?.remove()
         activeCookieFile = nil
         isDownloading = false
@@ -581,6 +705,7 @@ public final class DownloaderService: ObservableObject {
                 $0.status = .failed
                 $0.updatedAt = Date()
                 $0.errorMessage = message
+                $0.retryNote = nil
             }
         }
         finishCurrentJobAndContinue()
@@ -643,15 +768,18 @@ public final class DownloaderService: ObservableObject {
         }
         let cleaned = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty else { return }
+        engineLog.append(cleaned)
+        if engineLog.count > 400 { engineLog.removeFirst(engineLog.count - 400) }
         recentMessages.append(cleaned)
         if recentMessages.count > 8 { recentMessages.removeFirst() }
     }
+
+#endif
 
     private func updateJob(_ id: UUID, mutation: (inout DownloadJob) -> Void) {
         guard let index = jobs.firstIndex(where: { $0.id == id }) else { return }
         mutation(&jobs[index])
     }
-#endif
 
     private func persistJobs() {
         do { try historyWriter(jobs) }

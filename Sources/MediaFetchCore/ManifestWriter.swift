@@ -12,6 +12,15 @@ struct MediaManifest: Codable {
         let relativePath: String
         let byteSize: Int64
         let sha256: String
+        /// Added in schema 2: container detected from the file header.
+        let signature: MediaSignature?
+    }
+
+    /// Added in schema 2: how the engine reached this result.
+    struct EngineRecord: Codable {
+        let attempts: Int
+        let youtubePlayerClient: String?
+        let command: String?
     }
 
     let schemaVersion: Int
@@ -29,7 +38,19 @@ struct MediaManifest: Codable {
     let sidecarsRequested: Bool
     let subtitlesRequested: Bool
     let tools: ToolVersions
+    let engine: EngineRecord?
     let files: [FileRecord]
+}
+
+public enum ManifestWriterError: LocalizedError {
+    case errorPageInsteadOfMedia(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .errorPageInsteadOfMedia(let name):
+            return "“\(name)” 实际是网页错误页而不是媒体文件，已停止生成清单。请重试或检查登录状态。"
+        }
+    }
 }
 
 public enum ManifestWriter {
@@ -54,10 +75,15 @@ public enum ManifestWriter {
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
             .map { url -> MediaManifest.FileRecord in
                 let values = try url.resourceValues(forKeys: [.fileSizeKey])
+                let signature = MediaSignature.detect(fileAt: url)
+                if signature.isErrorPage && MediaSignature.expectsMedia(url) {
+                    throw ManifestWriterError.errorPageInsteadOfMedia(url.lastPathComponent)
+                }
                 return MediaManifest.FileRecord(
                     relativePath: url.lastPathComponent,
                     byteSize: Int64(values.fileSize ?? 0),
-                    sha256: try sha256(url)
+                    sha256: try sha256(url),
+                    signature: signature
                 )
             }
 
@@ -80,6 +106,11 @@ public enum ManifestWriter {
                 mediaFetch: MediaFetchRelease.version,
                 ytDLP: version(of: ytDLPPath, arguments: ["--version"]),
                 ffmpeg: ffmpegPath.map { version(of: $0, arguments: ["-version"], firstLineOnly: true) } ?? "not installed"
+            ),
+            engine: .init(
+                attempts: job.attempts ?? 1,
+                youtubePlayerClient: job.youtubePlayerClient,
+                command: job.lastCommand
             ),
             files: records
         )

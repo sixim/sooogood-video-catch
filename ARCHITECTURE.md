@@ -16,6 +16,7 @@ Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetc
 
 - `MediaFetchCore`：`DownloadJob`、`MediaMetadata`、`DownloadProfile`、平台识别、URL 校验、SHA-256 和 manifest schema。这里的 schema 变更必须增加版本，不改写既有 v1/v2 文件。
 - `SecurityScopedBookmarkStore`：保存用户明确选择的目录 bookmark，并在 Store profile 重新启动时恢复访问；不保存媒体内容。持有 scope 的对象必须在生命周期结束时调用 `stopAccessing`。
+- `MediaFetchVideo` 的纯决策层：`YtDLPArgumentBuilder`（参数）、`RetryPolicy`（是否重试、如何调整）不启动进程，直接用真实 stderr 片段做单元测试；`EngineDiagnostics`、`MediaSignature`、`EngineVersion` 位于 Core。新的失败类型先加诊断和测试，再改 UI。
 - `MediaFetchVideo`：`DownloaderService` 是当前 UI 的 façade；`VideoToolchain` 集中描述 yt-dlp/FFmpeg 的来源、环境和 Cookie 能力。Local profile 发现本机工具；Store profile 的视频 toolchain 固定为空，视频入口只渲染说明页。
 - `MediaFetchMusic`：Local profile 使用 ffprobe 获取更完整的容器/编码标签；Store profile 使用 `NativeAudioScanner` + AVFoundation，不嵌入或启动第三方 helper。`LocalAudioScanner` 的完整 Process/ffprobe 实现以编译条件排除在 Store 二进制之外；未来替换原生探针或增加合规的标签服务时，不需要改写 Spotify UI 和匹配规则。
 - Store profile 即使保留跨 profile 的公开工厂方法，也只编译 `AudioToolchain`/`VideoToolchain` 的无工具原生 stub，并将 PATH 固定为系统安全路径；Local profile 的 Homebrew 路径不会进入 Store 的可执行逻辑。

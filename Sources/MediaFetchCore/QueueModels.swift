@@ -8,6 +8,10 @@ public enum DownloadJobStatus: String, Codable, Sendable {
     case failed
     case cancelled
     case paused
+    /// Engine process is alive but stopped (SIGSTOP); resumes in place.
+    case suspended
+    /// Waiting for an automatic retry after a recoverable failure.
+    case retrying
 
     public var displayName: String {
         switch self {
@@ -18,6 +22,8 @@ public enum DownloadJobStatus: String, Codable, Sendable {
         case .failed: return "失败"
         case .cancelled: return "已取消"
         case .paused: return "已暂停"
+        case .suspended: return "已暂停（可继续）"
+        case .retrying: return "等待自动重试"
         }
     }
 }
@@ -41,6 +47,13 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var completedFiles: [String]
     public var manifestPath: String?
     public var errorMessage: String?
+    /// Engine attempt bookkeeping. All optional so pre-0.6 history decodes.
+    public var attempts: Int?
+    public var youtubePlayerClient: String?
+    public var diagnosis: EngineDiagnosis?
+    /// Last engine command with credential paths redacted, for the audit view.
+    public var lastCommand: String?
+    public var retryNote: String?
 
     public init(
         sourceURL: String,
@@ -120,7 +133,7 @@ public enum JobHistoryStore {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var jobs = try decoder.decode([DownloadJob].self, from: data)
-        for index in jobs.indices where [.downloading, .packaging].contains(jobs[index].status) {
+        for index in jobs.indices where [.downloading, .packaging, .suspended, .retrying].contains(jobs[index].status) {
             jobs[index].status = .paused
             jobs[index].updatedAt = Date()
         }

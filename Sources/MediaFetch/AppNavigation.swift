@@ -63,7 +63,8 @@ struct ContentView: View {
             DownloadTasksView(
                 downloader: downloader,
                 onBack: goHome,
-                openVideo: { replaceTop(with: .video) }
+                openVideo: { replaceTop(with: .video) },
+                openSettings: { replaceTop(with: .settings) }
             )
                 .navigationBarBackButtonHidden()
         case .settings:

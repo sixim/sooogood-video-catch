@@ -19,6 +19,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     header
 #if !MEDIAFETCH_STORE_PROFILE
+                    DependencyStatusPanel()
                     WebsiteLoginSettingsView(loginStore: loginStore)
 #endif
                     spotifySettings

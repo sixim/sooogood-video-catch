@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 (build 9)
+
+- 下载失败自动重试（最多 3 次）：429 指数退避并降低分片并发；YouTube SABR / 人机验证 / 签名失败按实测可用的 `player_client` 附加列表（`default,mweb` → `default,android` → `mweb,android`）切换；403 改用 IPv4；字幕单独被限流时去掉字幕重试；已删除、私有、404 等终止型错误不重试。
+- 新增 `EngineDiagnostics`：把引擎输出归类为具体原因，并给出唯一可执行的动作（登录网站 / 更新 yt-dlp / 稍后重试 / 查看磁盘 / 安装 deno），任务页以卡片呈现。
+- 下载命令统一由 `YtDLPArgumentBuilder` 生成，新增网络重试、超时、`--retry-sleep exp=1:30` 和 8 路分片并发；任务页可展开查看已脱敏的实际命令。
+- 下载中可暂停/继续（进程原地挂起，不丢进度）；队列运行期间阻止 Mac 闲置睡眠。
+- 写清单前检查文件头，拒收伪装成媒体的 HTML 错误页；视频 manifest 升级为 schema 2，新增 `engine`（尝试次数、player_client、命令）与每个文件的 `signature`。
+- 设置页新增「本机工具」面板：yt-dlp 版本下限 / 过期提醒、FFmpeg、deno 状态，并附带可复制的 brew 命令。
+- 队列状态的图标和颜色集中到一个共享扩展，两个任务列表共用。
+
 ## 0.5.1 (build 7)
 
 - 新增真正的应用内 WebKit 登录窗口：Vimeo、哔哩哔哩和优酷分别保存独立网站会话，支持清除与重启复用。

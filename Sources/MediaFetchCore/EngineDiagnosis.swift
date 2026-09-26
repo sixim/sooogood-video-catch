@@ -150,6 +150,15 @@ public enum EngineDiagnostics {
         ])
     }
 
+    /// The most informative single line of engine output, for compact UI.
+    public static func lastErrorLine(in output: String) -> String {
+        let lines = output.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        let line = lines.last(where: { $0.uppercased().hasPrefix("ERROR") }) ?? lines.last ?? ""
+        return String(line.prefix(400))
+    }
+
     private static func containsAny(_ text: String, _ needles: [String]) -> Bool {
         needles.contains { text.contains($0) }
     }

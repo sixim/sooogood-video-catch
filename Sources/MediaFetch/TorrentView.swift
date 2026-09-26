@@ -9,6 +9,7 @@ import MediaFetchTorrent
 struct TorrentView: View {
     @ObservedObject var service: TorrentService
     let onBack: () -> Void
+    var intake: IntakeCoordinator? = nil
 
     @State private var input = ""
     @State private var sequential = false
@@ -38,7 +39,9 @@ struct TorrentView: View {
             .padding(.vertical, 30)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .onChange(of: intake?.pendingTorrentInputs.count) { _, _ in consumePendingInputs() }
         .onAppear {
+            consumePendingInputs()
             service.isObserved = true
             if service.engineInstalled && noticeAccepted { Task { try? await service.ensureEngine() } }
         }
@@ -183,6 +186,24 @@ struct TorrentView: View {
     }
 
     // MARK: Actions
+
+    /// Magnets / .torrent files routed from elsewhere. Added only after the
+    /// first-use notice was accepted; otherwise they wait in the box.
+    private func consumePendingInputs() {
+        guard let intake, !intake.pendingTorrentInputs.isEmpty else { return }
+        let items = intake.pendingTorrentInputs
+        intake.pendingTorrentInputs = []
+        for item in items {
+            switch item {
+            case .magnet(let link):
+                if noticeAccepted, let source = TorrentSource.magnet(from: link) { add(source) } else { input = link }
+            case .torrentFile(let url) where url.isFileURL:
+                if noticeAccepted { addFile(url) }
+            default:
+                break
+            }
+        }
+    }
 
     private func addFromInput() {
         guard let source = TorrentSource.magnet(from: input) else {
@@ -404,6 +425,42 @@ struct CopyableCommand: View {
         }
         .padding(10)
         .background(MediaFetchTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+#endif
+
+#if !MEDIAFETCH_STORE_PROFILE
+/// Compact Torrent status on the task page, so every engine's work is visible in one place.
+struct TorrentSummaryCard: View {
+    @EnvironmentObject private var service: TorrentService
+    let openTorrent: () -> Void
+
+    var body: some View {
+        if !service.torrents.isEmpty {
+            Button(action: openTorrent) {
+                HStack(spacing: 12) {
+                    Image(systemName: "point.3.connected.trianglepath.dotted")
+                        .foregroundStyle(MediaFetchTheme.torrentAccent)
+                    Text("Torrent").font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
+                    Text(summary).font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText)
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(MediaFetchTheme.secondaryText)
+                }
+                .padding(14)
+                .background(MediaFetchTheme.surface, in: RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var summary: String {
+        let downloading = service.torrents.filter { $0.state == .downloading }
+        let seeding = service.torrents.filter { $0.state == .seeding }.count
+        let rate = downloading.reduce(Int64(0)) { $0 + $1.downloadRate }
+        var parts = ["\(service.torrents.count) 个任务"]
+        if !downloading.isEmpty { parts.append("\(downloading.count) 个下载中 ↓ " + ByteCountFormatter.string(fromByteCount: rate, countStyle: .file) + "/s") }
+        if seeding > 0 { parts.append("\(seeding) 个做种") }
+        return parts.joined(separator: " · ")
     }
 }
 #endif

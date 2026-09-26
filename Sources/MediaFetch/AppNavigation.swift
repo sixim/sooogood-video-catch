@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import MediaFetchCore
 import MediaFetchMusic
@@ -14,6 +15,7 @@ enum AppRoute: String, Hashable {
     case tasks
     case settings
     case torrent
+    case tools
 }
 
 struct ContentView: View {
@@ -28,13 +30,15 @@ struct ContentView: View {
     @State private var appLaunchDate = Date()
 #endif
     @State private var path: [AppRoute] = []
+    @StateObject private var intake = IntakeCoordinator()
 
     var body: some View {
         NavigationStack(path: $path) {
             HomeView(
                 downloader: downloader,
                 spotify: spotify,
-                navigate: navigate
+                navigate: navigate,
+                intake: intake
             )
             .navigationDestination(for: AppRoute.self) { route in
                 destination(for: route)
@@ -47,6 +51,8 @@ struct ContentView: View {
             if DependencyRegistry.providers.isEmpty {
                 DependencyRegistry.providers.append(TorrentDefaults.dependencyItem)
             }
+            GlobalHotKey.shared.onTrigger = handleHotKey
+            GlobalHotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: GlobalHotKey.preferenceKey))
             downloader.inAppCookieProvider = { url in
                 try await streamingLogins.exportSession(for: url)
             }
@@ -55,6 +61,7 @@ struct ContentView: View {
             InAppSiteLoginView(session: streamingLogins.session(for: platform), store: streamingLogins)
         }
         .environmentObject(resolve)
+        .environmentObject(torrents)
         .onReceive(downloader.$jobs) { jobs in autoSendToResolve(jobs) }
         .onOpenURL(perform: handleOpenURL)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
@@ -67,12 +74,13 @@ struct ContentView: View {
     private func destination(for route: AppRoute) -> some View {
         switch route {
         case .home:
-            HomeView(downloader: downloader, spotify: spotify, navigate: navigate)
+            HomeView(downloader: downloader, spotify: spotify, navigate: navigate, intake: intake)
         case .video:
             VideoDownloadView(
                 downloader: downloader,
                 loginStore: streamingLogins,
-                onBack: goHome
+                onBack: goHome,
+                intake: intake
             )
                 .navigationBarBackButtonHidden()
         case .music:
@@ -85,16 +93,20 @@ struct ContentView: View {
                 downloader: downloader,
                 onBack: goHome,
                 openVideo: { replaceTop(with: .video) },
-                openSettings: { replaceTop(with: .settings) }
+                openSettings: { replaceTop(with: .settings) },
+                openTorrent: { replaceTop(with: .torrent) }
             )
                 .navigationBarBackButtonHidden()
         case .torrent:
 #if !MEDIAFETCH_STORE_PROFILE
-            TorrentView(service: torrents, onBack: goHome)
+            TorrentView(service: torrents, onBack: goHome, intake: intake)
                 .navigationBarBackButtonHidden()
 #else
             EmptyView()
 #endif
+        case .tools:
+            ToolsPlaceholderView(onBack: goHome)
+                .navigationBarBackButtonHidden()
         case .settings:
             SettingsView(
                 viewModel: spotify,
@@ -120,19 +132,20 @@ struct ContentView: View {
 
     /// `magnet:` links and `.torrent` files opened from Finder or a browser.
     private func handleOpenURL(_ url: URL) {
-        let source: TorrentSource?
-        if url.scheme?.lowercased() == "magnet" {
-            source = TorrentSource.magnet(from: url.absoluteString)
-        } else if url.isFileURL, url.pathExtension.lowercased() == "torrent" {
-            source = try? TorrentSource.metainfo(fileAt: url)
-        } else {
-            source = nil
-        }
-        guard let source else { return }
-        if path.last != .torrent { path.append(.torrent) }
-        // The first-use notice must be accepted before anything is added.
-        guard UserDefaults.standard.bool(forKey: "MediaFetch.torrent.noticeAccepted") else { return }
-        Task { try? await torrents.add(source) }
+        let items = url.isFileURL ? InputClassifier.classify(fileURLs: [url]) : InputClassifier.classify(url.absoluteString)
+        open(intake.route(items))
+    }
+
+    /// ⌘⇧D: whatever links are on the clipboard go to the right page.
+    private func handleHotKey() {
+        NSApp.activate(ignoringOtherApps: true)
+        guard let text = NSPasteboard.general.string(forType: .string) else { return }
+        open(intake.route(InputClassifier.classify(text)))
+    }
+
+    private func open(_ route: AppRoute?) {
+        guard let route else { return }
+        if path.last != route { path.append(route) }
     }
 #endif
 

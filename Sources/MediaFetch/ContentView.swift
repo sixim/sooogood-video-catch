@@ -7,6 +7,7 @@ struct VideoDownloadView: View {
     @ObservedObject var downloader: DownloaderService
     @ObservedObject var loginStore: StreamingSiteLoginStore
     let onBack: () -> Void
+    var intake: IntakeCoordinator? = nil
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 #if !MEDIAFETCH_STORE_PROFILE
     @State private var mediaURL = ""
@@ -18,6 +19,9 @@ struct VideoDownloadView: View {
     @State private var genericBrowserCookieSource: BrowserCookieSource = .recommendedDefault
     @State private var includeSidecars = true
     @State private var includeSubtitles = true
+    @State private var showsPreflight = false
+    @State private var preflightReport: BatchPreflight.Report?
+    @State private var preflightTask: Task<Void, Never>?
 #endif
 
     var body: some View {
@@ -93,6 +97,21 @@ struct VideoDownloadView: View {
         }
         .onAppear {
             restoreDestinationBookmarkIfNeeded()
+            consumePendingInput()
+        }
+        .onChange(of: intake?.pendingVideoInput) { _, _ in consumePendingInput() }
+        .sheet(isPresented: $showsPreflight) {
+            BatchPreflightSheet(report: preflightReport) { urls in
+                showsPreflight = false
+                downloader.enqueue(
+                    urls.joined(separator: "\n"), profile: profile, destination: destination,
+                    includeSidecars: includeSidecars, includeSubtitles: includeSubtitles,
+                    cookieSourceByURL: cookieSourcesByURL, inAppLoginURLs: inAppLoginURLs
+                )
+            } onCancel: {
+                preflightTask?.cancel()
+                showsPreflight = false
+            }
         }
         .onDisappear {
             releaseDestinationScope()
@@ -342,6 +361,14 @@ struct VideoDownloadView: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                         .disabled(mediaURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || containsBlockedPlatform)
+                        if inputURLs.count > 1 {
+                            Button {
+                                runPreflight()
+                            } label: {
+                                Label("先预检 \(inputURLs.count) 条链接", systemImage: "checklist")
+                            }
+                            .controlSize(.large)
+                        }
                     }
                     Spacer()
                 }
@@ -507,6 +534,27 @@ struct VideoDownloadView: View {
             return genericUseBrowserCookies ? genericBrowserCookieSource : nil
         }
         return cookieSource(for: url)
+    }
+
+    private func runPreflight() {
+        preflightReport = nil
+        showsPreflight = true
+        let urls = inputURLs
+        preflightTask = Task {
+            let report = await downloader.preflight(
+                urls: urls, profile: profile, destination: destination,
+                cookieSourceByURL: cookieSourcesByURL, inAppLoginURLs: inAppLoginURLs
+            )
+            if !Task.isCancelled { preflightReport = report }
+        }
+    }
+
+    /// Input routed from the home box, the hotkey or another app.
+    private func consumePendingInput() {
+        guard let pending = intake?.pendingVideoInput else { return }
+        intake?.pendingVideoInput = nil
+        mediaURL = pending
+        if inputURLs.count == 1 && !downloader.isAnalyzing && !downloader.isDownloading { analyzeMedia() }
     }
 
     private func analyzeMedia() {

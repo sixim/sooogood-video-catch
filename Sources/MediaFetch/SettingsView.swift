@@ -21,6 +21,7 @@ struct SettingsView: View {
 #if !MEDIAFETCH_STORE_PROFILE
                     DependencyStatusPanel()
                     ResolveSettingsPanel()
+                    ShortcutSettingsPanel()
                     WebsiteLoginSettingsView(loginStore: loginStore)
 #endif
                     spotifySettings

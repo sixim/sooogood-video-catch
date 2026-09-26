@@ -8,6 +8,7 @@ struct DownloadTasksView: View {
     let onBack: () -> Void
     let openVideo: () -> Void
     var openSettings: () -> Void = {}
+    var openTorrent: () -> Void = {}
 
     var body: some View {
         ZStack {
@@ -15,6 +16,10 @@ struct DownloadTasksView: View {
 
             VStack(spacing: 0) {
                 header
+#if !MEDIAFETCH_STORE_PROFILE
+                TorrentSummaryCard(openTorrent: openTorrent)
+                    .padding(.bottom, 12)
+#endif
 
                 if downloader.jobs.isEmpty {
                     emptyState

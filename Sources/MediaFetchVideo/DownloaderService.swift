@@ -375,6 +375,28 @@ public final class DownloaderService: ObservableObject {
         }
     }
 
+#if !MEDIAFETCH_STORE_PROFILE
+    /// Resolves every URL of a batch before anything downloads.
+    public func preflight(
+        urls: [URL],
+        profile: DownloadProfile,
+        destination: URL,
+        cookieSourceByURL: [String: BrowserCookieSource],
+        inAppLoginURLs: Set<String>
+    ) async -> BatchPreflight.Report {
+        let knownKeys = BatchPreflightRunner.downloadedMediaKeys(from: jobs)
+        let knownURLs = Set(jobs.filter { $0.status == .completed }.map(\.sourceURL))
+        return await BatchPreflightRunner(toolchain: toolchain).run(
+            urls: urls, profile: profile, destination: destination,
+            knownMediaKeys: knownKeys, knownSourceURLs: knownURLs,
+            cookieArguments: { url in
+                if inAppLoginURLs.contains(url.absoluteString) { return nil }
+                return cookieSourceByURL[url.absoluteString]?.ytDLPArguments ?? []
+            }
+        )
+    }
+#endif
+
     /// Puts a failed or cancelled job back in the queue with a fresh attempt budget.
     public func retryJob(_ id: UUID) {
 #if !MEDIAFETCH_STORE_PROFILE
@@ -685,11 +707,7 @@ public final class DownloaderService: ObservableObject {
     }
 
     static func lastErrorLine(in output: String) -> String {
-        let lines = output.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        let line = lines.last(where: { $0.uppercased().hasPrefix("ERROR") }) ?? lines.last ?? ""
-        return String(line.prefix(400))
+        EngineDiagnostics.lastErrorLine(in: output)
     }
 
     private func failCurrentJob(_ message: String) {

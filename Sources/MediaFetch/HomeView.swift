@@ -6,6 +6,7 @@ struct HomeView: View {
     @ObservedObject var downloader: DownloaderService
     @ObservedObject var spotify: SpotifyBridgeViewModel
     let navigate: (AppRoute) -> Void
+    var intake: IntakeCoordinator? = nil
 
     private var activeJobs: Int {
         downloader.jobs.filter { [.queued, .downloading, .packaging, .paused].contains($0.status) }.count
@@ -18,6 +19,11 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
                     header
+#if !MEDIAFETCH_STORE_PROFILE
+                    if let intake {
+                        QuickIntakeBar(intake: intake, open: navigate)
+                    }
+#endif
                     primaryActions
                     secondaryActions
                     provenanceNote

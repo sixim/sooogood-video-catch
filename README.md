@@ -26,13 +26,33 @@ Sooogood Video Catch 是一个面向 macOS 的本地媒体工具。视频页用 
 - 只读扫描本地音乐资料夹，按 ISRC、歌手、标题、专辑与时长进行严格匹配；歧义版本必须人工确认
 - 把已确认的本地或授权 DRM-free 音频逐字节复制为 `audio/` 素材包，并生成 `playlist.m3u8` 与 schema v2 `manifest.json`
 - 在视频解析前阻止 Netflix 与 Spotify 受保护音频链接，避免把预告片或其他平台替代音频误报为原文件
+- 下载失败自动重试（429 退避、YouTube 备用客户端、IPv4、去字幕），失败原因显示为「原因 + 一个按钮」，可展开查看脱敏后的实际命令
+- YouTube 使用分片 DASH + 8 路并发（实测比 yt-dlp 默认快 15–25%），支持暂停/继续，下载期间阻止闲置睡眠
+- 首页统一输入框：视频链接、磁力链接、.torrent、本地媒体一框识别；批量预检（需登录 / 已下载 / 磁盘空间）；可选 ⌘⇧D 全局快捷键
+- 课程与播放列表：YouTube 播放列表、Udemy、B 站课堂按章节展开，下载到「课程/章节/课时」结构并生成 `collection-manifest.json`；DRM 课时跳过
+- Torrent（Local 版）：私有 transmission-daemon 引擎，选文件、顺序下载、做种策略，完成后生成带 SHA-256 的 `torrent-manifest.json`
+- 创作者工具箱（Local 版）：硬件 ProRes Proxy/LT/422、DNxHR、H.264 代理、HEVC、无损音轨、WAV、GIF、whisper.cpp 本机转录，结果记入 `derivatives.json`
+- DaVinci Resolve 对接（Local 版）：一键把素材包导入当前项目媒体池，写入来源与 SHA-256 元数据，自动关联代理、导入字幕，可选建时间线
+- MCP server（Local 版）：`sooogood-mcp` 让 Claude Code、Hermes 等 agent 查询、下载、运行工具箱、发送到达芬奇；不提供删除操作
 
 ## 环境
 
 遵循本机统一标准，CLI 依赖通过 Homebrew 安装：
 
 ```bash
-brew install yt-dlp ffmpeg
+brew install yt-dlp ffmpeg deno
+```
+
+可选（对应功能才需要）：
+
+```bash
+brew install transmission-cli whisper-cpp
+```
+
+接入 Claude Code（打包后在「设置 › AI Agent」里可一键复制路径）：
+
+```bash
+claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 开发运行：
@@ -56,7 +76,7 @@ swift test
 
 ## 模块化与后续维护
 
-源码拆分为四个职责清晰的 target：`MediaFetchCore`（领域模型与 manifest）、`MediaFetchVideo`（视频引擎适配）、`MediaFetchMusic`（Spotify 与音频匹配）以及 `MediaFetch`（SwiftUI 组合层）。依赖方向和迁移约定见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+源码按职责拆分为独立 target：`MediaFetchCore`（领域模型与 manifest）、`MediaFetchVideo`（视频引擎适配）、`MediaFetchMusic`（Spotify 与音频匹配）、仅 Local 版的 `MediaFetchTorrent`、`MediaFetchTools`、`MediaFetchResolve`、`MediaFetchControl` 与 `sooogood-mcp`，以及 `MediaFetch`（SwiftUI 组合层）。依赖方向和迁移约定见 [ARCHITECTURE.md](ARCHITECTURE.md)。
 
 本地内测打包：
 

@@ -105,7 +105,13 @@ final class EngineResilienceTests: XCTestCase {
         XCTAssertTrue(args.contains("--fragment-retries"))
         XCTAssertTrue(args.contains("exp=1:30"))
         XCTAssertEqual(args[args.firstIndex(of: "--concurrent-fragments")! + 1], "4")
-        XCTAssertTrue(args.contains("youtube:player_client=ios"))
+        XCTAssertTrue(args.contains("youtube:player_client=ios;formats=dashy"))
+        let plain = YtDLPArgumentBuilder.downloadArguments(
+            job: job("https://www.youtube.com/watch?v=abc"), destination: URL(fileURLWithPath: "/tmp/out"),
+            ffmpegPath: nil, state: EngineAttemptState(), sessionRateLimitCount: 0, cookieArguments: [])
+        XCTAssertTrue(plain.contains("youtube:formats=dashy"), "fragmented DASH so concurrent fragments apply")
+        XCTAssertFalse(YtDLPArgumentBuilder.analysisArguments(url: "https://www.youtube.com/watch?v=abc").contains { $0.contains("dashy") },
+                       "analysis keeps the normal format list")
         XCTAssertTrue(args.contains("--force-ipv4"))
         XCTAssertTrue(args.contains("--sleep-requests"))
         XCTAssertFalse(args.contains("--write-subs"))
@@ -201,7 +207,8 @@ final class EngineResilienceTests: XCTestCase {
         let calls = try String(contentsOf: report, encoding: .utf8).split(separator: "\n")
         XCTAssertEqual(calls.count, 2)
         XCTAssertFalse(calls[0].contains("player_client"))
-        XCTAssertTrue(calls[1].contains("youtube:player_client=default,mweb"))
+        XCTAssertTrue(calls[0].contains("youtube:formats=dashy"))
+        XCTAssertTrue(calls[1].contains("youtube:player_client=default,mweb;formats=dashy"))
         let manifest = try XCTUnwrap(job.manifestPath)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: manifest))) as? [String: Any])
         XCTAssertEqual(object["schemaVersion"] as? Int, 2)

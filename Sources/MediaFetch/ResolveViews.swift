@@ -36,6 +36,11 @@ struct ResolveSendButton: View {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(MediaFetchTheme.success)
                 Text("已导入达芬奇「\(result.project)」· \(result.clips.count) 个片段")
                     .help("媒体夹：" + result.bin.joined(separator: " › "))
+                if let warning = resolve.warnings[target.key]?.first {
+                    Image(systemName: "speaker.slash.fill")
+                        .foregroundStyle(MediaFetchTheme.warning)
+                        .help(warning)
+                }
             } else {
                 Button {
                     Task { await send() }

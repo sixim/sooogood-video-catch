@@ -9,6 +9,10 @@ public enum ResolveImportPlanner {
     public static let rootBin = "Sooogood"
     static let mediaSignatures: Set<MediaSignature> = [.isoBMFF, .matroska, .mpegTS, .mpegAudio, .flac, .ogg, .wave]
     static let subtitleExtensions: Set<String> = ["srt"]
+    /// Audio containers/codecs DaVinci Resolve cannot read (verified on Resolve 21:
+    /// `.ogg` Opus is rejected, Opus inside MKV imports as video-only).
+    static let unsupportedExtensions: Set<String> = ["ogg", "opus", "mka", "oga"]
+    static let unsupportedAudioCodecs: Set<String> = ["opus", "vorbis"]
 
     public struct Provenance: Equatable, Sendable {
         public var sourceURL: String?
@@ -16,6 +20,8 @@ public enum ResolveImportPlanner {
         public var platform: String?
         public var mediaID: String?
         public var sha256ByFileName: [String: String]
+        /// Audio codecs of the downloaded streams (from the manifest's selected formats).
+        public var audioCodecs: [String] = []
 
         public init(sourceURL: String? = nil, title: String? = nil, platform: String? = nil,
                     mediaID: String? = nil, sha256ByFileName: [String: String] = [:]) {
@@ -36,13 +42,17 @@ public enum ResolveImportPlanner {
                     hashes[(path as NSString).lastPathComponent] = hash
                 }
             }
-            return Provenance(
+            var provenance = Provenance(
                 sourceURL: json["sourceURL"]?.stringValue ?? json["magnetLink"]?.stringValue,
                 title: json["title"]?.stringValue ?? json["name"]?.stringValue,
                 platform: json["platform"]?.stringValue ?? (json["kind"]?.stringValue == "torrent" ? "BitTorrent" : nil),
                 mediaID: json["mediaID"]?.stringValue ?? json["infoHash"]?.stringValue,
                 sha256ByFileName: hashes
             )
+            provenance.audioCodecs = (json["selectedFormats"]?.arrayValue ?? [])
+                .compactMap { $0["audioCodec"]?.stringValue?.lowercased() }
+                .filter { !$0.isEmpty && $0 != "none" }
+            return provenance
         }
     }
 
@@ -54,8 +64,12 @@ public enum ResolveImportPlanner {
         proxies: [String: String] = [:],
         timelineName: String? = nil
     ) throws -> ResolveImportRequest {
-        plan(
-            files: try regularFiles(in: packageDirectory),
+        // Every proxy the toolbox made is excluded from import; only the preferred one is linked.
+        let allProxies = DerivativeLog.outputs(role: .proxy, in: packageDirectory)
+        func canonical(_ path: String) -> String { URL(fileURLWithPath: path).resolvingSymlinksInPath().path }
+        let excluded = Set(allProxies.map(canonical))
+        return plan(
+            files: try regularFiles(in: packageDirectory).filter { !excluded.contains(canonical($0.path)) },
             binName: binName(for: packageDirectory),
             provenance: provenance ?? manifestProvenance(in: packageDirectory),
             // Proxies made by the toolbox are linked automatically.
@@ -80,6 +94,7 @@ public enum ResolveImportPlanner {
         var clips: [ResolveClipSpec] = []
         var subtitles: [String] = []
         for file in files where !proxyPaths.contains(canonical(file.path)) {
+            if unsupportedExtensions.contains(file.pathExtension.lowercased()) { continue }
             if subtitleExtensions.contains(file.pathExtension.lowercased()) {
                 subtitles.append(file.path)
                 continue
@@ -93,6 +108,20 @@ public enum ResolveImportPlanner {
             ))
         }
         return ResolveImportRequest(binPath: [rootBin, binName], clips: clips, subtitles: subtitles, timelineName: timelineName)
+    }
+
+    /// Human-readable problems Resolve will have with this package, if any.
+    public static func compatibilityWarnings(packageDirectory: URL) -> [String] {
+        var warnings: [String] = []
+        let provenance = manifestProvenance(in: packageDirectory)
+        let codecs = Set((provenance?.audioCodecs ?? []).map { $0.split(separator: ".").first.map(String.init) ?? $0 })
+        let hasEditAudio = DerivativeLog.load(in: packageDirectory).contains {
+            ($0.preset == "wavForEdit" || $0.preset == "prores422" || $0.preset == "proresLT")
+        }
+        if !codecs.isDisjoint(with: unsupportedAudioCodecs) && !hasEditAudio {
+            warnings.append("音轨是 \(codecs.intersection(unsupportedAudioCodecs).sorted().joined(separator: "/"))，达芬奇无法读取，片段会没有声音。可在工具箱用「WAV 24-bit / 48 kHz」或「达芬奇友好 · ProRes 422」生成可用版本后再发送。")
+        }
+        return warnings
     }
 
     /// Resolve bin names: keep them readable but free of path separators.

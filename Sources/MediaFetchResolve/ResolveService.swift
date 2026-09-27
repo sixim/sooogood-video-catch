@@ -17,6 +17,8 @@ public final class ResolveService: ObservableObject {
     @Published public private(set) var connection: Connection = .unknown
     @Published public private(set) var sendingPackages: Set<String> = []
     @Published public private(set) var lastResults: [String: ResolveImportResult] = [:]
+    /// Compatibility notes per package key (e.g. Opus audio Resolve cannot read).
+    @Published public private(set) var warnings: [String: [String]] = [:]
     @Published public var errorMessage: String?
 
     private let bridgeFactory: () throws -> ResolveBridge
@@ -48,7 +50,8 @@ public final class ResolveService: ObservableObject {
     /// Imports one package folder into the current Resolve project.
     @discardableResult
     public func send(packageDirectory: URL, proxies: [String: String] = [:], timelineName: String? = nil) async -> ResolveImportResult? {
-        await perform(key: packageDirectory.path, logDirectory: packageDirectory) {
+        warnings[packageDirectory.path] = ResolveImportPlanner.compatibilityWarnings(packageDirectory: packageDirectory)
+        return await perform(key: packageDirectory.path, logDirectory: packageDirectory) {
             try ResolveImportPlanner.plan(packageDirectory: packageDirectory, proxies: proxies, timelineName: timelineName)
         }
     }

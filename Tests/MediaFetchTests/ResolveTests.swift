@@ -2,6 +2,7 @@
 import XCTest
 @testable import MediaFetchCore
 @testable import MediaFetchResolve
+@testable import MediaFetchTools
 
 final class ResolveTests: XCTestCase {
     private var root: URL!
@@ -64,6 +65,24 @@ final class ResolveTests: XCTestCase {
         let request = ResolveImportPlanner.plan(files: [file], binName: "movie.mkv", provenance: nil)
         XCTAssertEqual(request.clips.map(\.path), [file.path])
         XCTAssertEqual(request.binPath, ["Sooogood", "movie.mkv"])
+    }
+
+    func testOpusAudioIsSkippedAndWarnedUntilAnEditableVersionExists() throws {
+        let package = root.appendingPathComponent("Opus Pack")
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try Data([0x1A, 0x45, 0xDF, 0xA3, 0, 0]).write(to: package.appendingPathComponent("v.mkv"))
+        try Data("OggS".utf8).write(to: package.appendingPathComponent("v.audio.ogg"))
+        let manifest: JSONValue = ["selectedFormats": [["audioCodec": "opus", "videoCodec": "av01", "formatID": "1", "resolution": "x", "container": "mkv"]]]
+        try JSONEncoder().encode(manifest).write(to: package.appendingPathComponent("manifest.json"))
+        let request = try ResolveImportPlanner.plan(packageDirectory: package)
+        XCTAssertEqual(request.clips.map { ($0.path as NSString).lastPathComponent }, ["v.mkv"], ".ogg is never sent to Resolve")
+        XCTAssertEqual(ResolveImportPlanner.compatibilityWarnings(packageDirectory: package).count, 1)
+        try DerivativeLog.append(DerivativeRecord(
+            tool: "ffmpeg", preset: "wavForEdit", role: .audio,
+            source: .init(relativePath: "v.mkv", byteSize: 6, sha256: "a"),
+            output: .init(relativePath: "v.edit.wav", byteSize: 1, sha256: "b"),
+            command: [], engineVersion: "8", elapsedSeconds: 0), in: package)
+        XCTAssertTrue(ResolveImportPlanner.compatibilityWarnings(packageDirectory: package).isEmpty)
     }
 
     func testBinNameStripsPathSeparators() {
@@ -195,6 +214,39 @@ def scriptapp(name): return Resolve()
         let status = try await ResolveBridge(environment: try .discover()).status()
         print("LIVE RESOLVE:", status.product, status.version, status.project ?? "-")
         XCTAssertFalse(status.version.isEmpty)
+    }
+
+    /// Imports real packages into the user's open Resolve project. Opt-in only:
+    /// MF_LIVE_RESOLVE_IMPORT=<package dir>[:<package dir>...]
+    @MainActor
+    func testLiveResolveImport() async throws {
+        guard let list = ProcessInfo.processInfo.environment["MF_LIVE_RESOLVE_IMPORT"] else {
+            throw XCTSkip("set MF_LIVE_RESOLVE_IMPORT to import into the running DaVinci Resolve")
+        }
+        let service = ResolveService()
+        for path in list.split(separator: ":").map(String.init) {
+            let package = URL(fileURLWithPath: path)
+            if ProcessInfo.processInfo.environment["MF_LIVE_MAKE_WAV"] == "1",
+               let mkv = try FileManager.default.contentsOfDirectory(at: package, includingPropertiesForKeys: nil)
+                   .first(where: { $0.pathExtension == "mkv" }) {
+                let tools = ToolService(toolchain: .local(), historyURL: package.deletingLastPathComponent().appendingPathComponent("t.json"),
+                                        modelDirectory: package.deletingLastPathComponent().appendingPathComponent("m"))
+                tools.enqueue(inputs: [mkv], presets: [.wavForEdit])
+                while tools.jobs.contains(where: { [.queued, .running].contains($0.status) }) { try await Task.sleep(nanoseconds: 100_000_000) }
+                print("LIVE WAV:", tools.jobs.first?.status.rawValue ?? "-", tools.jobs.first?.errorMessage ?? "")
+            }
+            print("LIVE WARNINGS:", ResolveImportPlanner.compatibilityWarnings(packageDirectory: package))
+            let request = try ResolveImportPlanner.plan(packageDirectory: package)
+            print("LIVE PLAN:", package.lastPathComponent, "clips", request.clips.map { ($0.path as NSString).lastPathComponent },
+                  "subtitles", request.subtitles.map { ($0 as NSString).lastPathComponent },
+                  "proxies", request.clips.compactMap { $0.proxy.map { ($0 as NSString).lastPathComponent } })
+            let sent = await service.send(packageDirectory: package)
+            let result = try XCTUnwrap(sent, service.errorMessage ?? "send failed")
+            print("LIVE RESULT:", result.project, result.bin.joined(separator: " › "),
+                  "clips", result.clips.map { "\($0.name) reused=\($0.reused) proxy=\($0.proxyLinked.map(String.init) ?? "-") metaFail=\($0.metadataFailures)" },
+                  "subs", result.subtitles.map { ($0 as NSString).lastPathComponent }, "failed", result.failed)
+            XCTAssertTrue(result.failed.isEmpty, "\(result.failed)")
+        }
     }
 }
 #endif

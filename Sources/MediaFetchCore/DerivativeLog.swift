@@ -74,6 +74,12 @@ public enum DerivativeLog {
         try encoder.encode(document).write(to: directory.appendingPathComponent(fileName), options: .atomic)
     }
 
+    /// Absolute paths of every recorded output with this role (e.g. all proxies,
+    /// including ones not chosen for linking).
+    public static func outputs(role: DerivativeRecord.Role, in directory: URL) -> Set<String> {
+        Set(load(in: directory).filter { $0.role == role }.map { directory.appendingPathComponent($0.output.relativePath).path })
+    }
+
     /// Edit-grade proxies win when a clip has several (Resolve links one).
     static let proxyPreference = ["proresProxy", "dnxhrLB", "h264Proxy"]
 

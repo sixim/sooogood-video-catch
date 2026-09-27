@@ -122,6 +122,12 @@ final class ToolsTests: XCTestCase {
         XCTAssertEqual(records.filter { $0.role == .proxy }.count, 2, "ProRes and H.264 proxies are both recorded")
         XCTAssertEqual(DerivativeLog.proxies(in: dir).values.map { ($0 as NSString).lastPathComponent }, ["sample.proxy.mov"],
                        "Resolve links one proxy per clip; ProRes wins over H.264")
+        let request = try ResolveImportPlanner.plan(packageDirectory: dir)
+        let imported = request.clips.map { ($0.path as NSString).lastPathComponent }
+        XCTAssertFalse(imported.contains("sample.h264-proxy.mp4"), "unchosen proxies are not imported as clips")
+        XCTAssertFalse(imported.contains("sample.proxy.mov"))
+        XCTAssertTrue(imported.contains("sample.mp4"))
+        XCTAssertEqual(request.clips.first { $0.path.hasSuffix("sample.mp4") }?.proxy.map { ($0 as NSString).lastPathComponent }, "sample.proxy.mov")
 
         // Running the same preset again must not overwrite the existing output.
         service.enqueue(inputs: [source], presets: [.proresProxy])

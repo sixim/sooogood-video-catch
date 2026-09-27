@@ -41,6 +41,10 @@ struct CollectionSheet: View {
             Text(outline.title.isEmpty ? outline.id : outline.title).font(.title3.bold()).lineLimit(2)
             Text("\(outline.isCourse ? "课程" : "播放列表") · \(outline.entries.count) 项 · 已选 \(selected.count) 项 · 保存到「\(outline.rootFolderName)」文件夹")
                 .font(.caption).foregroundStyle(.secondary)
+            if outline.unavailableCount > 0 {
+                Text("另有 \(outline.unavailableCount) 个课时当前账号无法观看（通常需要购买或登录），已隐藏。")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             if outline.isCourse {
                 Text("只会下载你账号有权观看、且没有 DRM 保护的课时；受保护的课时会在课程清单里标记为已跳过。")
                     .font(.caption).foregroundStyle(.orange)

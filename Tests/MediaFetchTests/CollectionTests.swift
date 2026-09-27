@@ -43,6 +43,21 @@ final class CollectionTests: XCTestCase {
         XCTAssertNil(CollectionOutline.parse(try json(#"{"_type":"video","id":"x"}"#)))
     }
 
+    func testFullyExtractedEntriesUsePageURLNotExpiringCDNAndCountPaidGaps() throws {
+        // Shape captured from yt-dlp 2026.08.19 on bilibili.com/cheese/play/ss5918 without login.
+        let outline = try XCTUnwrap(CollectionOutline.parse(json("""
+        {"_type":"playlist","id":"5918","title":"课程","extractor_key":"BilibiliCheeseSeason","entries":[
+         {"id":"229832","title":"1 - 课程先导片","episode_number":1,"url":null,"webpage_url":"https://www.bilibili.com/cheese/play/ep229832"},
+         {"id":"229829","title":"2 - 新媒体课程的意义","episode_number":2,
+          "url":"https://upos-sz-mirrorcosov.bilivideo.com/x.mp4?deadline=1790486057","webpage_url":"https://www.bilibili.com/cheese/play/ep229829"},
+         null]}
+        """)))
+        XCTAssertEqual(outline.entries.map(\.url), ["https://www.bilibili.com/cheese/play/ep229832",
+                                                    "https://www.bilibili.com/cheese/play/ep229829"])
+        XCTAssertEqual(outline.unavailableCount, 1)
+        XCTAssertEqual(EngineDiagnostics.diagnose("ERROR: You need to purchase the course to download this episode.")?.cause, .needsLogin)
+    }
+
     func testDetector() {
         func check(_ string: String) -> Bool { CollectionDetector.looksLikeCollection(URL(string: string)!) }
         XCTAssertTrue(check("https://www.youtube.com/playlist?list=PL1"))

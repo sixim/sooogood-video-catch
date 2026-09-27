@@ -126,5 +126,84 @@ final class LiveBenchmarkTests: XCTestCase {
                       Double(snapshot.sizeWhenDone) / 1_048_576 / elapsed, Double(peak) / 1_048_576,
                       service.record(for: record.hash)?.manifestPath != nil ? "yes" : "no"))
     }
+
+    /// Magnet path end to end: metadata fetch → file selection → download → stop → manifest.
+    @MainActor
+    func testMagnetWithFileSelection() async throws {
+        let dir = try liveDirectory("magnet-\(Int(Date().timeIntervalSince1970))")
+        guard let magnet = environment["MF_LIVE_MAGNET"], let source = TorrentSource.magnet(from: magnet) else {
+            throw XCTSkip("MF_LIVE_MAGNET not set")
+        }
+        guard let daemon = TransmissionDaemon.findExecutable() else { throw XCTSkip("transmission not installed") }
+        let service = TorrentService(
+            defaultDownloadDirectory: dir, historyURL: dir.appendingPathComponent("history.json"),
+            daemonFactory: {
+                TransmissionDaemon(configuration: .init(executable: daemon, configDirectory: dir.appendingPathComponent("engine"),
+                                                        downloadDirectory: dir))
+            })
+        defer { service.shutdown() }
+        service.isObserved = true
+        let started = Date()
+        let record = try await service.add(source, seedPolicy: .stopWhenDone, selectFiles: true)
+        XCTAssertTrue(record.awaitingFileSelection)
+        var snapshot: TorrentSnapshot?
+        while Date().timeIntervalSince(started) < 180 {
+            await service.refresh()
+            snapshot = service.torrents.first { $0.hash == record.hash }
+            if snapshot?.hasMetadata == true && snapshot?.state == .stopped { break }
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+        let withMetadata = try XCTUnwrap(snapshot, "no metadata")
+        XCTAssertTrue(withMetadata.hasMetadata, "metadata not fetched in 3 min")
+        XCTAssertEqual(withMetadata.state, .stopped, "waits paused for the user's file choice")
+        report(String(format: "magnet metadata after %.1f s: %@ (%d files)", Date().timeIntervalSince(started),
+                      withMetadata.name, withMetadata.files.count))
+        try await service.confirmSelection(hash: record.hash, wantedIndices: Set(withMetadata.files.map(\.index)),
+                                           highPriority: [0])
+        var done = false
+        while Date().timeIntervalSince(started) < 1_200 {
+            await service.refresh()
+            if service.record(for: record.hash)?.manifestPath != nil { done = true; break }
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        XCTAssertTrue(done, "did not complete")
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        await service.refresh()
+        let final = try XCTUnwrap(service.torrents.first { $0.hash == record.hash })
+        report(String(format: "magnet complete in %.1f s, state after completion: %@ (stop-when-done), manifest: %@",
+                      Date().timeIntervalSince(started), final.state.displayName,
+                      service.record(for: record.hash)?.manifestPath ?? "-"))
+        XCTAssertEqual(final.state, .stopped, "stop-when-done policy stops seeding")
+    }
+
+    /// Course flow with the app's engine: expand → enqueue viewable lessons → course-manifest.json.
+    @MainActor
+    func testCourseExpansionAndDownload() async throws {
+        let dir = try liveDirectory("course-\(Int(Date().timeIntervalSince1970))")
+        guard let courseURL = environment["MF_LIVE_COURSE"].flatMap(URL.init(string:)) else { throw XCTSkip("MF_LIVE_COURSE not set") }
+        let downloader = DownloaderService(jobs: [], toolchain: .local(), historyWriter: { _ in })
+        let outline = try await downloader.expandCollection(courseURL, cookieSource: nil, usesInAppLogin: false)
+        report("course \(outline.title): \(outline.entries.count) viewable, \(outline.unavailableCount) unavailable, isCourse=\(outline.isCourse)")
+        let started = Date()
+        XCTAssertEqual(downloader.enqueueCollection(outline, entries: outline.entries, profile: .compatibleMP4, destination: dir,
+                                                    includeSidecars: false, includeSubtitles: false,
+                                                    cookieSource: nil, usesInAppLogin: false), outline.entries.count)
+        while Date().timeIntervalSince(started) < 900,
+              downloader.jobs.contains(where: { ![.completed, .failed, .cancelled].contains($0.status) }) {
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+        for job in downloader.jobs {
+            report("  \(job.status.rawValue): \(job.title ?? job.sourceURL) \(job.errorMessage ?? "")")
+        }
+        let root = dir.appendingPathComponent(outline.rootFolderName)
+        let manifestURL = root.appendingPathComponent(CollectionManifestWriter.courseFileName)
+        let manifest = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: manifestURL))
+        let entries = try XCTUnwrap(manifest["entries"]?.arrayValue)
+        report("course-manifest.json: kind=\(manifest["kind"]?.stringValue ?? "-"), entries=\(entries.map { "\($0["index"]?.intValue ?? 0):\($0["status"]?.stringValue ?? "")" })")
+        let tree = (FileManager.default.enumerator(atPath: root.path)?.allObjects as? [String] ?? []).filter { $0.hasSuffix(".mp4") || $0.hasSuffix("manifest.json") }.sorted()
+        report("tree: \(tree)")
+        XCTAssertEqual(manifest["kind"]?.stringValue, "course")
+        XCTAssertTrue(entries.allSatisfy { $0["status"]?.stringValue == "completed" })
+    }
 }
 #endif

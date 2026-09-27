@@ -441,17 +441,17 @@ public final class DownloaderService: ObservableObject {
         let (status, output, errors) = await Task.detached(priority: .userInitiated) {
             ProcessRunner.run(ytDLP, arguments, environment: environment)
         }.value
-        guard status == 0 else {
-            let text = String(decoding: errors, as: UTF8.self)
-            let diagnosis = EngineDiagnostics.diagnose(text)
-            throw EngineCallError([diagnosis?.title, diagnosis?.guidance, EngineDiagnostics.lastErrorLine(in: text)]
-                .compactMap { $0 }.joined(separator: "\n"))
+        // Paid or private entries make yt-dlp exit non-zero even though it printed
+        // the listing; a usable listing wins over the exit status.
+        if let json = try? JSONDecoder().decode(JSONValue.self, from: output),
+           let outline = CollectionOutline.parse(json) {
+            return outline
         }
-        guard let json = try? JSONDecoder().decode(JSONValue.self, from: output),
-              let outline = CollectionOutline.parse(json) else {
-            throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
+        let text = String(decoding: errors, as: UTF8.self)
+        if status != 0, let diagnosis = EngineDiagnostics.diagnose(text) {
+            throw EngineCallError([diagnosis.title, diagnosis.guidance, EngineDiagnostics.lastErrorLine(in: text)].joined(separator: "\n"))
         }
-        return outline
+        throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
     }
 
     /// Queues selected entries of a course/playlist; each keeps its place in

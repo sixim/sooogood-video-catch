@@ -49,6 +49,8 @@ public struct CollectionOutline: Equatable, Sendable {
     public let title: String
     public let extractor: String
     public let entries: [CollectionEntry]
+    /// Entries the extractor could not list for this account (e.g. paid lessons).
+    public var unavailableCount = 0
 
     public var isCourse: Bool {
         let key = extractor.lowercased()
@@ -83,8 +85,12 @@ public struct CollectionOutline: Equatable, Sendable {
         for (offset, item) in raw.enumerated() {
             guard let id = item["id"]?.stringValue else { continue }
             let key = (item["ie_key"]?.stringValue ?? item["extractor_key"]?.stringValue ?? extractor).lowercased()
-            let url = item["url"]?.stringValue.flatMap { $0.hasPrefix("http") ? $0 : nil }
-                ?? item["webpage_url"]?.stringValue
+            // Flat "url" entries point at a page; fully extracted entries carry a
+            // short-lived CDN "url", so their page URL must win.
+            let isReference = ["url", "url_transparent"].contains(item["_type"]?.stringValue ?? "")
+            let pageURL = item["webpage_url"]?.stringValue
+            let listedURL = item["url"]?.stringValue.flatMap { $0.hasPrefix("http") ? $0 : nil }
+            let url = (isReference ? listedURL ?? pageURL : pageURL ?? listedURL)
                 ?? (key.contains("cheese") ? "https://www.bilibili.com/cheese/play/ep\(id)" : nil)
                 ?? (key.contains("youtube") ? "https://www.youtube.com/watch?v=\(id)" : nil)
             guard let url else { continue }
@@ -99,8 +105,10 @@ public struct CollectionOutline: Equatable, Sendable {
             ))
         }
         guard !entries.isEmpty else { return nil }
-        return CollectionOutline(id: json["id"]?.stringValue ?? "collection", title: json["title"]?.stringValue ?? "",
-                                 extractor: extractor, entries: entries)
+        var outline = CollectionOutline(id: json["id"]?.stringValue ?? "collection", title: json["title"]?.stringValue ?? "",
+                                        extractor: extractor, entries: entries)
+        outline.unavailableCount = raw.count - entries.count
+        return outline
     }
 }
 

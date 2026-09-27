@@ -33,6 +33,7 @@ public final class TorrentService: ObservableObject {
     private var pollTask: Task<Void, Never>?
     private var startTask: Task<TransmissionRPCClient, Error>?
     private var manifestsInFlight: Set<String> = []
+    private var holdingForSelection: Set<String> = []
     private var engineVersion = "unknown"
     /// Faster polling while a torrent list is on screen.
     public var isObserved = false
@@ -146,23 +147,46 @@ public final class TorrentService: ObservableObject {
         let client = try await ensureEngine()
         let directory = (downloadDirectory ?? defaultDownloadDirectory).path
         let waitForSelection = selectFiles ?? selectFilesBeforeDownload
-        let result = try await client.add(source, downloadDirectory: directory,
-                                          paused: waitForSelection, sequential: sequential)
-        let policy = seedPolicy ?? defaultSeedPolicy
-        try? await client.set(result.hash, policy.torrentArguments)
-        if let existing = record(for: result.hash) { return existing }
         var magnet: String?
         if case .magnet(let link) = source { magnet = link }
-        let record = TorrentRecord(
-            hash: result.hash, name: result.name == result.hash ? source.displayHint : result.name,
-            downloadDirectory: directory, magnetLink: magnet, seedPolicy: policy,
-            awaitingFileSelection: waitForSelection
-        )
-        records.append(record)
+        // Transmission fetches no metadata for a paused magnet, so a magnet that
+        // waits for file selection starts throttled and is stopped as soon as its
+        // metadata arrives (see `reconcile`). A .torrent already has metadata.
+        let fetchMetadataFirst = waitForSelection && magnet != nil
+        let result = try await client.add(source, downloadDirectory: directory,
+                                          paused: waitForSelection && !fetchMetadataFirst, sequential: sequential)
+        let policy = seedPolicy ?? defaultSeedPolicy
+        var arguments = policy.torrentArguments
+        if fetchMetadataFirst {
+            arguments["download_limited"] = true
+            arguments["download_limit"] = .number(Double(Self.metadataThrottleKBps))
+        }
+        try? await client.set(result.hash, arguments)
+        // Upsert: the poller may have registered this torrent before we got here.
+        let record: TorrentRecord
+        if let index = records.firstIndex(where: { $0.hash == result.hash }) {
+            if !result.duplicate {
+                records[index].awaitingFileSelection = waitForSelection
+                records[index].seedPolicy = policy
+                records[index].magnetLink = records[index].magnetLink ?? magnet
+                records[index].downloadDirectory = directory
+            }
+            record = records[index]
+        } else {
+            record = TorrentRecord(
+                hash: result.hash, name: result.name == result.hash ? source.displayHint : result.name,
+                downloadDirectory: directory, magnetLink: magnet, seedPolicy: policy,
+                awaitingFileSelection: waitForSelection
+            )
+            records.append(record)
+        }
         persist()
         await refresh()
         return record
     }
+
+    /// Download cap while a magnet only needs its metadata before file selection.
+    public nonisolated static let metadataThrottleKBps = 50
 
     /// Confirms file selection and starts the download.
     public func confirmSelection(hash: String, wantedIndices: Set<Int>, highPriority: Set<Int> = []) async throws {
@@ -175,7 +199,8 @@ public final class TorrentService: ObservableObject {
             return
         }
         var arguments: [String: JSONValue] = [
-            "files_wanted": .array(wanted.sorted().map { .number(Double($0)) })
+            "files_wanted": .array(wanted.sorted().map { .number(Double($0)) }),
+            "download_limited": false
         ]
         let unwanted = all.subtracting(wanted)
         if !unwanted.isEmpty { arguments["files_unwanted"] = .array(unwanted.sorted().map { .number(Double($0)) }) }
@@ -267,6 +292,20 @@ public final class TorrentService: ObservableObject {
             guard let record = record(for: snapshot.hash) else { continue }
             if record.name != snapshot.name && snapshot.hasMetadata {
                 updateRecord(snapshot.hash) { $0.name = snapshot.name }
+            }
+            // Magnet metadata arrived while waiting for file selection: hold it here.
+            if record.awaitingFileSelection && snapshot.hasMetadata && snapshot.state != .stopped {
+                let hash = snapshot.hash
+                guard !holdingForSelection.contains(hash) else { continue }
+                holdingForSelection.insert(hash)
+                Task { [weak self] in
+                    guard let self, let client = self.client else { return }
+                    try? await client.stop(hash)
+                    try? await client.set(hash, ["download_limited": false])
+                    // The user may have confirmed while the stop was in flight: don't undo it.
+                    if self.record(for: hash)?.awaitingFileSelection == false { try? await client.start(hash) }
+                    self.holdingForSelection.remove(hash)
+                }
             }
             if !snapshot.errorString.isEmpty && record.lastError != snapshot.errorString {
                 updateRecord(snapshot.hash) { $0.lastError = snapshot.errorString }

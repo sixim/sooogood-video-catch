@@ -34,7 +34,7 @@ public enum YtDLPArgumentBuilder {
 
     /// `--flat-playlist` listing for courses and playlists.
     public static func expansionArguments(url: String, cookieArguments: [String]) -> [String] {
-        ["--flat-playlist", "--dump-single-json", "--no-warnings", "--socket-timeout", "30", "--extractor-retries", "3"]
+        ["--flat-playlist", "--dump-single-json", "--ignore-errors", "--no-warnings", "--socket-timeout", "30", "--extractor-retries", "3"]
             + (isCoursePlatform(url) ? ["--sleep-requests", "1"] : [])
             + cookieArguments + [url]
     }

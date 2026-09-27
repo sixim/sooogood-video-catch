@@ -47,7 +47,8 @@ struct TorrentView: View {
         }
         .onDisappear { service.isObserved = false }
         .sheet(item: Binding(
-            get: { selectionHash.flatMap { hash in service.torrents.first { $0.hash == hash } } },
+            // Opens once metadata exists; for magnets that is a few seconds after adding.
+            get: { selectionHash.flatMap { hash in service.torrents.first { $0.hash == hash && $0.hasMetadata } } },
             set: { selectionHash = $0?.hash }
         )) { snapshot in
             TorrentFileSelectionSheet(snapshot: snapshot) { wanted, high in

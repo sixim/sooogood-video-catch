@@ -37,6 +37,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         case "expand_collection": return try await expandCollection(args)
         case "enqueue_collection": return try await enqueueCollection(args)
         case "list_tasks": return await listTasks(args)
+        case "list_torrents": return await listTasks(Arguments(["kind": "torrent"]))
         case "get_task": return try await getTask(args.string("id"))
         case "pause_task": return try await control(args.string("id"), action: .pause)
         case "resume_task": return try await control(args.string("id"), action: .resume)

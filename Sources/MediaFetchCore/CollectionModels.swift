@@ -159,7 +159,14 @@ public enum CollectionPaths {
 /// with its outcome and a pointer to its own package manifest.
 public enum CollectionManifestWriter {
     public static let fileName = "collection-manifest.json"
+    /// Courses (Udemy, Bilibili 课堂, anything with chapters) use this name.
+    public static let courseFileName = "course-manifest.json"
     public static let schemaVersion = 1
+
+    public static func fileName(for context: CollectionContext) -> String {
+        let key = context.extractor.lowercased()
+        return key.contains("udemy") || key.contains("cheese") || context.chapterTitle != nil ? courseFileName : fileName
+    }
 
     public enum EntryStatus: String, Codable, Sendable {
         case completed
@@ -195,11 +202,12 @@ public enum CollectionManifestWriter {
     ) throws {
         let root = destination.appendingPathComponent(context.rootFolderName, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        let url = root.appendingPathComponent(fileName)
+        let url = root.appendingPathComponent(fileName(for: context))
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var document = (try? decoder.decode(Document.self, from: Data(contentsOf: url)))
-            ?? Document(schemaVersion: schemaVersion, kind: "collection", collectionID: context.collectionID,
+            ?? Document(schemaVersion: schemaVersion, kind: fileName(for: context) == courseFileName ? "course" : "collection",
+                        collectionID: context.collectionID,
                         title: context.collectionTitle, extractor: context.extractor, entries: [])
         let relative = packageManifest.map { manifest -> String in
             let rootPath = root.standardizedFileURL.path + "/"

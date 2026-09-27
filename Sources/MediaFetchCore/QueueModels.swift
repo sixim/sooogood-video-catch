@@ -28,6 +28,25 @@ public enum DownloadJobStatus: String, Codable, Sendable {
     }
 }
 
+/// Where a running job is in the pipeline, for the stage bar.
+public enum DownloadStage: Int, Codable, CaseIterable, Sendable {
+    case resolving
+    case downloading
+    case merging
+    case verifying
+    case manifest
+
+    public var displayName: String {
+        switch self {
+        case .resolving: return "解析"
+        case .downloading: return "下载"
+        case .merging: return "合并"
+        case .verifying: return "校验"
+        case .manifest: return "清单"
+        }
+    }
+}
+
 public struct DownloadJob: Codable, Identifiable, Sendable {
     public let id: UUID
     public let sourceURL: String
@@ -56,6 +75,10 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var retryNote: String?
     /// Set when the job belongs to a course or playlist.
     public var collection: CollectionContext?
+    /// Live pipeline position and throughput; not meaningful after completion.
+    public var stage: DownloadStage?
+    public var speedText: String?
+    public var etaText: String?
 
     public init(
         sourceURL: String,

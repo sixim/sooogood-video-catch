@@ -161,7 +161,10 @@ final class EngineResilienceTests: XCTestCase {
         let now = EngineVersion(year: 2026, month: 9, day: 25).date!
         XCTAssertEqual(EngineVersion("2026.08.19.232012 nightly")?.description, "2026.08.19")
         XCTAssertNil(EngineVersion("garbage"))
-        XCTAssertEqual(EngineHealthStatus.evaluate(versionOutput: "2026.08.19", now: now), .current(EngineVersion("2026.08.19")!))
+        XCTAssertEqual(EngineHealthStatus.evaluate(versionOutput: "2026.09.01", now: now), .current(EngineVersion("2026.09.01")!))
+        if case .stale(_, let days) = EngineHealthStatus.evaluate(versionOutput: "2026.08.19", now: now) {
+            XCTAssertEqual(days, 37, "older than 30 days suggests brew upgrade")
+        } else { XCTFail("2026.08.19 is stale on 2026-09-25") }
         XCTAssertEqual(EngineHealthStatus.evaluate(versionOutput: "2026.05.01", now: now), .belowMinimum(EngineVersion("2026.05.01")!))
         if case .stale = EngineHealthStatus.evaluate(versionOutput: "2026.06.10", now: now) {} else { XCTFail("expected stale") }
         XCTAssertEqual(EngineHealthStatus.evaluate(versionOutput: nil), .missing)

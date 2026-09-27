@@ -24,6 +24,8 @@ public actor TransmissionRPCClient {
     private var sessionID: String?
     private var nextID = 1
 
+    nonisolated var endpointForTesting: Endpoint { endpoint }
+
     public init(endpoint: Endpoint, session: URLSession = .shared) {
         self.endpoint = endpoint
         self.session = session

@@ -96,9 +96,10 @@ final class CollectionTests: XCTestCase {
                                 index: 1, chapterNumber: 1, chapterTitle: "Intro")
         try CollectionManifestWriter.record(destination: dir, context: drm, sourceURL: "v", title: "Protected",
                                             status: .drmSkipped, packageManifest: nil)
-        let manifest = try json(String(contentsOf: dir.appendingPathComponent("Course/collection-manifest.json"), encoding: .utf8))
+        let manifest = try json(String(contentsOf: dir.appendingPathComponent("Course/course-manifest.json"), encoding: .utf8))
         let entries = try XCTUnwrap(manifest["entries"]?.arrayValue)
         XCTAssertEqual(entries.map { $0["index"]?.intValue }, [1, 2], "sorted, one row per index")
+        XCTAssertEqual(manifest["kind"]?.stringValue, "course")
         XCTAssertEqual(entries[0]["status"]?.stringValue, "drm_skipped")
         XCTAssertEqual(entries[1]["status"]?.stringValue, "completed")
         XCTAssertEqual(entries[1]["packageManifest"]?.stringValue, "01 Intro/002 - Lesson [2]/manifest.json")

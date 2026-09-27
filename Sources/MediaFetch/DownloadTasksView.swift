@@ -3,8 +3,15 @@ import SwiftUI
 import MediaFetchCore
 import MediaFetchVideo
 
+enum TaskSection: String, CaseIterable {
+    case video = "视频"
+    case torrent = "Torrent"
+    case tools = "处理"
+}
+
 struct DownloadTasksView: View {
     @ObservedObject var downloader: DownloaderService
+    @State private var section: TaskSection = .video
     let onBack: () -> Void
     let openVideo: () -> Void
     var openSettings: () -> Void = {}
@@ -18,15 +25,25 @@ struct DownloadTasksView: View {
             VStack(spacing: 0) {
                 header
 #if !MEDIAFETCH_STORE_PROFILE
-                TorrentSummaryCard(openTorrent: openTorrent)
-                    .padding(.bottom, 12)
-#endif
-
-                if downloader.jobs.isEmpty {
-                    emptyState
-                } else {
-                    taskList
+                Picker("任务类型", selection: $section) {
+                    ForEach(TaskSection.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 360)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 14)
+                switch section {
+                case .video:
+                    videoSection
+                case .torrent:
+                    ScrollView { TorrentTaskList(openTorrent: openTorrent).padding(.bottom, 12) }
+                case .tools:
+                    ScrollView { ToolTaskList(openTools: { openTools([]) }).padding(.bottom, 12) }
+                }
+#else
+                videoSection
+#endif
             }
             .frame(maxWidth: 1180)
             .padding(.horizontal, 36)
@@ -81,6 +98,15 @@ struct DownloadTasksView: View {
             .disabled(downloader.isDownloading)
         }
         .padding(.bottom, 24)
+    }
+
+    @ViewBuilder
+    private var videoSection: some View {
+        if downloader.jobs.isEmpty {
+            emptyState
+        } else {
+            taskList
+        }
     }
 
     private var emptyState: some View {
@@ -156,6 +182,9 @@ struct DownloadTasksView: View {
 
                 ProgressView(value: job.progressFraction)
                     .tint(job.status.tint)
+                if [.downloading, .packaging, .suspended, .completed].contains(job.status) {
+                    StageBar(job: job)
+                }
 
                 HStack(spacing: 7) {
                     Text(job.profile.rawValue)

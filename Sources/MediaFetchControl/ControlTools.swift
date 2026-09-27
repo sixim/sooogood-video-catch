@@ -58,6 +58,8 @@ public struct ControlTool: Sendable, Equatable {
                 "kind": ["type": "string", "enum": ["video", "torrent", "tools", "all"]],
                 "limit": ["type": "integer", "minimum": 1, "maximum": 200]
               ])),
+        .init(name: "list_torrents", description: "List torrents with progress, speed, share ratio and whether their manifest is written.",
+              inputSchema: schema([:])),
         .init(name: "get_task", description: "Details of one task, including failure diagnosis and output paths.",
               inputSchema: schema(["id": taskID], required: ["id"])),
         .init(name: "pause_task", description: "Pause a running video download or a torrent.",

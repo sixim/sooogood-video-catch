@@ -245,5 +245,40 @@ final class TorrentTests: XCTestCase {
         await service.removeKeepingFiles(record.hash)
         XCTAssertTrue(FileManager.default.fileExists(atPath: payloadDir.appendingPathComponent("clip.bin").path))
     }
+
+    func testKeepSeedingDaemonIsAdoptedByTheNextSessionAndStoppable() async throws {
+        guard let daemonURL = TransmissionDaemon.findExecutable() else { throw XCTSkip("transmission-daemon not installed") }
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("mf-adopt-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = InMemoryTorrentCredentialStore()
+        func make() -> TransmissionDaemon {
+            TransmissionDaemon(configuration: .init(executable: daemonURL, configDirectory: dir.appendingPathComponent("engine"),
+                                                    downloadDirectory: dir, portForwarding: false,
+                                                    keepRunningAfterAppQuits: true, credentials: store))
+        }
+        let first = make()
+        _ = try await first.start()
+        XCTAssertNotNil(store.load(), "credentials remembered for the next session")
+        first.stopForAppQuit(keepSeeding: true)
+
+        let second = make()
+        let client = try await second.start()
+        XCTAssertTrue(second.adoptedExisting, "the running daemon is adopted, not restarted")
+        _ = try await client.version()
+        second.stop()
+        XCTAssertNil(store.load())
+        let reconnect = TransmissionRPCClient(endpoint: client.endpointForTesting)
+        do { _ = try await reconnect.version(); XCTFail("daemon should be stopped") } catch {}
+    }
+
+    func testSessionSettingsAreSentToEngine() async throws {
+        StubRPCProtocol.handler = { _ in (200, [:], Data(#"{"jsonrpc":"2.0","result":{},"id":1}"#.utf8)) }
+        let client = TransmissionRPCClient(endpoint: .init(port: 1, username: "u", password: "p"), session: stubSession())
+        try await client.setSession(["peer_port": 51500, "speed_limit_down_enabled": true, "speed_limit_down": 2048])
+        let body = try JSONDecoder().decode(JSONValue.self, from: StubRPCProtocol.requests.last!.httpBody!)
+        XCTAssertEqual(body["method"]?.stringValue, "session_set")
+        XCTAssertEqual(body["params"]?["peer_port"]?.intValue, 51500)
+        XCTAssertEqual(body["params"]?["speed_limit_down"]?.intValue, 2048)
+    }
 }
 #endif

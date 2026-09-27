@@ -612,7 +612,12 @@ struct VideoDownloadView: View {
         guard let pending = intake?.pendingVideoInput else { return }
         intake?.pendingVideoInput = nil
         mediaURL = pending
-        if inputURLs.count == 1 && !downloader.isAnalyzing && !downloader.isDownloading { analyzeMedia() }
+        // Courses and playlists go straight to the lesson picker.
+        if let collectionURL, CollectionDetector.looksLikeCollection(inputURLs[0]) {
+            expandCollection(collectionURL)
+        } else if inputURLs.count == 1 && !downloader.isAnalyzing && !downloader.isDownloading {
+            analyzeMedia()
+        }
     }
 
     private func analyzeMedia() {

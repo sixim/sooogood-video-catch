@@ -50,10 +50,14 @@ public final class TorrentService: ObservableObject {
             return TransmissionDaemon(configuration: .init(
                 executable: executable,
                 configDirectory: TransmissionDaemon.defaultConfigDirectory,
-                downloadDirectory: defaultDownloadDirectory
+                downloadDirectory: defaultDownloadDirectory,
+                keepRunningAfterAppQuits: UserDefaults.standard.bool(forKey: TorrentService.keepSeedingKey),
+                credentials: KeychainTorrentCredentialStore()
             ))
         }
     }
+
+    public nonisolated static let keepSeedingKey = "MediaFetch.torrent.keepSeedingAfterQuit"
 
     public var engineInstalled: Bool { TransmissionDaemon.findExecutable() != nil }
 
@@ -80,6 +84,7 @@ public final class TorrentService: ObservableObject {
             startTask = nil
             engineVersion = (try? await client.version()) ?? "unknown"
             engineStatus = .running(version: engineVersion)
+            await applySessionSettings()
             startPolling()
             return client
         } catch {
@@ -90,14 +95,42 @@ public final class TorrentService: ObservableObject {
         }
     }
 
-    /// Stops the engine (on app quit). Torrents resume on next launch.
-    public func shutdown() {
+    /// Stops the engine (on app quit). Torrents resume on next launch; with
+    /// `keepSeeding` the daemon stays up and is adopted again next time.
+    public func shutdown(keepSeeding: Bool = false) {
         pollTask?.cancel()
         pollTask = nil
         client = nil
-        daemon?.stop()
+        daemon?.stopForAppQuit(keepSeeding: keepSeeding)
         daemon = nil
         engineStatus = .idle
+    }
+
+    public struct SessionSettings: Equatable, Sendable {
+        public var peerPort: Int?
+        public var downloadLimitKBps: Int?
+        public var uploadLimitKBps: Int?
+        public init(peerPort: Int?, downloadLimitKBps: Int?, uploadLimitKBps: Int?) {
+            self.peerPort = peerPort
+            self.downloadLimitKBps = downloadLimitKBps
+            self.uploadLimitKBps = uploadLimitKBps
+        }
+    }
+
+    /// Applied on every engine start and whenever Settings change.
+    public var sessionSettings = SessionSettings(peerPort: nil, downloadLimitKBps: nil, uploadLimitKBps: nil)
+
+    public func applySessionSettings() async {
+        guard let client else { return }
+        var arguments: [String: JSONValue] = [
+            "speed_limit_down_enabled": .bool(sessionSettings.downloadLimitKBps != nil),
+            "speed_limit_down": .number(Double(sessionSettings.downloadLimitKBps ?? 0)),
+            "speed_limit_up_enabled": .bool(sessionSettings.uploadLimitKBps != nil),
+            "speed_limit_up": .number(Double(sessionSettings.uploadLimitKBps ?? 0)),
+            "download_dir": .string(defaultDownloadDirectory.path)
+        ]
+        if let port = sessionSettings.peerPort, (1024...65535).contains(port) { arguments["peer_port"] = .number(Double(port)) }
+        do { try await client.setSession(arguments) } catch { errorMessage = error.localizedDescription }
     }
 
     // MARK: Commands
@@ -169,18 +202,6 @@ public final class TorrentService: ObservableObject {
     public func setSeedPolicy(_ hash: String, _ policy: SeedPolicy) async {
         await perform { try await $0.set(hash, policy.torrentArguments) }
         updateRecord(hash) { $0.seedPolicy = policy }
-    }
-
-    /// Global speed limits in KB/s; nil removes the limit.
-    public func setSpeedLimits(downloadKBps: Int?, uploadKBps: Int?) async {
-        await perform {
-            try await $0.setSession([
-                "speed_limit_down_enabled": .bool(downloadKBps != nil),
-                "speed_limit_down": .number(Double(downloadKBps ?? 0)),
-                "speed_limit_up_enabled": .bool(uploadKBps != nil),
-                "speed_limit_up": .number(Double(uploadKBps ?? 0))
-            ])
-        }
     }
 
     /// Removes the torrent from the list. Files on disk are left untouched.

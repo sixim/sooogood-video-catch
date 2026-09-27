@@ -27,7 +27,7 @@ public struct EngineVersion: Comparable, Codable, Sendable, CustomStringConverti
     /// downloader and aria2c manifest execution issues.
     public static let minimumSupported = EngineVersion(year: 2026, month: 6, day: 9)
     /// Extractors go stale quickly; suggest an upgrade after this many days.
-    public static let staleAfterDays = 45
+    public static let staleAfterDays = 30
 
     public var description: String { String(format: "%04d.%02d.%02d", year, month, day) }
 

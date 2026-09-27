@@ -20,6 +20,7 @@ struct SettingsView: View {
                     header
 #if !MEDIAFETCH_STORE_PROFILE
                     DependencyStatusPanel()
+                    TorrentSettingsPanel()
                     ResolveSettingsPanel()
                     ShortcutSettingsPanel()
                     AgentSettingsPanelContainer()

@@ -621,6 +621,7 @@ public final class DownloaderService: ObservableObject {
             $0.updatedAt = Date()
             $0.errorMessage = nil
             $0.diagnosis = nil
+            $0.stage = .resolving
         }
         persistJobs()
 
@@ -722,6 +723,9 @@ public final class DownloaderService: ObservableObject {
         jobs[jobIndex].progressFraction = 1
         jobs[jobIndex].progressText = "100%"
         jobs[jobIndex].status = .packaging
+        jobs[jobIndex].stage = .verifying
+        jobs[jobIndex].speedText = nil
+        jobs[jobIndex].etaText = nil
         jobs[jobIndex].updatedAt = Date()
         jobs[jobIndex].completedFiles = completedFiles
         status = "正在计算 SHA-256 并生成清单…"
@@ -744,6 +748,7 @@ public final class DownloaderService: ObservableObject {
                     job: job, packageDirectory: packageDirectory, platform: platform,
                     mediaID: mediaID, selectedFormats: formats, ytDLPPath: ytDLPPath, ffmpegPath: ffmpeg
                 )
+                DispatchQueue.main.async { self?.updateJob(job.id) { $0.stage = .manifest } }
                 #if MEDIAFETCH_STORE_PROFILE
                 let exportedDirectory = try self?.packageExporter.export(
                     packageDirectory: packageDirectory,
@@ -776,6 +781,7 @@ public final class DownloaderService: ObservableObject {
                 DispatchQueue.main.async {
                     guard let self else { return }
                     self.updateJob(job.id) {
+                        $0.stage = nil
                         $0.status = .completed
                         $0.updatedAt = Date()
                         $0.manifestPath = finalManifest.path
@@ -856,6 +862,7 @@ public final class DownloaderService: ObservableObject {
                 $0.updatedAt = Date()
                 $0.errorMessage = message
                 $0.retryNote = nil
+                $0.stage = nil
             }
         }
         finishCurrentJobAndContinue()
@@ -885,11 +892,18 @@ public final class DownloaderService: ObservableObject {
                 updateJob(currentJobID) {
                     $0.progressFraction = parsed.fraction
                     $0.progressText = parsed.percentText
+                    $0.stage = .downloading
+                    $0.speedText = parsed.speedText.isEmpty ? nil : parsed.speedText
+                    $0.etaText = parsed.etaText.isEmpty ? nil : parsed.etaText
                 }
             }
             return
         }
-        if line.hasPrefix("MF_POSTPROCESS|") { status = "下载完成，正在无损封装…"; return }
+        if line.hasPrefix("MF_POSTPROCESS|") {
+            status = "下载完成，正在无损封装…"
+            if let currentJobID { updateJob(currentJobID) { $0.stage = .merging; $0.etaText = nil } }
+            return
+        }
         if line.hasPrefix("MF_FILE|") {
             let path = String(line.dropFirst("MF_FILE|".count))
             if !completedFiles.contains(path) { completedFiles.append(path) }

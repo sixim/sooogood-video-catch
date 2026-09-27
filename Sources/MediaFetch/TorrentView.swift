@@ -291,7 +291,7 @@ struct TorrentView: View {
     }
 }
 
-private struct TorrentRow: View {
+struct TorrentRow: View {
     let snapshot: TorrentSnapshot
     let record: TorrentRecord?
     let onSelectFiles: () -> Void
@@ -430,37 +430,40 @@ struct CopyableCommand: View {
 #endif
 
 #if !MEDIAFETCH_STORE_PROFILE
-/// Compact Torrent status on the task page, so every engine's work is visible in one place.
-struct TorrentSummaryCard: View {
+/// Torrent section of the task page: the same rows as the Torrent page.
+struct TorrentTaskList: View {
     @EnvironmentObject private var service: TorrentService
     let openTorrent: () -> Void
 
     var body: some View {
-        if !service.torrents.isEmpty {
-            Button(action: openTorrent) {
-                HStack(spacing: 12) {
-                    Image(systemName: "point.3.connected.trianglepath.dotted")
-                        .foregroundStyle(MediaFetchTheme.torrentAccent)
-                    Text("Torrent").font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
-                    Text(summary).font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText)
-                    Spacer()
-                    Image(systemName: "chevron.right").foregroundStyle(MediaFetchTheme.secondaryText)
+        LazyVStack(spacing: 12) {
+            if service.torrents.isEmpty {
+                VStack(spacing: 10) {
+                    Text(service.engineStatus == .idle ? "Torrent 引擎尚未启动" : "还没有 Torrent 任务")
+                        .foregroundStyle(MediaFetchTheme.secondaryText)
+                    Button("打开 Torrent 页", action: openTorrent).buttonStyle(.bordered)
                 }
-                .padding(14)
-                .background(MediaFetchTheme.surface, in: RoundedRectangle(cornerRadius: 14))
+                .frame(maxWidth: .infinity, minHeight: 200)
             }
-            .buttonStyle(.plain)
+            ForEach(service.torrents) { snapshot in
+                TorrentRow(
+                    snapshot: snapshot,
+                    record: service.record(for: snapshot.hash),
+                    onSelectFiles: openTorrent,
+                    onPause: { Task { await service.pause(snapshot.hash) } },
+                    onResume: { Task { await service.resume(snapshot.hash) } },
+                    onSequential: { value in Task { await service.setSequential(snapshot.hash, value) } },
+                    onReveal: { NSWorkspace.shared.activateFileViewerSelecting([service.contentURL(for: snapshot)]) },
+                    onRemove: { Task { await service.removeKeepingFiles(snapshot.hash) } }
+                )
+            }
         }
+        .onAppear { service.isObserved = true }
+        .onDisappear { service.isObserved = false }
     }
 
-    private var summary: String {
-        let downloading = service.torrents.filter { $0.state == .downloading }
-        let seeding = service.torrents.filter { $0.state == .seeding }.count
-        let rate = downloading.reduce(Int64(0)) { $0 + $1.downloadRate }
-        var parts = ["\(service.torrents.count) 个任务"]
-        if !downloading.isEmpty { parts.append("\(downloading.count) 个下载中 ↓ " + ByteCountFormatter.string(fromByteCount: rate, countStyle: .file) + "/s") }
-        if seeding > 0 { parts.append("\(seeding) 个做种") }
-        return parts.joined(separator: " · ")
+    static func activeCount(_ service: TorrentService) -> Int {
+        service.torrents.filter { $0.state == .downloading || !$0.hasMetadata }.count
     }
 }
 #endif

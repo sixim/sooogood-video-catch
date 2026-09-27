@@ -14,12 +14,20 @@ public final class TransmissionDaemon: @unchecked Sendable {
         public var configDirectory: URL
         public var downloadDirectory: URL
         public var portForwarding: Bool
+        /// When true the daemon is launched without the watchdog so it keeps
+        /// seeding after the app quits; the next launch adopts it via Keychain.
+        public var keepRunningAfterAppQuits: Bool
+        public var credentials: TorrentCredentialStoring
 
-        public init(executable: URL, configDirectory: URL, downloadDirectory: URL, portForwarding: Bool = true) {
+        public init(executable: URL, configDirectory: URL, downloadDirectory: URL, portForwarding: Bool = true,
+                    keepRunningAfterAppQuits: Bool = false,
+                    credentials: TorrentCredentialStoring = InMemoryTorrentCredentialStore()) {
             self.executable = executable
             self.configDirectory = configDirectory
             self.downloadDirectory = downloadDirectory
             self.portForwarding = portForwarding
+            self.keepRunningAfterAppQuits = keepRunningAfterAppQuits
+            self.credentials = credentials
         }
     }
 
@@ -35,8 +43,10 @@ public final class TransmissionDaemon: @unchecked Sendable {
             .appendingPathComponent("transmission", isDirectory: true)
     }
 
-    private let configuration: Configuration
+    private var configuration: Configuration
     private var process: Process?
+    /// True when this app session attached to a daemon started by an earlier session.
+    public private(set) var adoptedExisting = false
     private let lock = NSLock()
 
     public init(configuration: Configuration) {
@@ -53,21 +63,34 @@ public final class TransmissionDaemon: @unchecked Sendable {
         let dir = configuration.configDirectory
         try manager.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
+        // A daemon left seeding by the previous session: adopt it instead of restarting.
+        if let saved = configuration.credentials.load() {
+            let client = TransmissionRPCClient(endpoint: saved.endpoint, session: session)
+            if (try? await client.version()) != nil {
+                adoptedExisting = true
+                return client
+            }
+        }
         terminateStaleDaemon()
 
         let port = try Self.freeLoopbackPort()
         let username = "mediafetch"
         let password = Self.randomSecret()
         try writeSettings(port: port, username: username, password: password)
+        configuration.credentials.save(TorrentRPCCredentials(port: port, username: username, password: password))
 
         let task = Process()
-        // A small sh watchdog owns the daemon: if the app dies (crash, force quit,
-        // SIGKILL) the daemon is stopped too instead of seeding on as an orphan.
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", Self.watchdogScript, "mediafetch-transmission",
-                          configuration.executable.path,
-                          "--foreground", "--config-dir", dir.path,
-                          "--log-level=warn", "--logfile", dir.appendingPathComponent("daemon.log").path]
+        let daemonArguments = ["--foreground", "--config-dir", dir.path,
+                               "--log-level=warn", "--logfile", dir.appendingPathComponent("daemon.log").path]
+        if configuration.keepRunningAfterAppQuits {
+            task.executableURL = configuration.executable
+            task.arguments = daemonArguments
+        } else {
+            // A small sh watchdog owns the daemon: if the app dies (crash, force quit,
+            // SIGKILL) the daemon is stopped too instead of seeding on as an orphan.
+            task.executableURL = URL(fileURLWithPath: "/bin/sh")
+            task.arguments = ["-c", Self.watchdogScript, "mediafetch-transmission", configuration.executable.path] + daemonArguments
+        }
         task.standardOutput = FileHandle.nullDevice
         task.standardError = FileHandle.nullDevice
         do { try task.run() } catch { throw TorrentError.engineFailedToStart(error.localizedDescription) }
@@ -88,6 +111,12 @@ public final class TransmissionDaemon: @unchecked Sendable {
         throw TorrentError.engineFailedToStart("RPC 在 10 秒内没有响应")
     }
 
+    /// Quits the daemon unless the user chose to keep seeding after quit.
+    public func stopForAppQuit(keepSeeding: Bool) {
+        if keepSeeding { return }
+        stop()
+    }
+
     /// SIGTERM lets the daemon flush resume files before exiting.
     public func stop() {
         let task: Process? = lock.withLock {
@@ -95,7 +124,12 @@ public final class TransmissionDaemon: @unchecked Sendable {
             process = nil
             return current
         }
-        guard let task, task.isRunning else { return }
+        configuration.credentials.clear()
+        guard let task, task.isRunning else {
+            // Adopted daemon from an earlier session: stop it through its pid file.
+            if adoptedExisting { terminateStaleDaemon(); adoptedExisting = false }
+            return
+        }
         task.terminate()
         let deadline = Date().addingTimeInterval(5)
         while task.isRunning && Date() < deadline { usleep(50_000) }

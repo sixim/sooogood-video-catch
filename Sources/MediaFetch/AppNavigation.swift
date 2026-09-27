@@ -57,6 +57,7 @@ struct ContentView: View {
             }
             agentHost.configure(bridge: AgentControlBridge(
                 downloader: downloader, torrents: torrents, tools: tools, resolve: resolve, logins: streamingLogins))
+            torrents.sessionSettings = TorrentPreferences.sessionSettings
             GlobalHotKey.shared.onTrigger = handleHotKey
             GlobalHotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: GlobalHotKey.preferenceKey))
             downloader.inAppCookieProvider = { url in
@@ -69,10 +70,11 @@ struct ContentView: View {
         .environmentObject(resolve)
         .environmentObject(torrents)
         .environmentObject(agentHost)
+        .environmentObject(tools)
         .onReceive(downloader.$jobs) { jobs in autoSendToResolve(jobs) }
         .onOpenURL(perform: handleOpenURL)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-            torrents.shutdown()
+            torrents.shutdown(keepSeeding: UserDefaults.standard.bool(forKey: TorrentService.keepSeedingKey))
             agentHost.stop()
         }
 #endif

@@ -256,7 +256,7 @@ struct ToolsView: View {
     }
 }
 
-private struct ToolJobRow: View {
+struct ToolJobRow: View {
     let job: ToolJob
     let onCancel: () -> Void
 
@@ -320,6 +320,27 @@ private struct ToolJobRow: View {
         case .running: return MediaFetchTheme.toolsAccent
         case .completed: return MediaFetchTheme.success
         case .failed: return MediaFetchTheme.danger
+        }
+    }
+}
+
+/// Processing section of the task page.
+struct ToolTaskList: View {
+    @EnvironmentObject private var service: ToolService
+    let openTools: () -> Void
+
+    var body: some View {
+        LazyVStack(spacing: 10) {
+            if service.jobs.isEmpty {
+                VStack(spacing: 10) {
+                    Text("还没有处理任务").foregroundStyle(MediaFetchTheme.secondaryText)
+                    Button("打开工具箱", action: openTools).buttonStyle(.bordered)
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+            }
+            ForEach(service.jobs.reversed()) { job in
+                ToolJobRow(job: job, onCancel: { service.cancel(job.id) })
+            }
         }
     }
 }

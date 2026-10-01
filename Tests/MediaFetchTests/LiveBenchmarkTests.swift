@@ -1,6 +1,7 @@
 #if !MEDIAFETCH_STORE_PROFILE
 import XCTest
 @testable import MediaFetchCore
+@testable import MediaFetchMusic
 @testable import MediaFetchTools
 @testable import MediaFetchTorrent
 @testable import MediaFetchVideo
@@ -330,6 +331,31 @@ final class LiveBenchmarkTests: XCTestCase {
         let manifest = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: URL(fileURLWithPath: job.manifestPath!)))
         let recorded = manifest["files"]?.arrayValue?.first { ($0["relativePath"]?.stringValue ?? "").hasSuffix(".mp3") }?["sha256"]?.stringValue
         XCTAssertEqual(recorded, try ManifestWriter.sha256(URL(fileURLWithPath: audio)))
+    }
+
+    /// Index the downloaded music: first scan vs cached rescan, and a match.
+    func testLocalIndexOnDownloadedMusic() throws {
+        guard environment["MF_LIVE_NETWORK"] == "1", let base = environment["MF_LIVE_DIR"] else { throw XCTSkip("live benchmark disabled") }
+        let root = URL(fileURLWithPath: base)
+        let cacheURL = root.appendingPathComponent("index-cache-\(UUID().uuidString).json")
+        func scan() throws -> (Int, TimeInterval, Int) {
+            var scanner = LocalAudioScanner(toolchain: .local())
+            let cache = AudioMetadataCache(url: cacheURL)
+            scanner.cache = cache
+            let started = Date()
+            let found = try scanner.scan(directory: root)
+            return (found.count, Date().timeIntervalSince(started), cache.hits)
+        }
+        let first = try scan()
+        let second = try scan()
+        report(String(format: "library scan: %d files, first %.2f s (cache hits %d), rescan %.2f s (cache hits %d)",
+                      first.0, first.1, first.2, second.1, second.2))
+        XCTAssertEqual(second.2, second.0, "every unchanged file comes from the cache")
+        let index = LocalMusicIndex(items: LocalMusicIndex.manifestItems(under: root))
+        let match = index.match(platform: "netease", mediaID: "1973665667", title: "海屿你", artists: ["马也_Crabbit"], durationSeconds: 295)
+        report("index: \(index.items.count) packages; 海屿你 → \(match.map { $0.isExact ? "本地已有" : "可能已有" } ?? "未找到")")
+        XCTAssertEqual(match?.isExact, true)
+        try? FileManager.default.removeItem(at: cacheURL)
     }
 }
 #endif

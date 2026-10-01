@@ -26,6 +26,8 @@ public struct LocalAudioScanner: Sendable {
 
     public let ffprobePath: String
     public let processEnvironment: [String: String]
+    /// Optional probe cache; unchanged files skip ffprobe.
+    public var cache: AudioMetadataCache?
 
     public init(
         ffprobePath: String? = nil,
@@ -114,12 +116,17 @@ public struct LocalAudioScanner: Sendable {
 
             scannedCount += 1
             progress?(scannedCount, canonicalURL)
-            candidates.append(probeOrFallback(canonicalURL))
+            if let cache {
+                candidates.append(cache.candidate(for: canonicalURL) { probeOrFallback(canonicalURL) })
+            } else {
+                candidates.append(probeOrFallback(canonicalURL))
+            }
         }
 
         if let enumerationError, candidates.isEmpty {
             throw ScannerError.enumerationFailed(enumerationError.localizedDescription)
         }
+        cache?.save()
         return candidates.sorted {
             $0.url.path.localizedStandardCompare($1.url.path) == .orderedAscending
         }

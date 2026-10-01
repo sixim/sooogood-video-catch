@@ -1,6 +1,7 @@
 #if !MEDIAFETCH_STORE_PROFILE
 import Foundation
 import MediaFetchCore
+import MediaFetchMusic
 import MediaFetchVideo
 
 /// State of the music download page: resolve a link, list tracks, probe each
@@ -28,6 +29,12 @@ final class MusicDownloadModel: ObservableObject {
     @Published var probes: [String: Probe] = [:]
     @Published var selected: Set<String> = []
     @Published var sourceURL: URL?
+    /// Tracks already on disk (by entry id), from the local music index.
+    @Published var localMatches: [String: LocalMusicIndex.Match] = [:]
+    @Published var singleLocalMatch: LocalMusicIndex.Match?
+    @Published var indexSummary: String?
+    private var index: LocalMusicIndex?
+    private var indexTask: Task<LocalMusicIndex, Never>?
 
     static let autoProbeLimit = 40
     private let maxConcurrentProbes = 3
@@ -58,6 +65,9 @@ final class MusicDownloadModel: ObservableObject {
         probeQueue = []
         probes = [:]
         selected = []
+        localMatches = [:]
+        singleLocalMatch = nil
+        loadIndexIfNeeded()
         phase = .resolving
         Task {
             let expanded = await MusicLinkResolver().resolveShortLinks(in: text)
@@ -76,6 +86,9 @@ final class MusicDownloadModel: ObservableObject {
                 } else {
                     let track = try await downloader.inspectMusic(url, cookieSource: session.cookieSource, usesInAppLogin: session.inApp)
                     phase = .single(url: url.absoluteString, track: track)
+                    let index = await indexTask?.value
+                    singleLocalMatch = index?.match(platform: MusicLink.parse(url)?.platform.extractorFamily, mediaID: track.id,
+                                                    title: track.title, artists: track.artists, durationSeconds: track.duration)
                 }
             } catch {
                 phase = .failed(error.localizedDescription)
@@ -123,10 +136,50 @@ final class MusicDownloadModel: ObservableObject {
         probes[entry.id] = .loading
         let session = session(for: url)
         do {
-            probes[entry.id] = .loaded(try await downloader.inspectMusic(url, cookieSource: session.cookieSource, usesInAppLogin: session.inApp))
+            let track = try await downloader.inspectMusic(url, cookieSource: session.cookieSource, usesInAppLogin: session.inApp)
+            probes[entry.id] = .loaded(track)
+            if let index = await indexTask?.value,
+               let match = index.match(platform: MusicLink.parse(url)?.platform.extractorFamily, mediaID: track.id,
+                                       title: track.title, artists: track.artists, durationSeconds: track.duration) {
+                // Already on disk: flag it and leave it out of the default selection.
+                if localMatches[entry.id] == nil { selected.remove(entry.id) }
+                localMatches[entry.id] = match
+            }
         } catch {
             probes[entry.id] = .failed(error.localizedDescription)
         }
+    }
+
+    // MARK: Local index
+
+    /// Indexes the music folder once per page: package manifests (exact) plus
+    /// audio tags read through the shared probe cache (fast on rescans).
+    func loadIndexIfNeeded(root: URL = MusicPreferences.destination) {
+        guard indexTask == nil else { return }
+        indexTask = Task.detached(priority: .utility) {
+            var items = LocalMusicIndex.manifestItems(under: root)
+            let toolchain = AudioToolchain.local()
+            if toolchain.ffprobeURL != nil, FileManager.default.fileExists(atPath: root.path) {
+                var scanner = LocalAudioScanner(toolchain: toolchain)
+                scanner.cache = AudioMetadataCache()
+                let tagged = (try? scanner.scan(directory: root)) ?? []
+                items += tagged.filter { !$0.titleWasFilenameFallback }.map {
+                    LocalMusicIndex.Item(path: $0.url.path, platform: nil, mediaID: nil, title: $0.title, artists: $0.artists,
+                                         durationSeconds: $0.durationMS.map { Double($0) / 1000 })
+                }
+            }
+            return LocalMusicIndex(items: items)
+        }
+        Task {
+            let index = await indexTask?.value
+            self.index = index
+            indexSummary = index.map { "本地音乐库：\($0.items.count) 条记录" }
+        }
+    }
+
+    func refreshIndex() {
+        indexTask = nil
+        loadIndexIfNeeded()
     }
 
     // MARK: Selection

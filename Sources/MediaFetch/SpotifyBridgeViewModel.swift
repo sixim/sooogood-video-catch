@@ -141,7 +141,12 @@ final class SpotifyBridgeViewModel: ObservableObject {
     private var authClient: SpotifyAuthClient?
     private var apiClient: SpotifyAPIClient?
 
+    /// Shared probe cache; previews keep it in memory so they never write files.
+    private lazy var metadataCache = AudioMetadataCache(url: allowsMetadataCachePersistence ? AudioMetadataCache.defaultURL : nil)
+    private var allowsMetadataCachePersistence = true
+
     init(restoresConnection: Bool = true, allowsPersistence: Bool = true) {
+        allowsMetadataCachePersistence = allowsPersistence
         self.allowsPersistence = allowsPersistence
         clientID = restoresConnection
             ? UserDefaults.standard.string(forKey: Self.clientIDDefaultsKey) ?? ""
@@ -391,12 +396,13 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
         do {
 #if MEDIAFETCH_STORE_PROFILE
-            let scanner = NativeAudioScanner()
+            let scanner = NativeAudioScanner(cache: metadataCache)
             let candidates = try await Task.detached(priority: .userInitiated) {
                 try await scanner.scan(directory: directory)
             }.value
 #else
-            let scanner = LocalAudioScanner(toolchain: audioToolchain)
+            var scanner = LocalAudioScanner(toolchain: audioToolchain)
+            scanner.cache = metadataCache
             let candidates = try await Task.detached(priority: .userInitiated) {
                 try scanner.scan(directory: directory)
             }.value

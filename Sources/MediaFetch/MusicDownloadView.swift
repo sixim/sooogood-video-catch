@@ -121,6 +121,9 @@ struct MusicDownloadView: View {
             }
             .frame(width: 260)
             Spacer()
+            if let summary = model.indexSummary {
+                Button(summary) { model.refreshIndex() }.buttonStyle(.link).help("点击重新索引本地音乐")
+            }
             Label(destination.path, systemImage: "folder").lineLimit(1).truncationMode(.middle).frame(maxWidth: 280, alignment: .trailing)
             Button("更改…", action: chooseDestination).buttonStyle(.link)
         }
@@ -180,6 +183,7 @@ struct MusicDownloadView: View {
                             if track.hasLyrics { Text("歌词").font(.caption2).padding(.horizontal, 6).padding(.vertical, 2).background(.quaternary, in: Capsule()) }
                         }
                         expectationLine(track)
+                        if let match = model.singleLocalMatch { localBanner(match) }
                     }
                     Spacer()
                     if let duration = track.duration { Text(CollectionSheet.format(duration)).font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText) }
@@ -197,6 +201,7 @@ struct MusicDownloadView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(outline.title.isEmpty ? outline.id : outline.title).font(.title3.bold()).foregroundStyle(MediaFetchTheme.primaryText)
                         Text("\(outline.entries.count) 首 · 已选 \(model.selected.count) · 已检测音质 \(probed)" +
+                             (model.localMatches.isEmpty ? "" : " · 本地已有 \(model.localMatches.count)（默认不选）") +
                              (outline.unavailableCount > 0 ? " · \(outline.unavailableCount) 首当前账号不可见" : ""))
                             .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
@@ -241,6 +246,14 @@ struct MusicDownloadView: View {
                     .font(.caption).lineLimit(1).foregroundStyle(MediaFetchTheme.secondaryText)
             }
             Spacer()
+            if let match = model.localMatches[entry.id] {
+                Text(match.isExact ? "本地已有" : "本地可能已有")
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(MediaFetchTheme.success.opacity(0.18), in: Capsule())
+                    .foregroundStyle(MediaFetchTheme.success)
+                    .help(match.path)
+            }
             switch probe {
             case .pending:
                 Button("检测") { model.probe([entry]) }.buttonStyle(.link).font(.caption)
@@ -265,6 +278,15 @@ struct MusicDownloadView: View {
                 .font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText).frame(width: 48, alignment: .trailing)
         }
         .padding(.vertical, 2)
+    }
+
+    private func localBanner(_ match: LocalMusicIndex.Match) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.seal.fill").foregroundStyle(MediaFetchTheme.success)
+            Text(match.isExact ? "本地已有这首歌" : "本地可能已有（歌名、歌手、时长一致）")
+            Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: match.path)]) }.buttonStyle(.link)
+        }
+        .font(.caption)
     }
 
     private func expectationLine(_ track: MusicTrackInfo) -> some View {

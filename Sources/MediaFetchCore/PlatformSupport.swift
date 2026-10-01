@@ -110,6 +110,18 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         .youtube, .vimeo, .bilibili, .youku, .udemy, .netease, .qqmusic
     ]
 
+    /// yt-dlp extractor family, as recorded in package manifests (`netease:song` → `netease`).
+    public var extractorFamily: String? {
+        switch self {
+        case .netease: return "netease"
+        case .qqmusic: return "qqmusic"
+        case .youtube: return "youtube"
+        case .bilibili: return "bilibili"
+        case .vimeo: return "vimeo"
+        default: return nil
+        }
+    }
+
     /// Music services whose items are audio tracks rather than videos.
     public var isMusicService: Bool { self == .netease || self == .qqmusic }
 

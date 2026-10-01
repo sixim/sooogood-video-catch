@@ -369,6 +369,18 @@ struct MusicBridgeView: View {
                         }
                     }
                     Spacer()
+#if !MEDIAFETCH_STORE_PROFILE
+                    if FileManager.default.fileExists(atPath: MusicPreferences.destination.path) {
+                        Button {
+                            Task { await viewModel.scanSourceFolder(MusicPreferences.destination) }
+                        } label: {
+                            Label("使用音乐下载文件夹", systemImage: "arrow.down.circle")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(viewModel.phase.isBusy)
+                        .help(MusicPreferences.destination.path)
+                    }
+#endif
                     Button {
                         chooseSourceFolder()
                     } label: {

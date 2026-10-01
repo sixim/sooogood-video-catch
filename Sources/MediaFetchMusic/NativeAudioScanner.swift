@@ -21,7 +21,12 @@ public struct NativeAudioScanner: Sendable {
         }
     }
 
-    public init() {}
+    /// Optional probe cache; unchanged files skip AVFoundation loading.
+    public var cache: AudioMetadataCache?
+
+    public init(cache: AudioMetadataCache? = nil) {
+        self.cache = cache
+    }
 
     public func scan(
         directory: URL,
@@ -33,8 +38,15 @@ public struct NativeAudioScanner: Sendable {
         for (index, url) in urls.enumerated() {
             try Task.checkCancellation()
             progress?(index + 1, url)
-            candidates.append(await probeOrFallback(url))
+            if let hit = cache?.cached(for: url) {
+                candidates.append(hit)
+            } else {
+                let fresh = await probeOrFallback(url)
+                cache?.store(fresh, for: url)
+                candidates.append(fresh)
+            }
         }
+        cache?.save()
         return candidates
     }
 

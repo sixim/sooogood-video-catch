@@ -129,7 +129,7 @@ public enum YtDLPArgumentBuilder {
 
         if job.musicQuality != nil {
             let layout = job.musicLayout ?? (job.collection == nil ? .flat : .collection)
-            arguments += ["--output", layout.outputTemplate(collection: job.collection)]
+            arguments += ["--output", layout.outputTemplate(collection: job.collection, custom: job.musicNameTemplate)]
             arguments += musicArguments
         } else if let collection = job.collection {
             arguments += ["--output", CollectionPaths.outputTemplate(for: collection, separateStreams: job.profile == .sourceStreams)]

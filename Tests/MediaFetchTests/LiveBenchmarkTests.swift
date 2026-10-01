@@ -298,5 +298,38 @@ final class LiveBenchmarkTests: XCTestCase {
         XCTAssertEqual(job.attempts ?? 1, 1, "no pointless retries")
         XCTAssertTrue(job.errorMessage?.contains("只要无损") == true)
     }
+
+    /// Custom template + embedded lyrics on a real NetEase track.
+    @MainActor
+    func testMusicLyricsAndCustomTemplate() async throws {
+        let dir = try liveDirectory("tags-\(Int(Date().timeIntervalSince1970))")
+        let downloader = DownloaderService(jobs: [], toolchain: .local(), historyWriter: { _ in })
+        let started = Date()
+        downloader.enqueueMusic([("https://music.163.com/song?id=1973665667", "x", nil)], quality: .best, layout: .custom,
+                                destination: dir, cookieSource: nil, usesInAppLogin: false, nameTemplate: "{artist}/{title}")
+        while Date().timeIntervalSince(started) < 120, downloader.jobs.contains(where: { ![.completed, .failed].contains($0.status) }) {
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        let job = try XCTUnwrap(downloader.jobs.first)
+        XCTAssertEqual(job.status, .completed, job.errorMessage ?? "")
+        let audio = try XCTUnwrap(job.completedFiles.first { $0.hasSuffix(".mp3") })
+        report("custom template path: \(audio.replacingOccurrences(of: dir.path + "/", with: ""))")
+        let probe = Process(); let pipe = Pipe()
+        probe.executableURL = URL(fileURLWithPath: "/opt/homebrew/bin/ffprobe")
+        probe.arguments = ["-v", "error", "-show_entries", "format_tags", "-of", "json", audio]
+        probe.standardOutput = pipe
+        try probe.run()
+        let tags = try JSONDecoder().decode(JSONValue.self, from: pipe.fileHandleForReading.readDataToEndOfFile())["format"]?["tags"]?.objectValue ?? [:]
+        probe.waitUntilExit()
+        let lyrics = tags.first { $0.key.lowercased().hasPrefix("lyrics") }?.value.stringValue ?? ""
+        report("embedded lyrics: \(lyrics.split(separator: "\n").prefix(2).joined(separator: " / ")) (\(lyrics.split(separator: "\n").count) lines); title=\(tags["title"]?.stringValue ?? "-") artist=\(tags["artist"]?.stringValue ?? "-")")
+        XCTAssertFalse(lyrics.isEmpty)
+        XCTAssertFalse(lyrics.contains("[00:"), "plain text, timestamps stripped")
+        XCTAssertEqual(audio.replacingOccurrences(of: dir.path + "/", with: "").split(separator: "/").count, 3)
+        // Manifest hash is of the final (tagged) file.
+        let manifest = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: URL(fileURLWithPath: job.manifestPath!)))
+        let recorded = manifest["files"]?.arrayValue?.first { ($0["relativePath"]?.stringValue ?? "").hasSuffix(".mp3") }?["sha256"]?.stringValue
+        XCTAssertEqual(recorded, try ManifestWriter.sha256(URL(fileURLWithPath: audio)))
+    }
 }
 #endif

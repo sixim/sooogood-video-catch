@@ -454,7 +454,7 @@ public final class DownloaderService: ObservableObject {
     public func enqueueMusic(
         _ items: [(url: String, title: String?, collection: CollectionContext?)],
         quality: MusicQualityPreference, layout: MusicLayout, destination: URL,
-        cookieSource: BrowserCookieSource?, usesInAppLogin: Bool
+        cookieSource: BrowserCookieSource?, usesInAppLogin: Bool, nameTemplate: String? = nil
     ) -> Int {
         guard ytDLPPath != nil else {
             errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
@@ -475,6 +475,7 @@ public final class DownloaderService: ObservableObject {
             job.collection = item.collection
             job.musicQuality = quality
             job.musicLayout = layout
+            job.musicNameTemplate = layout == .custom ? nameTemplate : nil
             jobs.append(job)
         }
         persistJobs()
@@ -805,6 +806,11 @@ public final class DownloaderService: ObservableObject {
         let environment = toolchain.processEnvironment
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
+                if job.musicQuality != nil, let audio = audioFiles.first,
+                   let lrc = (try? FileManager.default.contentsOfDirectory(at: audio.deletingLastPathComponent(), includingPropertiesForKeys: nil))?
+                       .first(where: { $0.pathExtension.lowercased() == "lrc" }) {
+                    MusicTagger.embedLyrics(audio: audio, lrc: lrc, ffmpeg: ffmpeg.map(URL.init(fileURLWithPath:)), environment: environment)
+                }
                 if job.musicQuality != nil, let audio = audioFiles.first, let ffprobe,
                    FileManager.default.isExecutableFile(atPath: ffprobe.path) {
                     let probe = ProcessRunner.run(ffprobe, ["-v", "error", "-of", "json", "-show_format", "-show_streams", audio.path],
@@ -839,7 +845,7 @@ public final class DownloaderService: ObservableObject {
                 }
                 #endif
                 #if !MEDIAFETCH_STORE_PROFILE
-                if let collection = job.collection {
+                if let collection = job.collection, job.musicLayout != .custom {
                     try? CollectionManifestWriter.record(
                         destination: URL(fileURLWithPath: job.destinationPath, isDirectory: true), context: collection,
                         sourceURL: job.sourceURL, title: job.title, status: .completed, packageManifest: finalManifest)
@@ -910,7 +916,8 @@ public final class DownloaderService: ObservableObject {
     private func failCurrentJob(_ message: String) {
         if let currentJobID { attemptStates[currentJobID] = nil }
         #if !MEDIAFETCH_STORE_PROFILE
-        if let currentJobID, let job = jobs.first(where: { $0.id == currentJobID }), let collection = job.collection {
+        if let currentJobID, let job = jobs.first(where: { $0.id == currentJobID }), let collection = job.collection,
+           job.musicLayout != .custom {
             let drm = job.diagnosis?.cause == .drmProtected || message.contains("DRM")
             try? CollectionManifestWriter.record(
                 destination: URL(fileURLWithPath: job.destinationPath, isDirectory: true), context: collection,

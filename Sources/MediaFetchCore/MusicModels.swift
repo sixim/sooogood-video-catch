@@ -151,6 +151,7 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
     case artistAlbum
     case flat
     case collection
+    case custom
 
     public var id: String { rawValue }
 
@@ -159,12 +160,14 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
         case .artistAlbum: return "歌手 / 专辑 / 歌曲"
         case .flat: return "歌手 - 歌曲（平铺）"
         case .collection: return "按歌单顺序"
+        case .custom: return "自定义模板"
         }
     }
 
     /// yt-dlp output template. Metadata fields are sanitized by yt-dlp; our own
     /// folder names (collection) go through `CollectionPaths.safeComponent`.
-    public func outputTemplate(collection: CollectionContext?) -> String {
+    public func outputTemplate(collection: CollectionContext?, custom: String? = nil) -> String {
+        if self == .custom { return MusicNameTemplate(custom ?? MusicNameTemplate.defaultTemplate).ytDLPTemplate(collection: collection) }
         let artist = "%(creators.0,artists.0,artist,album_artists.0,uploader|未知歌手).80B"
         let album = "%(album|未知专辑).80B"
         let track = "\(artist) - %(title).120B [%(id)s]"
@@ -172,6 +175,8 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
         case .artistAlbum:
             return "\(artist)/\(album)/\(track)/\(track).%(ext)s"
         case .flat:
+            return "\(track)/\(track).%(ext)s"
+        case .custom:
             return "\(track)/\(track).%(ext)s"
         case .collection:
             guard let collection else { return "\(track)/\(track).%(ext)s" }
@@ -225,5 +230,60 @@ public struct AudioQualityReport: Codable, Equatable, Sendable {
         return AudioQualityReport(codec: codec, sampleRate: sampleRate, bitsPerSample: bits, bitrate: bitrate,
                                   channels: int(stream["channels"]), durationSeconds: duration,
                                   tier: tier, expectedTier: expectedTier)
+    }
+}
+
+/// User file-name template with `{artist}` `{album}` `{title}` `{id}` `{index}`
+/// tokens and `/` for folders. Literal text is escaped for yt-dlp, `..` and
+/// empty segments are dropped, and the track id is always kept in the last
+/// segment so two songs with the same title never collide.
+public struct MusicNameTemplate: Equatable, Sendable {
+    public static let defaultTemplate = "{artist}/{album}/{artist} - {title}"
+    public static let tokens = ["artist", "album", "title", "id", "index"]
+
+    public let raw: String
+
+    public init(_ raw: String) { self.raw = raw }
+
+    var segments: [String] {
+        raw.split(separator: "/").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && $0 != "." && $0 != ".." }
+    }
+
+    public func ytDLPTemplate(collection: CollectionContext?) -> String {
+        var parts = segments.isEmpty ? MusicNameTemplate(Self.defaultTemplate).segments : segments
+        if !(parts.last ?? "").contains("{id}") { parts[parts.count - 1] += " [{id}]" }
+        let index = collection.map { String(format: "%03d", $0.index) } ?? "%(playlist_index|0)03d"
+        let fields: [String: String] = [
+            "artist": "%(creators.0,artists.0,artist,album_artists.0,uploader|未知歌手).80B",
+            "album": "%(album|未知专辑).80B",
+            "title": "%(title).120B",
+            "id": "%(id)s",
+            "index": index
+        ]
+        let converted = parts.map { segment -> String in
+            var output = ""
+            var rest = Substring(segment.replacingOccurrences(of: "%", with: "%%"))
+            while let open = rest.firstIndex(of: "{") {
+                output += rest[..<open]
+                guard let close = rest[open...].firstIndex(of: "}") else { output += rest[open...]; rest = ""; break }
+                let name = String(rest[rest.index(after: open)..<close])
+                output += fields[name] ?? "{\(name)}"
+                rest = rest[rest.index(after: close)...]
+            }
+            return output + rest
+        }
+        let leaf = converted.last!
+        return (converted + ["\(leaf).%(ext)s"]).joined(separator: "/")
+    }
+
+    /// Example path for the settings preview.
+    public func preview() -> String {
+        var parts = segments.isEmpty ? MusicNameTemplate(Self.defaultTemplate).segments : segments
+        if !(parts.last ?? "").contains("{id}") { parts[parts.count - 1] += " [{id}]" }
+        let sample = ["artist": "周杰伦", "album": "叶惠美", "title": "晴天", "id": "0039MnYb0qxYhV", "index": "001"]
+        var text = parts.joined(separator: "/")
+        for (key, value) in sample { text = text.replacingOccurrences(of: "{\(key)}", with: value) }
+        return text + "/" + (text.split(separator: "/").last.map(String.init) ?? "") + ".flac"
     }
 }

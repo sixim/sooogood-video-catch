@@ -8,6 +8,7 @@ enum MusicPreferences {
     static let qualityKey = "MediaFetch.music.quality"
     static let layoutKey = "MediaFetch.music.layout"
     static let destinationKey = "MediaFetch.music.destination"
+    static let templateKey = "MediaFetch.music.nameTemplate"
 
     static var destination: URL {
         if let path = UserDefaults.standard.string(forKey: destinationKey) { return URL(fileURLWithPath: path, isDirectory: true) }
@@ -31,6 +32,7 @@ struct MusicDownloadView: View {
     @State private var destination = MusicPreferences.destination
     @AppStorage(MusicPreferences.qualityKey) private var qualityRaw = MusicQualityPreference.best.rawValue
     @AppStorage(MusicPreferences.layoutKey) private var layoutRaw = MusicLayout.artistAlbum.rawValue
+    @AppStorage(MusicPreferences.templateKey) private var nameTemplate = MusicNameTemplate.defaultTemplate
 
     init(downloader: DownloaderService, logins: StreamingSiteLoginStore, onBack: @escaping () -> Void,
          intake: IntakeCoordinator? = nil, openSettings: @escaping () -> Void = {}) {
@@ -54,6 +56,7 @@ struct MusicDownloadView: View {
                     header
                     inputPanel
                     optionsBar
+                    if layout == .custom { templateEditor }
                     content
                     recentJobs
                 }
@@ -123,6 +126,19 @@ struct MusicDownloadView: View {
         }
         .font(.caption)
         .foregroundStyle(MediaFetchTheme.secondaryText)
+    }
+
+    private var templateEditor: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("文件名模板").font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
+                TextField(MusicNameTemplate.defaultTemplate, text: $nameTemplate)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.caption.monospaced())
+            }
+            Text("可用：{artist} {album} {title} {id} {index}，用 / 分隔文件夹 · 示例：\(MusicNameTemplate(nameTemplate).preview())")
+                .font(.caption2).foregroundStyle(MediaFetchTheme.secondaryText)
+        }
     }
 
     @ViewBuilder
@@ -266,7 +282,7 @@ struct MusicDownloadView: View {
     private func downloadBar(count: Int) -> some View {
         HStack {
             Button {
-                let result = model.enqueue(quality: quality, layout: layout, destination: destination)
+                let result = model.enqueue(quality: quality, layout: layout, destination: destination, nameTemplate: nameTemplate)
                 var parts: [String] = []
                 if result.queued > 0 { parts.append("已加入 \(result.queued) 首") }
                 if !result.skipped.isEmpty { parts.append("跳过 \(result.skipped.count) 首（没有「\(quality.displayName)」）：" + result.skipped.prefix(3).joined(separator: "、")) }

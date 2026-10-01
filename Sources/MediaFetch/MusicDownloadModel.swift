@@ -153,7 +153,7 @@ final class MusicDownloadModel: ObservableObject {
     /// Returns how many were queued and which were skipped because the chosen
     /// quality is known to be unavailable for them.
     @discardableResult
-    func enqueue(quality: MusicQualityPreference, layout: MusicLayout, destination: URL) -> (queued: Int, skipped: [String]) {
+    func enqueue(quality: MusicQualityPreference, layout: MusicLayout, destination: URL, nameTemplate: String? = nil) -> (queued: Int, skipped: [String]) {
         guard let sourceURL else { return (0, []) }
         let session = session(for: sourceURL)
         var items: [(url: String, title: String?, collection: CollectionContext?)] = []
@@ -173,14 +173,16 @@ final class MusicDownloadModel: ObservableObject {
                     continue
                 }
                 items.append((entry.url, probes[entry.id]?.track?.title ?? entry.title,
-                              layout == .collection ? outline.context(for: entry) : nil))
+                              layout == .collection || (layout == .custom && (nameTemplate ?? "").contains("{index}"))
+                                ? outline.context(for: entry) : nil))
             }
         default:
             break
         }
         guard !items.isEmpty else { return (0, skipped) }
         let queued = downloader.enqueueMusic(items, quality: quality, layout: layout, destination: destination,
-                                             cookieSource: session.cookieSource, usesInAppLogin: session.inApp)
+                                             cookieSource: session.cookieSource, usesInAppLogin: session.inApp,
+                                             nameTemplate: nameTemplate)
         return (queued, skipped)
     }
 }

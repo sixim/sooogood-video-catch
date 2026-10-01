@@ -28,7 +28,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
     }
 
     func handle(tool: String, arguments: [String: JSONValue]) async throws -> JSONValue {
-        let args = Arguments(arguments)
+        let args = Arguments(await Self.expandingShortLinks(arguments))
         switch tool {
         case "app_status": return await appStatus()
         case "analyze_url": return try await analyze(args)
@@ -331,6 +331,21 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     // MARK: Helpers
 
+    /// Music share short links in `url` / `urls` are expanded before validation.
+    static func expandingShortLinks(_ arguments: [String: JSONValue]) async -> [String: JSONValue] {
+        var result = arguments
+        let resolver = MusicLinkResolver()
+        if let url = arguments["url"]?.stringValue {
+            result["url"] = .string(await resolver.resolveShortLinks(in: url).trimmingCharacters(in: .whitespaces))
+        }
+        if let urls = arguments["urls"]?.arrayValue?.compactMap(\.stringValue) {
+            var expanded: [JSONValue] = []
+            for url in urls { expanded.append(.string(await resolver.resolveShortLinks(in: url).trimmingCharacters(in: .whitespaces))) }
+            result["urls"] = .array(expanded)
+        }
+        return result
+    }
+
     @MainActor private func loginRouting(for url: URL) -> (cookieSource: BrowserCookieSource?, inApp: Bool) {
         let platform = StreamingPlatform.detect(url)
         guard let logins, StreamingPlatform.browserLoginPlatforms.contains(platform), logins.isEnabled(for: platform) else {
@@ -408,12 +423,12 @@ struct Arguments {
     func int(_ key: String) -> Int? { raw[key]?.intValue }
 
     func url(_ key: String) throws -> URL {
-        guard let url = URLValidator.validatedMediaURL(from: try string(key)) else { throw ControlError.invalidParams("\(key) 不是有效的 http(s) 链接") }
+        guard let url = LinkInputParser.URLs(from: try string(key)).first else { throw ControlError.invalidParams("\(key) 不是有效的 http(s) 链接") }
         return url
     }
 
     func urls(_ key: String) throws -> [URL] {
-        let urls = try strings(key).compactMap(URLValidator.validatedMediaURL(from:))
+        let urls = LinkInputParser.URLs(from: try strings(key).joined(separator: "\n"))
         guard !urls.isEmpty else { throw ControlError.invalidParams("\(key) 中没有有效链接") }
         return urls
     }

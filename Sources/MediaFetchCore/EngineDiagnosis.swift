@@ -103,7 +103,7 @@ public enum EngineDiagnostics {
         }
         if EngineErrorClassifier.isAuthenticationRequiredError(output) || containsAny(s, [
             "members-only", "available to this channel's members", "requires purchase",
-            "need to purchase", "purchase the course",
+            "need to purchase", "purchase the course", "only available for registered users",
             "use --cookies", "sign in if you've been granted access"
         ]) {
             return .init(cause: .needsLogin, remedy: .signIn)

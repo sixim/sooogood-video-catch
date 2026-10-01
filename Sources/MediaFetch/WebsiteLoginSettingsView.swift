@@ -179,6 +179,9 @@ private struct WebsiteLoginCard: View {
         case .vimeo: return Color(red: 0.18, green: 0.68, blue: 1.0)
         case .bilibili: return Color(red: 0.96, green: 0.45, blue: 0.65)
         case .youku: return Color(red: 0.55, green: 0.48, blue: 1.0)
+        case .udemy: return Color(red: 0.64, green: 0.36, blue: 0.96)
+        case .netease: return Color(red: 0.89, green: 0.16, blue: 0.19)
+        case .qqmusic: return Color(red: 0.19, green: 0.76, blue: 0.49)
         default: return MediaFetchTheme.videoAccent
         }
     }

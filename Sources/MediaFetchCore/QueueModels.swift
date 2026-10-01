@@ -126,13 +126,27 @@ public struct SelectedFormatInfo: Codable, Equatable, Sendable {
 }
 
 public enum LinkInputParser {
+    /// http(s) URLs found anywhere in pasted text — including app share text
+    /// where the link is glued to CJK characters, e.g. `《晴天》http://163cn.tv/x`.
+    /// Music links are normalized to the form the engine accepts.
     public static func URLs(from input: String) -> [URL] {
-        input
-            .components(separatedBy: .whitespacesAndNewlines)
+        candidates(in: input)
             .compactMap(URLValidator.validatedMediaURL)
+            .map(MusicLink.canonicalize)
             .reduce(into: [URL]()) { result, url in
                 if !result.contains(url) { result.append(url) }
             }
+    }
+
+    private static let urlPattern = try! NSRegularExpression(
+        pattern: #"https?://[A-Za-z0-9\-._~:/?#\[\]@!$&'*+,;=%]+"#, options: [.caseInsensitive])
+
+    public static func candidates(in input: String) -> [String] {
+        let range = NSRange(input.startIndex..., in: input)
+        return urlPattern.matches(in: input, range: range).compactMap { match in
+            Range(match.range, in: input).map { String(input[$0]) }
+        }
+        .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ".,;:!?'")) }
     }
 }
 

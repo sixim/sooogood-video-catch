@@ -20,6 +20,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
     case bilibili
     case youku
     case udemy
+    case netease
+    case qqmusic
     case directStream
     case netflix
     case spotify
@@ -34,6 +36,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         case .bilibili: return "哔哩哔哩"
         case .youku: return "优酷"
         case .udemy: return "Udemy"
+        case .netease: return "网易云音乐"
+        case .qqmusic: return "QQ 音乐"
         case .directStream: return "HLS / DASH 直链"
         case .netflix: return "Netflix"
         case .spotify: return "Spotify"
@@ -45,6 +49,7 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         switch self {
         case .youtube, .vimeo, .bilibili, .youku: return "play.rectangle.fill"
         case .udemy: return "graduationcap.fill"
+        case .netease, .qqmusic: return "music.note"
         case .directStream: return "waveform.path.ecg.rectangle"
         case .netflix: return "lock.fill"
         case .spotify: return "music.note"
@@ -55,7 +60,7 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
     public var supportLevel: PlatformSupportLevel {
         switch self {
         case .youtube, .directStream: return .supported
-        case .vimeo, .bilibili, .youku, .udemy: return .loginRecommended
+        case .vimeo, .bilibili, .youku, .udemy, .netease, .qqmusic: return .loginRecommended
         case .netflix: return .drmBlocked
         case .spotify: return .spotifyBridge
         case .generic: return .generic
@@ -78,6 +83,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         case .bilibili: return "哔哩哔哩的高画质、番剧或账户内容可能需要登录。"
         case .youku: return "优酷的高画质、会员或地区限制内容可能需要登录。"
         case .udemy: return "Udemy 课程需要登录已购买课程的账号；受 DRM 保护的课时会被跳过。"
+        case .netease: return "未登录时最高 320k；登录会员账号后可获得平台提供的无损音质。"
+        case .qqmusic: return "QQ 音乐需要登录账号才能下载；音质取决于账号权益。"
         default: return nil
         }
     }
@@ -94,14 +101,17 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
     }
 
     public static let featuredDownloadable: [StreamingPlatform] = [
-        .youtube, .vimeo, .bilibili, .youku, .udemy, .directStream, .generic
+        .youtube, .vimeo, .bilibili, .youku, .udemy, .netease, .qqmusic, .directStream, .generic
     ]
 
     /// Platforms whose authenticated web session can be reused by the local
     /// download profile. Credentials remain in the selected browser.
     public static let browserLoginPlatforms: [StreamingPlatform] = [
-        .youtube, .vimeo, .bilibili, .youku, .udemy
+        .youtube, .vimeo, .bilibili, .youku, .udemy, .netease, .qqmusic
     ]
+
+    /// Music services whose items are audio tracks rather than videos.
+    public var isMusicService: Bool { self == .netease || self == .qqmusic }
 
     public var browserLoginURL: URL? {
         switch self {
@@ -110,6 +120,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         case .bilibili: return URL(string: "https://passport.bilibili.com/login")
         case .youku: return URL(string: "https://account.youku.com/")
         case .udemy: return URL(string: "https://www.udemy.com/join/login-popup/")
+        case .netease: return URL(string: "https://music.163.com/")
+        case .qqmusic: return URL(string: "https://y.qq.com/")
         case .directStream, .netflix, .spotify, .generic: return nil
         }
     }
@@ -121,6 +133,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         case .bilibili: return "高画质、番剧及账户可见内容可能需要登录。"
         case .youku: return "高画质、会员及地区限制内容可能需要登录。"
         case .udemy: return "只能下载你已购买课程中没有 DRM 保护的课时，并会放慢请求节奏以免账号受限。"
+        case .netease: return "在官网右上角登录（扫码或手机号）；会员账号可获得无损音质。"
+        case .qqmusic: return "在官网右上角用 QQ 或微信扫码登录；未登录无法下载。"
         default: return ""
         }
     }
@@ -132,6 +146,8 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
         if matches(host, domains: ["bilibili.com", "bilibili.tv", "biliintl.com", "b23.tv"]) { return .bilibili }
         if matches(host, domains: ["youku.com", "tudou.com"]) { return .youku }
         if matches(host, domains: ["udemy.com"]) { return .udemy }
+        if matches(host, domains: ["music.163.com", "163cn.tv"]) { return .netease }
+        if matches(host, domains: ["y.qq.com"]) { return .qqmusic }
         if matches(host, domains: ["netflix.com"]) { return .netflix }
         if matches(host, domains: ["spotify.com", "spotify.link", "spotify.app.link"]) { return .spotify }
         let extensionName = url.pathExtension.lowercased()

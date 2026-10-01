@@ -35,6 +35,9 @@ final class InAppSiteSession: NSObject, ObservableObject, WKNavigationDelegate, 
         case .vimeo: suffix = "000000000002"
         case .bilibili: suffix = "000000000003"
         case .youku: suffix = "000000000004"
+        case .udemy: suffix = "000000000005"
+        case .netease: suffix = "000000000006"
+        case .qqmusic: suffix = "000000000007"
         default: preconditionFailure("Unsupported in-app login platform")
         }
         self.dataStore = dataStore ?? WKWebsiteDataStore(forIdentifier: UUID(uuidString: "EC3BB55D-5920-45DE-A438-" + suffix)!)

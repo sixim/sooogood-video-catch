@@ -116,6 +116,7 @@ public enum CollectionDetector {
     /// URLs that point at a list rather than one video. Cheap and offline; the
     /// expander confirms with yt-dlp.
     public static func looksLikeCollection(_ url: URL) -> Bool {
+        if let music = MusicLink.parse(url) { return music.kind.isCollection }
         let host = url.host?.lowercased() ?? ""
         let path = url.path.lowercased()
         let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []

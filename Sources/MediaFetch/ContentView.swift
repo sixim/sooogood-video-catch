@@ -101,6 +101,7 @@ struct VideoDownloadView: View {
             consumePendingInput()
         }
         .onChange(of: intake?.pendingVideoInput) { _, _ in consumePendingInput() }
+        .onChange(of: mediaURL) { _, text in expandShortMusicLinks(text) }
         .sheet(isPresented: Binding(get: { collectionPhase != nil }, set: { if !$0 { collectionPhase = nil } })) {
             if let phase = collectionPhase {
                 CollectionSheet(phase: phase) { outline, entries in
@@ -604,6 +605,18 @@ struct VideoDownloadView: View {
                 cookieSourceByURL: cookieSourcesByURL, inAppLoginURLs: inAppLoginURLs
             )
             if !Task.isCancelled { preflightReport = report }
+        }
+    }
+
+    /// Music-app share links (163cn.tv, c6.y.qq.com) are swapped for their real
+    /// page URL in place, so the user sees exactly what will be resolved.
+    private func expandShortMusicLinks(_ text: String) {
+        guard LinkInputParser.candidates(in: text).contains(where: { URL(string: $0).map(MusicLink.needsRedirectResolution) ?? false }) else { return }
+        Task {
+            let resolved = await MusicLinkResolver().resolveShortLinks(in: text)
+            if resolved != text && mediaURL == text {
+                mediaURL = resolved.trimmingCharacters(in: .whitespacesAndNewlines)
+            }
         }
     }
 

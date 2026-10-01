@@ -36,6 +36,8 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         case "enqueue_download": return try await enqueue(args)
         case "expand_collection": return try await expandCollection(args)
         case "enqueue_collection": return try await enqueueCollection(args)
+        case "analyze_music": return try await analyzeMusic(args)
+        case "enqueue_music": return try await enqueueMusic(args)
         case "list_tasks": return await listTasks(args)
         case "list_torrents": return await listTasks(Arguments(["kind": "torrent"]))
         case "get_task": return try await getTask(args.string("id"))
@@ -176,6 +178,64 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有任务被加入队列") }
         return ["enqueued": .number(Double(count)), "title": .string(outline.title),
                 "folder": .string(destination.appendingPathComponent(outline.rootFolderName).path)]
+    }
+
+    // MARK: Music
+
+    private func musicJSON(_ track: MusicTrackInfo) -> JSONValue {
+        [
+            "id": .string(track.id), "title": .string(track.title), "artists": .array(track.artists.map(JSONValue.string)),
+            "album": track.album.map(JSONValue.string) ?? .null, "duration_seconds": track.duration.map(JSONValue.number) ?? .null,
+            "has_lyrics": .bool(track.hasLyrics),
+            "qualities": .array(track.availableTiers.map { .string($0.displayName) }),
+            "best_quality": track.bestTier.map { .string($0.displayName) } ?? .null
+        ]
+    }
+
+    @MainActor private func analyzeMusic(_ args: Arguments) async throws -> JSONValue {
+        let url = try args.url("url")
+        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
+        let login = loginRouting(for: url)
+        if link.kind.isCollection {
+            let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
+            return ["kind": .string(link.kind.rawValue), "title": .string(outline.title),
+                    "unavailable": .number(Double(outline.unavailableCount)),
+                    "tracks": .array(outline.entries.map { ["index": .number(Double($0.index)), "title": .string($0.title), "url": .string($0.url)] })]
+        }
+        var result = musicJSON(try await downloader.inspectMusic(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)).objectValue ?? [:]
+        result["kind"] = "song"
+        return .object(result)
+    }
+
+    @MainActor private func enqueueMusic(_ args: Arguments) async throws -> JSONValue {
+        let url = try args.url("url")
+        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
+        let quality = try args.optionalString("quality").map { value -> MusicQualityPreference in
+            guard let preference = MusicQualityPreference(rawValue: value) else { throw ControlError.invalidParams("未知 quality：\(value)") }
+            return preference
+        } ?? .best
+        let layout = try args.optionalString("layout").map { value -> MusicLayout in
+            guard let layout = MusicLayout(rawValue: value), layout != .custom else { throw ControlError.invalidParams("未知 layout：\(value)") }
+            return layout
+        } ?? .artistAlbum
+        let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? MusicPreferences.destination
+        let login = loginRouting(for: url)
+        var items: [(url: String, title: String?, collection: CollectionContext?)] = []
+        if link.kind.isCollection {
+            let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
+            let wanted: Set<Int>? = args.raw["indices"]?.arrayValue.map { Set($0.compactMap(\.intValue)) }
+            items = outline.entries.filter { wanted?.contains($0.index) ?? true }
+                .map { ($0.url, $0.title, layout == .collection ? outline.context(for: $0) : nil) }
+        } else {
+            items = [(link.canonicalURL.absoluteString, nil, nil)]
+        }
+        guard !items.isEmpty else { throw ControlError.invalidParams("没有匹配的曲目") }
+        let before = Set(downloader.jobs.map(\.id))
+        let count = downloader.enqueueMusic(items, quality: quality, layout: layout, destination: destination,
+                                            cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
+        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有曲目被加入队列") }
+        return ["enqueued": .number(Double(count)), "quality": .string(quality.displayName), "destination": .string(destination.path),
+                "tasks": .array(downloader.jobs.filter { !before.contains($0.id) }.map(videoSummary))]
     }
 
     // MARK: Tasks
@@ -367,7 +427,8 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             "progress": .number(job.progressFraction), "profile": .string(job.profile.rawValue),
             "manifest": job.manifestPath.map(JSONValue.string) ?? .null,
             "error": job.errorMessage.map(JSONValue.string) ?? .null,
-            "retry_note": job.retryNote.map(JSONValue.string) ?? .null
+            "retry_note": job.retryNote.map(JSONValue.string) ?? .null,
+            "measured_quality": job.audioQuality.map { .string($0.summary) } ?? .null
         ]
     }
 

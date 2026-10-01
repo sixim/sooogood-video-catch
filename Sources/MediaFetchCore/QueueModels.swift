@@ -81,6 +81,9 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var musicQuality: MusicQualityPreference?
     public var musicLayout: MusicLayout?
     public var musicNameTemplate: String?
+    /// Reported by the engine while downloading (music jobs).
+    public var musicArtist: String?
+    public var musicAlbum: String?
     /// Measured quality of the downloaded audio (music jobs).
     public var audioQuality: AudioQualityReport?
     public var speedText: String?

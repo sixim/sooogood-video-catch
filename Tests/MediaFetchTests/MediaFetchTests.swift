@@ -93,9 +93,9 @@ final class MediaFetchTests: XCTestCase {
     func testReleaseMetadataUsesExpectedSchemaVersions() {
         XCTAssertEqual(MediaFetchRelease.bundleIdentifier, "com.simon.mediafetch")
         XCTAssertEqual(MediaFetchRelease.displayName, "Sooogood Video Catch")
-        XCTAssertEqual(MediaFetchRelease.version, "0.19.0")
-        XCTAssertEqual(MediaFetchRelease.build, "24")
-        XCTAssertEqual(MediaFetchRelease.videoManifestSchema, 3)
+        XCTAssertEqual(MediaFetchRelease.version, "0.20.0")
+        XCTAssertEqual(MediaFetchRelease.build, "25")
+        XCTAssertEqual(MediaFetchRelease.videoManifestSchema, 4)
         XCTAssertEqual(MediaFetchRelease.musicManifestSchema, 2)
     }
 
@@ -328,7 +328,7 @@ final class MediaFetchTests: XCTestCase {
             ffmpegPath: nil
         )
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any]
-        XCTAssertEqual(json?["schemaVersion"] as? Int, 3)
+        XCTAssertEqual(json?["schemaVersion"] as? Int, 4)
         XCTAssertEqual(json?["mediaID"] as? String, "abc123")
         XCTAssertEqual((json?["files"] as? [[String: Any]])?.count, 1)
         XCTAssertNotNil((json?["files"] as? [[String: Any]])?.first?["sha256"])

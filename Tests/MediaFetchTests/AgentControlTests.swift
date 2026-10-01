@@ -44,6 +44,12 @@ final class AgentControlTests: XCTestCase {
         XCTAssertNotNil(ping["result"])
     }
 
+    func testMusicToolsAreAdvertised() {
+        XCTAssertNotNil(ControlTool.named("analyze_music"))
+        XCTAssertEqual(ControlTool.named("enqueue_music")?.inputSchema["properties"]?["quality"]?["enum"],
+                       ["best", "losslessOnly", "upTo320"])
+    }
+
     func testNoToolCanDeleteAnything() {
         for tool in ControlTool.all {
             XCTAssertFalse(["delete", "remove", "trash", "erase"].contains { tool.name.contains($0) }, tool.name)

@@ -214,7 +214,7 @@ final class EngineResilienceTests: XCTestCase {
         XCTAssertTrue(calls[1].contains("youtube:player_client=default,mweb;formats=dashy"))
         let manifest = try XCTUnwrap(job.manifestPath)
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: manifest))) as? [String: Any])
-        XCTAssertEqual(object["schemaVersion"] as? Int, 3)
+        XCTAssertEqual(object["schemaVersion"] as? Int, 4)
         let engine = try XCTUnwrap(object["engine"] as? [String: Any])
         XCTAssertEqual(engine["attempts"] as? Int, 2)
         XCTAssertEqual(engine["youtubePlayerClient"] as? String, "default,mweb")

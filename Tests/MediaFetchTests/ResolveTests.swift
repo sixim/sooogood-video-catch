@@ -85,6 +85,30 @@ final class ResolveTests: XCTestCase {
         XCTAssertTrue(ResolveImportPlanner.compatibilityWarnings(packageDirectory: package).isEmpty)
     }
 
+    func testMusicPackagesGoToAlbumBinWithArtistAndMeasuredQuality() throws {
+        let package = root.appendingPathComponent("马也_Crabbit - 海屿你 [1973665667]")
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        try (Data("ID3".utf8) + Data([3, 0, 0, 0, 0, 0, 0]) + Data([0xFF, 0xFB, 0x90, 0x64])).write(to: package.appendingPathComponent("a.mp3"))
+        try Data([0xFF, 0xD8, 0xFF, 0xE0]).write(to: package.appendingPathComponent("a.jpg"))
+        try Data("[00:00.00]x".utf8).write(to: package.appendingPathComponent("a.lyrics.lrc"))
+        let manifest: JSONValue = [
+            "schemaVersion": 4, "sourceURL": "https://music.163.com/song?id=1973665667", "title": "海屿你", "platform": "netease:song",
+            "mediaID": "1973665667", "musicQualityPreference": "best",
+            "music": ["artist": "马也_Crabbit", "album": "海屿你/单曲"],
+            "audio": ["codec": "mp3", "sampleRate": 48000, "bitrate": 320000, "tier": 3],
+            "files": [["relativePath": "a.mp3", "sha256": "abc"]]
+        ]
+        try JSONEncoder().encode(manifest).write(to: package.appendingPathComponent("manifest.json"))
+        let request = try ResolveImportPlanner.plan(packageDirectory: package)
+        XCTAssertEqual(request.binPath, ["Sooogood", "音乐", "海屿你／单曲"])
+        XCTAssertEqual(request.clips.map { ($0.path as NSString).lastPathComponent }, ["a.mp3"], "cover and .lrc are not media clips")
+        let clip = try XCTUnwrap(request.clips.first)
+        XCTAssertEqual(clip.metadata["Description"], "马也_Crabbit - 海屿你")
+        XCTAssertTrue(clip.metadata["Keywords"]?.contains("Music") == true)
+        XCTAssertEqual(clip.thirdParty["Sooogood Artist"], "马也_Crabbit")
+        XCTAssertEqual(clip.thirdParty["Sooogood Audio Quality"], "MP3 · 48.0 kHz · 320 kbps")
+    }
+
     func testBinNameStripsPathSeparators() {
         XCTAssertEqual(ResolveImportPlanner.binName(for: URL(fileURLWithPath: "/x/a:b")), "a-b")
     }

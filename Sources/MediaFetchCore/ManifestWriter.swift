@@ -16,6 +16,11 @@ struct MediaManifest: Codable {
         let signature: MediaSignature?
     }
 
+    struct MusicRecord: Codable {
+        let artist: String?
+        let album: String?
+    }
+
     /// Added in schema 2: how the engine reached this result.
     struct EngineRecord: Codable {
         let attempts: Int
@@ -42,6 +47,8 @@ struct MediaManifest: Codable {
     /// Added in schema 3: measured audio quality and the requested preference (music).
     let audio: AudioQualityReport?
     let musicQualityPreference: String?
+    /// Added in schema 4: who and which album (music packages).
+    let music: MusicRecord?
     let files: [FileRecord]
 }
 
@@ -117,6 +124,7 @@ public enum ManifestWriter {
             ),
             audio: job.audioQuality,
             musicQualityPreference: job.musicQuality?.rawValue,
+            music: job.musicQuality == nil ? nil : MediaManifest.MusicRecord(artist: job.musicArtist, album: job.musicAlbum),
             files: records
         )
 

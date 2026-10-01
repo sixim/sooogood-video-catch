@@ -7,6 +7,7 @@ import MediaFetchCore
 /// file headers and an optional manifest, so it is unit-testable offline.
 public enum ResolveImportPlanner {
     public static let rootBin = "Sooogood"
+    public static let musicBin = "音乐"
     static let mediaSignatures: Set<MediaSignature> = [.isoBMFF, .matroska, .mpegTS, .mpegAudio, .flac, .ogg, .wave]
     static let subtitleExtensions: Set<String> = ["srt"]
     /// Audio containers/codecs DaVinci Resolve cannot read (verified on Resolve 21:
@@ -22,6 +23,11 @@ public enum ResolveImportPlanner {
         public var sha256ByFileName: [String: String]
         /// Audio codecs of the downloaded streams (from the manifest's selected formats).
         public var audioCodecs: [String] = []
+        /// Music packages (schema 4 `music` block or measured `audio`).
+        public var isMusic = false
+        public var artist: String?
+        public var album: String?
+        public var measuredQuality: String?
 
         public init(sourceURL: String? = nil, title: String? = nil, platform: String? = nil,
                     mediaID: String? = nil, sha256ByFileName: [String: String] = [:]) {
@@ -49,6 +55,19 @@ public enum ResolveImportPlanner {
                 mediaID: json["mediaID"]?.stringValue ?? json["infoHash"]?.stringValue,
                 sha256ByFileName: hashes
             )
+            if let music = json["music"], music != .null {
+                provenance.isMusic = true
+                provenance.artist = music["artist"]?.stringValue
+                provenance.album = music["album"]?.stringValue
+            }
+            if let audio = json["audio"], audio != .null {
+                provenance.isMusic = provenance.isMusic || json["musicQualityPreference"]?.stringValue != nil
+                let codec = audio["codec"]?.stringValue?.uppercased() ?? ""
+                let rate = audio["sampleRate"]?.doubleValue.map { String(format: "%.1f kHz", $0 / 1000) }
+                let bits = audio["bitsPerSample"]?.intValue.map { "\($0)-bit" }
+                let kbps = audio["bitrate"]?.doubleValue.map { "\(Int($0 / 1000)) kbps" }
+                provenance.measuredQuality = [codec, rate, bits ?? kbps].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+            }
             provenance.audioCodecs = (json["selectedFormats"]?.arrayValue ?? [])
                 .compactMap { $0["audioCodec"]?.stringValue?.lowercased() }
                 .filter { !$0.isEmpty && $0 != "none" }
@@ -68,14 +87,21 @@ public enum ResolveImportPlanner {
         let allProxies = DerivativeLog.outputs(role: .proxy, in: packageDirectory)
         func canonical(_ path: String) -> String { URL(fileURLWithPath: path).resolvingSymlinksInPath().path }
         let excluded = Set(allProxies.map(canonical))
-        return plan(
+        let provenance = provenance ?? manifestProvenance(in: packageDirectory)
+        var request = plan(
             files: try regularFiles(in: packageDirectory).filter { !excluded.contains(canonical($0.path)) },
             binName: binName(for: packageDirectory),
-            provenance: provenance ?? manifestProvenance(in: packageDirectory),
+            provenance: provenance,
             // Proxies made by the toolbox are linked automatically.
             proxies: DerivativeLog.proxies(in: packageDirectory).merging(proxies) { _, explicit in explicit },
             timelineName: timelineName
         )
+        // Music goes to Sooogood › 音乐 › <album> so a soundtrack stays together.
+        if provenance?.isMusic == true {
+            let album = provenance?.album.map { CollectionPaths.safeComponent($0) }
+            request.binPath = [rootBin, musicBin, album ?? binName(for: packageDirectory)]
+        }
+        return request
     }
 
     /// Explicit file list, e.g. a single-file torrent that sits directly in
@@ -138,7 +164,12 @@ public enum ResolveImportPlanner {
         var result: [String: String] = [:]
         if let url = provenance.sourceURL { result["Comments"] = "Source: \(url)" }
         if let title = provenance.title { result["Description"] = title }
-        let keywords = [provenance.platform, MediaFetchRelease.shortDisplayName].compactMap { $0 }
+        if provenance.isMusic {
+            var description = provenance.title ?? ""
+            if let artist = provenance.artist { description = "\(artist) - \(description)" }
+            if !description.isEmpty { result["Description"] = description }
+        }
+        let keywords = [provenance.platform, provenance.isMusic ? "Music" : nil, MediaFetchRelease.shortDisplayName].compactMap { $0 }
         if !keywords.isEmpty { result["Keywords"] = keywords.joined(separator: ",") }
         return result
     }
@@ -148,6 +179,9 @@ public enum ResolveImportPlanner {
         if let hash = provenance?.sha256ByFileName[file.lastPathComponent] { result["Sooogood SHA-256"] = hash }
         if let id = provenance?.mediaID { result["Sooogood Media ID"] = id }
         if let url = provenance?.sourceURL { result["Sooogood Source"] = url }
+        if let artist = provenance?.artist { result["Sooogood Artist"] = artist }
+        if let album = provenance?.album { result["Sooogood Album"] = album }
+        if let quality = provenance?.measuredQuality, !quality.isEmpty { result["Sooogood Audio Quality"] = quality }
         return result
     }
 

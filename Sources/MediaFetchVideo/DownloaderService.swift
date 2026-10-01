@@ -989,6 +989,16 @@ public final class DownloaderService: ObservableObject {
             if let currentJobID { updateJob(currentJobID) { $0.title = title } }
             return
         }
+        if line.hasPrefix("MF_MUSIC|") {
+            let parts = line.dropFirst("MF_MUSIC|".count).split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+            if let currentJobID {
+                updateJob(currentJobID) {
+                    $0.musicArtist = parts.first.flatMap { $0.isEmpty ? nil : $0 }
+                    $0.musicAlbum = parts.count > 1 && !parts[1].isEmpty ? parts[1] : nil
+                }
+            }
+            return
+        }
         if line.hasPrefix("MF_ID|") { activeMediaID = String(line.dropFirst("MF_ID|".count)); return }
         if line.hasPrefix("MF_PLATFORM|") {
             activePlatform = String(line.dropFirst("MF_PLATFORM|".count)); return

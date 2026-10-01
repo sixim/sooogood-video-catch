@@ -2,6 +2,7 @@
 import AppKit
 import SwiftUI
 import MediaFetchCore
+import MediaFetchResolve
 import MediaFetchVideo
 
 enum MusicPreferences {
@@ -27,6 +28,7 @@ struct MusicDownloadView: View {
     var openBrowser: () -> Void = {}
 
     @StateObject private var model: MusicDownloadModel
+    @EnvironmentObject private var resolve: ResolveService
     @State private var input = ""
     @State private var groupByAlbum = false
     @State private var notice: String?
@@ -331,7 +333,22 @@ struct MusicDownloadView: View {
         let jobs = downloader.jobs.filter { $0.musicQuality != nil }.suffix(8).reversed()
         return VStack(alignment: .leading, spacing: 8) {
             if !jobs.isEmpty {
-                Text("最近的音乐任务").font(.headline).foregroundStyle(MediaFetchTheme.primaryText).padding(.top, 8)
+                HStack {
+                    Text("最近的音乐任务").font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
+                    Spacer()
+                    let unsent = jobs.compactMap(\.manifestPath).map { URL(fileURLWithPath: $0).deletingLastPathComponent() }
+                        .filter { resolve.lastResults[$0.path] == nil }
+                    if !unsent.isEmpty {
+                        Button {
+                            Task { for package in unsent { await resolve.send(packageDirectory: package) } }
+                        } label: {
+                            Label("全部发送到达芬奇（\(unsent.count)）", systemImage: "film.stack")
+                        }
+                        .buttonStyle(.bordered)
+                        .help("导入当前达芬奇项目的「Sooogood › 音乐 › 专辑」媒体夹")
+                    }
+                }
+                .padding(.top, 8)
             }
             ForEach(Array(jobs)) { job in
                 HStack(spacing: 10) {

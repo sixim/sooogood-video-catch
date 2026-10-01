@@ -131,6 +131,7 @@ public enum YtDLPArgumentBuilder {
             let layout = job.musicLayout ?? (job.collection == nil ? .flat : .collection)
             arguments += ["--output", layout.outputTemplate(collection: job.collection, custom: job.musicNameTemplate)]
             arguments += musicArguments
+            arguments += ["--print", "before_dl:MF_MUSIC|%(creators.0,artists.0,artist,album_artists.0|)s|%(album|)s"]
         } else if let collection = job.collection {
             arguments += ["--output", CollectionPaths.outputTemplate(for: collection, separateStreams: job.profile == .sourceStreams)]
         } else {

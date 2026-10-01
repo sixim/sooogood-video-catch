@@ -24,6 +24,7 @@ struct MusicDownloadView: View {
     let onBack: () -> Void
     var intake: IntakeCoordinator? = nil
     var openSettings: () -> Void = {}
+    var openBrowser: () -> Void = {}
 
     @StateObject private var model: MusicDownloadModel
     @State private var input = ""
@@ -35,12 +36,13 @@ struct MusicDownloadView: View {
     @AppStorage(MusicPreferences.templateKey) private var nameTemplate = MusicNameTemplate.defaultTemplate
 
     init(downloader: DownloaderService, logins: StreamingSiteLoginStore, onBack: @escaping () -> Void,
-         intake: IntakeCoordinator? = nil, openSettings: @escaping () -> Void = {}) {
+         intake: IntakeCoordinator? = nil, openSettings: @escaping () -> Void = {}, openBrowser: @escaping () -> Void = {}) {
         self.downloader = downloader
         self.logins = logins
         self.onBack = onBack
         self.intake = intake
         self.openSettings = openSettings
+        self.openBrowser = openBrowser
         _model = StateObject(wrappedValue: MusicDownloadModel(downloader: downloader, logins: logins))
     }
 
@@ -106,6 +108,9 @@ struct MusicDownloadView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(accent)
                 .disabled(input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.phase == .resolving)
+                Button { openBrowser() } label: { Label("在应用内浏览", systemImage: "safari") }
+                    .buttonStyle(.bordered)
+                    .help("在应用内打开网易云 / QQ 音乐网页，找到歌曲后点「下载当前页面」")
             }
         }
     }

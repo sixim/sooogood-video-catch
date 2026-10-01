@@ -93,8 +93,8 @@ final class MediaFetchTests: XCTestCase {
     func testReleaseMetadataUsesExpectedSchemaVersions() {
         XCTAssertEqual(MediaFetchRelease.bundleIdentifier, "com.simon.mediafetch")
         XCTAssertEqual(MediaFetchRelease.displayName, "Sooogood Video Catch")
-        XCTAssertEqual(MediaFetchRelease.version, "0.18.0")
-        XCTAssertEqual(MediaFetchRelease.build, "23")
+        XCTAssertEqual(MediaFetchRelease.version, "0.19.0")
+        XCTAssertEqual(MediaFetchRelease.build, "24")
         XCTAssertEqual(MediaFetchRelease.videoManifestSchema, 3)
         XCTAssertEqual(MediaFetchRelease.musicManifestSchema, 2)
     }

@@ -18,6 +18,7 @@ enum AppRoute: String, Hashable {
     case torrent
     case tools
     case musicDownload
+    case musicBrowser
 }
 
 struct ContentView: View {
@@ -129,8 +130,19 @@ struct ContentView: View {
         case .musicDownload:
 #if !MEDIAFETCH_STORE_PROFILE
             MusicDownloadView(downloader: downloader, logins: streamingLogins, onBack: goHome, intake: intake,
-                              openSettings: { replaceTop(with: .settings) })
+                              openSettings: { replaceTop(with: .settings) },
+                              openBrowser: { path.append(.musicBrowser) })
                 .navigationBarBackButtonHidden()
+#else
+            EmptyView()
+#endif
+        case .musicBrowser:
+#if !MEDIAFETCH_STORE_PROFILE
+            MusicBrowserView(logins: streamingLogins, onBack: { if !path.isEmpty { path.removeLast() } }) { url in
+                intake.pendingMusicInput = url.absoluteString
+                if path.dropLast().last == .musicDownload { path.removeLast() } else { replaceTop(with: .musicDownload) }
+            }
+            .navigationBarBackButtonHidden()
 #else
             EmptyView()
 #endif

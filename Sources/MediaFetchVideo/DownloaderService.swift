@@ -423,8 +423,24 @@ public final class DownloaderService: ObservableObject {
         }.value
     }
 
+    /// Read-only engine call with up to two quiet retries on transient glitches.
+    private func runEngineRetrying(
+        _ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool,
+        arguments makeArguments: @escaping ([String]) -> [String]
+    ) async throws -> (status: Int32, stdout: Data, stderr: Data) {
+        var result = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin, arguments: makeArguments)
+        for attempt in 1...2 where result.status != 0 && EngineDiagnostics.isTransientGlitch(String(decoding: result.stderr, as: UTF8.self)) {
+            try await Task.sleep(nanoseconds: UInt64(attempt) * 800_000_000)
+            result = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin, arguments: makeArguments)
+        }
+        return result
+    }
+
     private static func engineError(_ stderr: Data) -> EngineCallError {
         let text = String(decoding: stderr, as: UTF8.self)
+        if text.contains("expected string or bytes-like object") {
+            return EngineCallError("平台网页暂时没有响应（已自动重试 3 次）。请稍后再试；QQ 音乐还需要先登录。")
+        }
         let diagnosis = EngineDiagnostics.diagnose(text)
         return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
     }
@@ -439,7 +455,7 @@ public final class DownloaderService: ObservableObject {
 
     /// One music track: who, which album, and which qualities this account can get.
     public func inspectMusic(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MusicTrackInfo {
-        let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
+        let (status, output, errors) = try await runEngineRetrying(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
             YtDLPArgumentBuilder.analysisArguments(url: url.absoluteString, sessionRateLimitCount: self.sessionRateLimitCount, cookieArguments: $0)
         }
         guard status == 0 else { throw Self.engineError(errors) }
@@ -486,7 +502,7 @@ public final class DownloaderService: ObservableObject {
 
     /// Lists the entries of a course or playlist without downloading anything.
     public func expandCollection(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> CollectionOutline {
-        let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
+        let (status, output, errors) = try await runEngineRetrying(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
             YtDLPArgumentBuilder.expansionArguments(url: url.absoluteString, cookieArguments: $0)
         }
         // Paid or private entries make yt-dlp exit non-zero even though it printed

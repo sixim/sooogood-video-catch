@@ -27,6 +27,14 @@ final class EngineResilienceTests: XCTestCase {
         XCTAssertNil(EngineDiagnostics.diagnose("ERROR: something nobody has seen before"))
     }
 
+    func testTransientGlitchesAreRecognisedForQuietRetry() {
+        // Captured: yt-dlp qqmusic _download_init_data when the page fetch fails.
+        XCTAssertTrue(EngineDiagnostics.isTransientGlitch("ERROR: expected string or bytes-like object, got 'bool'"))
+        XCTAssertTrue(EngineDiagnostics.isTransientGlitch("ERROR: Unable to download webpage: HTTP Error 502: Bad Gateway"))
+        XCTAssertFalse(EngineDiagnostics.isTransientGlitch("ERROR: [qqmusic] x: This video is only available for registered users."))
+        XCTAssertFalse(EngineDiagnostics.isTransientGlitch("ERROR: Video unavailable"))
+    }
+
     func testRateLimitIsNeverTerminalButRemovedVideoIs() {
         XCTAssertFalse(EngineDiagnostics.isTerminal("HTTP Error 429 ... Video unavailable"))
         XCTAssertTrue(EngineDiagnostics.isTerminal("ERROR: HTTP Error 404: Not Found"))

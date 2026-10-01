@@ -115,6 +115,7 @@ public struct ResolveBridge: Sendable {
         switch reply["error"]?.stringValue {
         case "not_connected": return .notConnected
         case "no_project": return .noProject
+        case "not_ready": return .notReady
         case "module": return .scriptModuleMissing(detail)
         case "bin_failed": return .binFailed(detail)
         default: return .bridgeFailed(detail.isEmpty ? (reply["error"]?.stringValue ?? "未知错误") : detail)

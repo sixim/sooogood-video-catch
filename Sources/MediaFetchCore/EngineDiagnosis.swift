@@ -151,6 +151,16 @@ public enum EngineDiagnostics {
         ])
     }
 
+    /// One-off failures worth an immediate silent retry for short read-only
+    /// calls (inspect / expand). The first is yt-dlp's qqmusic extractor
+    /// running a regex on `False` when the page fetch hiccups.
+    public static func isTransientGlitch(_ output: String) -> Bool {
+        let s = output.lowercased()
+        return ["expected string or bytes-like object", "timed out", "connection reset", "temporary failure in name resolution",
+                "http error 500", "http error 502", "http error 503", "http error 504", "remote end closed connection"]
+            .contains { s.contains($0) }
+    }
+
     /// The most informative single line of engine output, for compact UI.
     public static func lastErrorLine(in output: String) -> String {
         let lines = output.components(separatedBy: .newlines)

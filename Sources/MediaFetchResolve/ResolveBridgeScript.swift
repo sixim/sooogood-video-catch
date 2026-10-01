@@ -8,6 +8,7 @@ enum ResolveBridgeScript {
     static let source = #"""
 import json
 import sys
+import time
 
 
 def reply(payload):
@@ -45,6 +46,15 @@ if request.get("op") == "status":
 
 if project is None:
     fail("no_project")
+
+# Right after launch the scripting API answers before the UI has finished
+# loading; media pool calls fail until a page exists. Wait briefly for it.
+for _ in range(30):
+    if resolve.GetCurrentPage():
+        break
+    time.sleep(1)
+else:
+    fail("not_ready")
 
 pool = project.GetMediaPool()
 folder = pool.GetRootFolder()

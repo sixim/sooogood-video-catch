@@ -116,6 +116,7 @@ final class ResolveTests: XCTestCase {
     func testErrorMappingAndLaunchHint() {
         XCTAssertEqual(ResolveBridge.mapError(["ok": false, "error": "not_connected"]), .notConnected)
         XCTAssertEqual(ResolveBridge.mapError(["ok": false, "error": "no_project"]), .noProject)
+        XCTAssertEqual(ResolveBridge.mapError(["ok": false, "error": "not_ready"]), .notReady)
         XCTAssertTrue(ResolveBridgeError.notRunning.suggestsLaunching)
         XCTAssertFalse(ResolveBridgeError.notConnected.suggestsLaunching)
     }
@@ -187,6 +188,7 @@ class PM:
 class Resolve:
     def GetProductName(self): return "DaVinci Resolve Studio"
     def GetVersionString(self): return "21.0.4.5"
+    def GetCurrentPage(self): return "media"
     def GetProjectManager(self): return PM()
 
 def scriptapp(name): return Resolve()

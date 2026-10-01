@@ -17,6 +17,7 @@ enum AppRoute: String, Hashable {
     case settings
     case torrent
     case tools
+    case musicDownload
 }
 
 struct ContentView: View {
@@ -121,6 +122,14 @@ struct ContentView: View {
         case .tools:
 #if !MEDIAFETCH_STORE_PROFILE
             ToolsView(service: tools, onBack: goHome, intake: intake)
+                .navigationBarBackButtonHidden()
+#else
+            EmptyView()
+#endif
+        case .musicDownload:
+#if !MEDIAFETCH_STORE_PROFILE
+            MusicDownloadView(downloader: downloader, logins: streamingLogins, onBack: goHome, intake: intake,
+                              openSettings: { replaceTop(with: .settings) })
                 .navigationBarBackButtonHidden()
 #else
             EmptyView()

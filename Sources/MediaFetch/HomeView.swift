@@ -110,6 +110,14 @@ struct HomeView: View {
 
 #if !MEDIAFETCH_STORE_PROFILE
             CompactNavigationCard(
+                title: "音乐下载",
+                subtitle: "网易云 · QQ 音乐",
+                systemImage: "music.note",
+                badge: nil,
+                action: { navigate(.musicDownload) }
+            )
+
+            CompactNavigationCard(
                 title: "工具箱",
                 subtitle: "代理 · 转码 · 转录",
                 systemImage: "wand.and.stars",

@@ -26,6 +26,13 @@ public enum YtDLPArgumentBuilder {
         return host == "youtu.be" || host.hasSuffix("youtube.com") || host.hasSuffix("youtube-nocookie.com")
     }
 
+    /// Tags, embedded cover, kept cover file and synced lyrics for music tracks.
+    /// Formats stay the platform's originals; ffmpeg only remuxes tags in.
+    public static let musicArguments = [
+        "--embed-metadata", "--embed-thumbnail", "--convert-thumbnails", "jpg", "--write-thumbnail",
+        "--write-subs", "--sub-langs", "lyrics,lrc", "--sub-format", "lrc/best"
+    ]
+
     public static func isCoursePlatform(_ url: String) -> Bool {
         guard let parsed = URL(string: url) else { return false }
         let host = parsed.host?.lowercased() ?? ""
@@ -97,7 +104,7 @@ public enum YtDLPArgumentBuilder {
         let youtube = isYouTube(job.sourceURL)
         var arguments = [
             "--newline", "--no-playlist", "--continue",
-            "--format", job.profile.formatSelector,
+            "--format", job.musicQuality?.formatSelector ?? job.profile.formatSelector,
             "--paths", destination.path,
             "--progress-template", "download:MF_PROGRESS|%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes_estimate)s|%(progress.speed)s|%(progress.eta)s",
             "--progress-template", "postprocess:MF_POSTPROCESS|%(info.title)s",
@@ -108,13 +115,23 @@ public enum YtDLPArgumentBuilder {
             "--print", "after_move:MF_FILE|%(filepath)s"
         ]
         arguments += resilienceArguments
+        if job.musicQuality != nil {
+            // Music files are small; NetEase occasionally stalls one API call until
+            // the socket timeout, so a shorter timeout halves that worst case.
+            // (Later --socket-timeout wins in yt-dlp's option parsing.)
+            arguments += ["--socket-timeout", "15"]
+        }
         arguments += [
             "--concurrent-fragments",
             String(concurrentFragments(isYouTube: youtube, sessionRateLimitCount: sessionRateLimitCount))
         ]
         if youtube { arguments += ["--throttled-rate", "100K"] }
 
-        if let collection = job.collection {
+        if job.musicQuality != nil {
+            let layout = job.musicLayout ?? (job.collection == nil ? .flat : .collection)
+            arguments += ["--output", layout.outputTemplate(collection: job.collection)]
+            arguments += musicArguments
+        } else if let collection = job.collection {
             arguments += ["--output", CollectionPaths.outputTemplate(for: collection, separateStreams: job.profile == .sourceStreams)]
         } else {
             let packageName = "%(title).180B [%(id)s]"
@@ -130,7 +147,7 @@ public enum YtDLPArgumentBuilder {
             arguments += ["--merge-output-format", "mp4"]
         }
         if job.includeSidecars { arguments += ["--write-info-json", "--write-thumbnail"] }
-        if job.includeSubtitles && state.subtitlesEnabled {
+        if job.includeSubtitles && state.subtitlesEnabled && job.musicQuality == nil {
             arguments += [
                 "--write-subs", "--write-auto-subs", "--sub-langs",
                 "en,zh,zh-CN,zh-TW,zh-Hans,zh-Hant,-live_chat"

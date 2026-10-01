@@ -347,12 +347,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
     }
 
     @MainActor private func loginRouting(for url: URL) -> (cookieSource: BrowserCookieSource?, inApp: Bool) {
-        let platform = StreamingPlatform.detect(url)
-        guard let logins, StreamingPlatform.browserLoginPlatforms.contains(platform), logins.isEnabled(for: platform) else {
-            return (nil, false)
-        }
-        if logins.method(for: platform) == .inApp { return (nil, true) }
-        return (logins.cookieSource(for: platform), false)
+        logins?.routing(for: url) ?? (nil, false)
     }
 
     @MainActor private func videoJob(_ id: String) -> DownloadJob? {
@@ -458,6 +453,7 @@ enum AgentPaths {
             FileManager.default.urls(for: .moviesDirectory, in: .userDomainMask)[0]
         ]
         if let video = SecurityScopedBookmarkStore(key: "MediaFetch.video.destination").resolve() { roots.append(video) }
+        roots.append(MusicPreferences.destination)
         if let torrent = UserDefaults.standard.string(forKey: "MediaFetch.torrent.directory") {
             roots.append(URL(fileURLWithPath: torrent, isDirectory: true))
         }

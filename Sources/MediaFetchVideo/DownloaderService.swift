@@ -399,7 +399,12 @@ public final class DownloaderService: ObservableObject {
 
 #if !MEDIAFETCH_STORE_PROFILE
     /// Resolves one URL without touching UI state (for agents and automation).
-    public func inspect(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MediaMetadata {
+    /// Runs yt-dlp once for `url` with the right session (browser cookies or a
+    /// temporary in-app cookie file that is removed afterwards).
+    private func runEngine(
+        _ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool,
+        arguments makeArguments: ([String]) -> [String]
+    ) async throws -> (status: Int32, stdout: Data, stderr: Data) {
         guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError("未找到 yt-dlp，请执行 brew install yt-dlp") }
         let platform = StreamingPlatform.detect(url)
         guard platform.downloadAllowed else { throw EngineCallError(platform.restrictionMessage ?? "受保护平台") }
@@ -410,37 +415,79 @@ public final class DownloaderService: ObservableObject {
             cookieFile = file
             cookieArguments = ["--cookies", file.url.path]
         }
-        let arguments = YtDLPArgumentBuilder.analysisArguments(
-            url: url.absoluteString, sessionRateLimitCount: sessionRateLimitCount, cookieArguments: cookieArguments)
-        let environment = toolchain.processEnvironment
         defer { cookieFile?.remove() }
-        let (status, output, errors) = await Task.detached(priority: .userInitiated) {
+        let arguments = makeArguments(cookieArguments)
+        let environment = toolchain.processEnvironment
+        return await Task.detached(priority: .userInitiated) {
             ProcessRunner.run(ytDLP, arguments, environment: environment)
         }.value
-        guard status == 0 else {
-            let text = String(decoding: errors, as: UTF8.self)
-            let diagnosis = EngineDiagnostics.diagnose(text)
-            throw EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
+    }
+
+    private static func engineError(_ stderr: Data) -> EngineCallError {
+        let text = String(decoding: stderr, as: UTF8.self)
+        let diagnosis = EngineDiagnostics.diagnose(text)
+        return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
+    }
+
+    public func inspect(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MediaMetadata {
+        let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
+            YtDLPArgumentBuilder.analysisArguments(url: url.absoluteString, sessionRateLimitCount: self.sessionRateLimitCount, cookieArguments: $0)
         }
+        guard status == 0 else { throw Self.engineError(errors) }
         return try JSONDecoder().decode(MediaMetadata.self, from: output)
+    }
+
+    /// One music track: who, which album, and which qualities this account can get.
+    public func inspectMusic(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MusicTrackInfo {
+        let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
+            YtDLPArgumentBuilder.analysisArguments(url: url.absoluteString, sessionRateLimitCount: self.sessionRateLimitCount, cookieArguments: $0)
+        }
+        guard status == 0 else { throw Self.engineError(errors) }
+        guard let json = try? JSONDecoder().decode(JSONValue.self, from: output), let track = MusicTrackInfo.parse(json) else {
+            throw EngineCallError("无法读取歌曲信息")
+        }
+        return track
+    }
+
+    /// Queues music tracks; each becomes its own package with tags, cover and lyrics.
+    @discardableResult
+    public func enqueueMusic(
+        _ items: [(url: String, title: String?, collection: CollectionContext?)],
+        quality: MusicQualityPreference, layout: MusicLayout, destination: URL,
+        cookieSource: BrowserCookieSource?, usesInAppLogin: Bool
+    ) -> Int {
+        guard ytDLPPath != nil else {
+            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            return 0
+        }
+        guard ffmpegPath != nil else {
+            errorMessage = "写入封面和标签需要 FFmpeg。请先执行：brew install ffmpeg"
+            return 0
+        }
+        guard ensureCookieAccess(usesInAppLogin ? nil : cookieSource) else { return 0 }
+        for item in items {
+            var job = DownloadJob(
+                sourceURL: item.url, profile: .audioOnly, destination: destination,
+                includeSidecars: false, includeSubtitles: false,
+                browserCookieSource: usesInAppLogin ? nil : cookieSource, usesInAppLogin: usesInAppLogin
+            )
+            job.title = item.title
+            job.collection = item.collection
+            job.musicQuality = quality
+            job.musicLayout = layout
+            jobs.append(job)
+        }
+        persistJobs()
+        status = "已加入 \(items.count) 首歌曲"
+        startNextIfNeeded()
+        return items.count
     }
 
     /// Lists the entries of a course or playlist without downloading anything.
     public func expandCollection(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> CollectionOutline {
-        guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError("未找到 yt-dlp，请执行 brew install yt-dlp") }
-        var cookieFile: TemporaryCookieFile?
-        var cookieArguments = cookieSource?.ytDLPArguments ?? []
-        if usesInAppLogin, let provider = inAppCookieProvider {
-            let file = try TemporaryCookieFile(data: await provider(url))
-            cookieFile = file
-            cookieArguments = ["--cookies", file.url.path]
+        let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
+            YtDLPArgumentBuilder.expansionArguments(url: url.absoluteString, cookieArguments: $0)
         }
-        defer { cookieFile?.remove() }
-        let arguments = YtDLPArgumentBuilder.expansionArguments(url: url.absoluteString, cookieArguments: cookieArguments)
-        let environment = toolchain.processEnvironment
-        let (status, output, errors) = await Task.detached(priority: .userInitiated) {
-            ProcessRunner.run(ytDLP, arguments, environment: environment)
-        }.value
         // Paid or private entries make yt-dlp exit non-zero even though it printed
         // the listing; a usable listing wins over the exit status.
         if let json = try? JSONDecoder().decode(JSONValue.self, from: output),

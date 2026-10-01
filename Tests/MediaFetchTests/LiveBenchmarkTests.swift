@@ -205,5 +205,75 @@ final class LiveBenchmarkTests: XCTestCase {
         XCTAssertEqual(manifest["kind"]?.stringValue, "course")
         XCTAssertTrue(entries.allSatisfy { $0["status"]?.stringValue == "completed" })
     }
+
+    /// Music path with the app's engine: inspect, expand a chart, download, verify tags/cover/lyrics.
+    @MainActor
+    func testNetEaseMusicPipeline() async throws {
+        let dir = try liveDirectory("music-\(Int(Date().timeIntervalSince1970))")
+        let downloader = DownloaderService(jobs: [], toolchain: .local(), historyWriter: { _ in })
+        let single = try await downloader.inspectMusic(URL(string: "https://music.163.com/song?id=1973665667")!, cookieSource: nil, usesInAppLogin: false)
+        report("inspect: \(single.title) — \(single.artistLine) — tiers \(single.availableTiers.map(\.displayName)) lyrics=\(single.hasLyrics)")
+        let chart = try await downloader.expandCollection(URL(string: "https://music.163.com/discover/toplist?id=3778678")!, cookieSource: nil, usesInAppLogin: false)
+        report("chart: \(chart.title) \(chart.entries.count) entries")
+        let picked = Array(chart.entries.prefix(2))
+        let started = Date()
+        let queued = downloader.enqueueMusic(picked.map { ($0.url, $0.title, chart.context(for: $0)) }, quality: .best, layout: .artistAlbum,
+                                             destination: dir, cookieSource: nil, usesInAppLogin: false)
+        XCTAssertEqual(queued, 2)
+        var lastSeen: [UUID: String] = [:]
+        while Date().timeIntervalSince(started) < 300, downloader.jobs.contains(where: { ![.completed, .failed, .cancelled].contains($0.status) }) {
+            for job in downloader.jobs {
+                let key = "\(job.status.rawValue)/\(job.stage.map { "\($0)" } ?? "-")"
+                if lastSeen[job.id] != key {
+                    lastSeen[job.id] = key
+                    report(String(format: "  t=%5.1fs %@ %@", Date().timeIntervalSince(started), job.title ?? "?", key))
+                }
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        for job in downloader.jobs {
+            XCTAssertEqual(job.status, .completed, job.errorMessage ?? "")
+            let package = URL(fileURLWithPath: try XCTUnwrap(job.manifestPath)).deletingLastPathComponent()
+            let files = try FileManager.default.contentsOfDirectory(atPath: package.path).sorted()
+            report("package \(package.path.replacingOccurrences(of: dir.path + "/", with: "")): \(files)")
+            report("  attempts=\(job.attempts ?? 1) created→updated \(String(format: "%.1f", job.updatedAt.timeIntervalSince(job.createdAt)))s cmd=\(job.lastCommand ?? "-")")
+            XCTAssertTrue(files.contains { $0.hasSuffix(".mp3") || $0.hasSuffix(".flac") })
+            XCTAssertTrue(files.contains { $0.hasSuffix(".jpg") }, "cover kept")
+            XCTAssertTrue(files.contains { $0.hasSuffix(".lrc") }, "lyrics kept")
+        }
+        report(String(format: "2 tracks in %.1f s", Date().timeIntervalSince(started)))
+    }
+
+    @MainActor
+    func testMusicFirstJobLatency() async throws {
+        let dir = try liveDirectory("latency-\(Int(Date().timeIntervalSince1970))")
+        let downloader = DownloaderService(jobs: [], toolchain: .local(), historyWriter: { _ in })
+        let steps = environment["MF_LATENCY_STEPS"] ?? ""
+        if steps.contains("inspect") {
+            _ = try await downloader.inspectMusic(URL(string: "https://music.163.com/song?id=1973665667")!, cookieSource: nil, usesInAppLogin: false)
+        }
+        if steps.contains("expand") {
+            _ = try await downloader.expandCollection(URL(string: "https://music.163.com/discover/toplist?id=3778678")!, cookieSource: nil, usesInAppLogin: false)
+        }
+        let started = Date()
+        downloader.enqueueMusic([("https://music.163.com/song?id=3342319503", "b", nil), ("https://music.163.com/song?id=1973665667", "a", nil)],
+                                quality: .best, layout: .flat, destination: dir, cookieSource: nil, usesInAppLogin: false)
+        var marks: [String] = []
+        var last: [UUID: String] = [:]
+        var lastLine = ""
+        while Date().timeIntervalSince(started) < 200, downloader.jobs.contains(where: { ![.completed, .failed].contains($0.status) }) {
+            for job in downloader.jobs {
+                let key = "\(job.status.rawValue)/\(job.stage.map { "\($0)" } ?? "-")"
+                if last[job.id] != key { last[job.id] = key; marks.append(String(format: "%.1f %@ %@", Date().timeIntervalSince(started), job.title ?? "", key)) }
+            }
+            if let line = downloader.recentMessages.last, line != lastLine {
+                lastLine = line
+                marks.append(String(format: "%.1f | %@", Date().timeIntervalSince(started), String(line.prefix(90))))
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        for mark in marks { report("  " + mark) }
+        report("engine log tail: \(downloader.recentMessages.suffix(4))")
+    }
 }
 #endif

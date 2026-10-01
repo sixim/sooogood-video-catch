@@ -8,15 +8,21 @@ final class IntakeCoordinator: ObservableObject {
     @Published var pendingVideoInput: String?
     @Published var pendingTorrentInputs: [RoutedInput] = []
     @Published var pendingToolInputs: [URL] = []
+    @Published var pendingMusicInput: String?
     @Published var notice: String?
 
     /// Routes a batch and returns the page to open.
     func route(_ items: [RoutedInput]) -> AppRoute? {
         notice = nil
         let web = items.compactMap { item -> String? in
-            if case .webMedia(let url) = item { return url.absoluteString }
+            if case .webMedia(let url) = item, item.destination == .video { return url.absoluteString }
             return nil
         }
+        let music = items.compactMap { item -> String? in
+            if case .webMedia(let url) = item, item.destination == .music { return url.absoluteString }
+            return nil
+        }
+        if !music.isEmpty { pendingMusicInput = music.joined(separator: "\n") }
         let torrents = items.filter { $0.destination == .torrent }
         let unsupported = items.compactMap { item -> String? in
             if case .unsupported(let text) = item { return text }
@@ -33,6 +39,7 @@ final class IntakeCoordinator: ObservableObject {
         }
         switch InputClassifier.primaryDestination(of: items) {
         case .video: return .video
+        case .music: return .musicDownload
         case .torrent: return .torrent
         case .tools: return .tools
         case .none: return nil

@@ -77,6 +77,9 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var collection: CollectionContext?
     /// Live pipeline position and throughput; not meaningful after completion.
     public var stage: DownloadStage?
+    /// Set for music-service downloads: picks audio formats, tags and layout.
+    public var musicQuality: MusicQualityPreference?
+    public var musicLayout: MusicLayout?
     public var speedText: String?
     public var etaText: String?
 

@@ -86,6 +86,15 @@ final class StreamingSiteLoginStore: ObservableObject {
         return browser(for: platform)
     }
 
+    /// Which session a download of `url` should use: a browser's cookies, the
+    /// in-app WebKit session, or none. Single source for every entry point.
+    func routing(for url: URL) -> (cookieSource: BrowserCookieSource?, inApp: Bool) {
+        let platform = StreamingPlatform.detect(url)
+        guard StreamingPlatform.browserLoginPlatforms.contains(platform), isEnabled(for: platform) else { return (nil, false) }
+        if method(for: platform) == .inApp { return (nil, true) }
+        return (cookieSource(for: platform), false)
+    }
+
     func method(for platform: StreamingPlatform) -> SiteLoginMethod {
         configuration(for: platform)?.resolvedMethod ?? .inApp
     }

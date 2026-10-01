@@ -1,0 +1,183 @@
+import Foundation
+
+/// Audio quality tiers as music services name them. Ordered low → high.
+public enum MusicQualityTier: Int, Codable, Comparable, CaseIterable, Sendable {
+    case low        // < 128 kbps (e.g. 48/96 kbps AAC)
+    case standard   // 128 kbps
+    case higher     // 192 kbps
+    case high       // 320 kbps (极高 / HQ)
+    case lossless   // 16-bit FLAC/APE/ALAC (无损 / SQ)
+    case hires      // 24-bit or > 48 kHz lossless (Hi-Res / 母带)
+
+    public var displayName: String {
+        switch self {
+        case .low: return "低音质"
+        case .standard: return "标准 128k"
+        case .higher: return "较高 192k"
+        case .high: return "极高 320k"
+        case .lossless: return "无损"
+        case .hires: return "Hi-Res"
+        }
+    }
+
+    public var isLossless: Bool { self >= .lossless }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
+
+    static let losslessCodecs: Set<String> = ["flac", "alac", "ape", "wav", "pcm_s16le", "pcm_s24le"]
+
+    /// Classifies one yt-dlp format. NetEase level names are authoritative
+    /// when present; otherwise codec and bitrate decide.
+    public static func classify(formatID: String?, codec: String?, ext: String?, bitrate: Double?, sampleRate: Double?) -> MusicQualityTier {
+        switch formatID?.lowercased() {
+        case "standard": return .standard
+        case "higher": return .higher
+        case "exhigh": return .high
+        case "lossless": return .lossless
+        case "hires", "jymaster", "jyeffect": return .hires
+        default: break
+        }
+        let codec = (codec ?? "").lowercased()
+        let ext = (ext ?? "").lowercased()
+        if losslessCodecs.contains(codec) || ["flac", "ape", "wav"].contains(ext) {
+            if let rate = sampleRate, rate > 48_000 { return .hires }
+            return .lossless
+        }
+        guard let kbps = bitrate else { return .standard }
+        switch kbps {
+        case 300...: return .high
+        case 180..<300: return .higher
+        case 120..<180: return .standard
+        default: return .low
+        }
+    }
+}
+
+public struct MusicFormatOption: Equatable, Sendable, Identifiable {
+    public let formatID: String
+    public let tier: MusicQualityTier
+    public let ext: String
+    public let bitrate: Double?
+    public let fileSize: Int64?
+
+    public var id: String { formatID }
+}
+
+/// One track as resolved by yt-dlp (`-J`), reduced to what the music UI needs.
+public struct MusicTrackInfo: Equatable, Sendable {
+    public let id: String
+    public let title: String
+    public let artists: [String]
+    public let album: String?
+    public let duration: Double?
+    public let thumbnail: String?
+    public let hasLyrics: Bool
+    public let formats: [MusicFormatOption]
+
+    public var artistLine: String { artists.isEmpty ? "未知歌手" : artists.joined(separator: " / ") }
+    public var bestTier: MusicQualityTier? { formats.map(\.tier).max() }
+    public var availableTiers: [MusicQualityTier] { Array(Set(formats.map(\.tier))).sorted() }
+
+    public static func parse(_ json: JSONValue) -> MusicTrackInfo? {
+        guard let id = json["id"]?.stringValue, let title = json["title"]?.stringValue ?? json["track"]?.stringValue else { return nil }
+        func strings(_ key: String) -> [String] { json[key]?.arrayValue?.compactMap(\.stringValue) ?? [] }
+        var artists = strings("artists")
+        if artists.isEmpty { artists = strings("creators") }
+        if artists.isEmpty, let single = json["artist"]?.stringValue ?? json["creator"]?.stringValue {
+            artists = single.components(separatedBy: ", ")
+        }
+        if artists.isEmpty { artists = strings("album_artists") }
+        let formats = (json["formats"]?.arrayValue ?? []).compactMap { format -> MusicFormatOption? in
+            guard let formatID = format["format_id"]?.stringValue else { return nil }
+            let vcodec = format["vcodec"]?.stringValue ?? "none"
+            guard vcodec == "none" || vcodec.isEmpty else { return nil } // audio only
+            let bitrate = format["abr"]?.doubleValue ?? format["tbr"]?.doubleValue
+            return MusicFormatOption(
+                formatID: formatID,
+                tier: .classify(formatID: formatID, codec: format["acodec"]?.stringValue, ext: format["ext"]?.stringValue,
+                                bitrate: bitrate, sampleRate: format["asr"]?.doubleValue),
+                ext: format["ext"]?.stringValue ?? "",
+                bitrate: bitrate,
+                fileSize: (format["filesize"]?.doubleValue ?? format["filesize_approx"]?.doubleValue).map { Int64($0) }
+            )
+        }
+        let subtitles = json["subtitles"]?.objectValue ?? [:]
+        return MusicTrackInfo(
+            id: id, title: title, artists: artists, album: json["album"]?.stringValue,
+            duration: json["duration"]?.doubleValue, thumbnail: json["thumbnail"]?.stringValue,
+            hasLyrics: subtitles.keys.contains { $0.lowercased().contains("lyric") }, formats: formats
+        )
+    }
+}
+
+/// What the user wants when several qualities exist.
+public enum MusicQualityPreference: String, Codable, CaseIterable, Sendable, Identifiable {
+    case best
+    case losslessOnly
+    case upTo320
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .best: return "最高可用音质"
+        case .losslessOnly: return "只要无损"
+        case .upTo320: return "最高 320k（省空间）"
+        }
+    }
+
+    /// yt-dlp `--format` selector. Platform original formats only; never transcodes.
+    public var formatSelector: String {
+        switch self {
+        case .best: return "ba/b"
+        case .losslessOnly: return "ba[acodec=flac]/ba[ext=flac]/ba[acodec=alac]/ba[ext=ape]"
+        case .upTo320: return "ba[acodec!=flac][ext!=flac][ext!=ape][abr<=320]/ba[acodec!=flac][ext!=flac][ext!=ape]"
+        }
+    }
+
+    /// Which tier this preference would pick from what a track offers (nil = would fail).
+    public func expectedTier(from tiers: [MusicQualityTier]) -> MusicQualityTier? {
+        switch self {
+        case .best: return tiers.max()
+        case .losslessOnly: return tiers.filter(\.isLossless).max()
+        case .upTo320: return tiers.filter { !$0.isLossless }.max()
+        }
+    }
+}
+
+/// How downloaded tracks are arranged on disk. Each track is still its own
+/// package folder (audio + cover + lyrics + manifest.json).
+public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
+    case artistAlbum
+    case flat
+    case collection
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .artistAlbum: return "歌手 / 专辑 / 歌曲"
+        case .flat: return "歌手 - 歌曲（平铺）"
+        case .collection: return "按歌单顺序"
+        }
+    }
+
+    /// yt-dlp output template. Metadata fields are sanitized by yt-dlp; our own
+    /// folder names (collection) go through `CollectionPaths.safeComponent`.
+    public func outputTemplate(collection: CollectionContext?) -> String {
+        let artist = "%(creators.0,artists.0,artist,album_artists.0,uploader|未知歌手).80B"
+        let album = "%(album|未知专辑).80B"
+        let track = "\(artist) - %(title).120B [%(id)s]"
+        switch self {
+        case .artistAlbum:
+            return "\(artist)/\(album)/\(track)/\(track).%(ext)s"
+        case .flat:
+            return "\(track)/\(track).%(ext)s"
+        case .collection:
+            guard let collection else { return "\(track)/\(track).%(ext)s" }
+            let root = collection.rootFolderName.replacingOccurrences(of: "%", with: "%%")
+            let numbered = String(format: "%03d", collection.index) + " - " + track
+            return "\(root)/\(numbered)/\(numbered).%(ext)s"
+        }
+    }
+}

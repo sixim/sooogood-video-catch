@@ -11,7 +11,8 @@ public enum RoutedInput: Equatable, Sendable {
 
     public var destination: Destination {
         switch self {
-        case .webMedia: return .video
+        case .webMedia(let url):
+            return MusicLink.parse(url) != nil || MusicLink.needsRedirectResolution(url) ? .music : .video
         case .magnet, .torrentFile: return .torrent
         case .localMedia: return .tools
         case .unsupported: return .none
@@ -19,7 +20,7 @@ public enum RoutedInput: Equatable, Sendable {
     }
 
     public enum Destination: String, Sendable {
-        case video, torrent, tools, none
+        case video, music, torrent, tools, none
     }
 }
 
@@ -30,12 +31,22 @@ public enum InputClassifier {
 
     /// Splits on whitespace and newlines; magnets keep their full query string.
     public static func classify(_ text: String) -> [RoutedInput] {
-        text.components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .map(classifyToken)
-            .reduce(into: [RoutedInput]()) { result, item in
-                if !result.contains(item) { result.append(item) }
+        var items: [RoutedInput] = []
+        for token in text.components(separatedBy: .whitespacesAndNewlines) where !token.isEmpty {
+            let lowered = token.lowercased()
+            if lowered.contains("http://") || lowered.contains("https://"), !lowered.hasPrefix("magnet:") {
+                // Share text glues links to other characters: take every URL inside the token.
+                let urls = LinkInputParser.URLs(from: token)
+                items += urls.map { $0.pathExtension.lowercased() == "torrent" ? .torrentFile($0) : .webMedia($0) }
+                if urls.isEmpty { items.append(.unsupported(token)) }
+            } else if !token.unicodeScalars.contains(where: { $0.value > 0x2E7F }) || token.hasPrefix("/") || token.hasPrefix("~") || lowered.hasPrefix("magnet:") {
+                items.append(classifyToken(token))
             }
+            // Pure CJK words around a shared link (e.g. 分享…的单曲) are not inputs.
+        }
+        return items.reduce(into: [RoutedInput]()) { result, item in
+            if !result.contains(item) { result.append(item) }
+        }
     }
 
     public static func classify(fileURLs: [URL]) -> [RoutedInput] {

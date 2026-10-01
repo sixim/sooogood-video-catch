@@ -758,6 +758,12 @@ public final class DownloaderService: ObservableObject {
                     : authenticationRequiredMessage(for: jobs[jobIndex].browserCookieSource))
                 return
             }
+            if let preference = jobs[jobIndex].musicQuality,
+               engineOutput.lowercased().contains("requested format is not available") {
+                // A missing quality tier will not appear on retry: say so instead.
+                failCurrentJob("该曲目当前账号没有「\(preference.displayName)」可用（平台只提供更低音质，或需要会员）。可改用「最高可用音质」。")
+                return
+            }
             if scheduleRetryIfUseful(jobIndex: jobIndex, output: engineOutput) { return }
             let lastLine = Self.lastErrorLine(in: engineOutput)
             let fallback = lastLine.isEmpty ? "下载引擎返回错误 \(finished.terminationStatus)" : lastLine
@@ -778,7 +784,7 @@ public final class DownloaderService: ObservableObject {
         status = "正在计算 SHA-256 并生成清单…"
         persistJobs()
 
-        let job = jobs[jobIndex]
+        var job = jobs[jobIndex]
         let packageDirectory = completedFiles.first.map { URL(fileURLWithPath: $0).deletingLastPathComponent() }
         let formats = activeFormats
         let mediaID = activeMediaID
@@ -789,8 +795,22 @@ public final class DownloaderService: ObservableObject {
             return
         }
 
+        let audioFiles = completedFiles.map(URL.init(fileURLWithPath:)).filter {
+            ["mp3", "flac", "m4a", "ogg", "opus", "ape", "wav", "aac"].contains($0.pathExtension.lowercased())
+        }
+        let expectedTier = formats.first.map {
+            MusicQualityTier.classify(formatID: $0.formatID, codec: $0.audioCodec, ext: $0.container, bitrate: nil, sampleRate: nil)
+        }
+        let ffprobe = ffmpeg.map { URL(fileURLWithPath: $0).deletingLastPathComponent().appendingPathComponent("ffprobe") }
+        let environment = toolchain.processEnvironment
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
+                if job.musicQuality != nil, let audio = audioFiles.first, let ffprobe,
+                   FileManager.default.isExecutableFile(atPath: ffprobe.path) {
+                    let probe = ProcessRunner.run(ffprobe, ["-v", "error", "-of", "json", "-show_format", "-show_streams", audio.path],
+                                                  environment: environment)
+                    job.audioQuality = AudioQualityReport.parse(ffprobeJSON: probe.stdout, expectedTier: expectedTier)
+                }
                 let manifest = try ManifestWriter.write(
                     job: job, packageDirectory: packageDirectory, platform: platform,
                     mediaID: mediaID, selectedFormats: formats, ytDLPPath: ytDLPPath, ffmpegPath: ffmpeg
@@ -829,6 +849,7 @@ public final class DownloaderService: ObservableObject {
                     guard let self else { return }
                     self.updateJob(job.id) {
                         $0.stage = nil
+                        $0.audioQuality = job.audioQuality
                         $0.status = .completed
                         $0.updatedAt = Date()
                         $0.manifestPath = finalManifest.path

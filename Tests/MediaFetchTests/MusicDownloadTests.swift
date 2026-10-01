@@ -76,4 +76,22 @@ final class MusicDownloadTests: XCTestCase {
         XCTAssertEqual(InputClassifier.classify("https://www.youtube.com/watch?v=x").first?.destination, .video)
         XCTAssertEqual(InputClassifier.primaryDestination(of: items), .music)
     }
+
+    func testAudioQualityReportMeasuresRealFileNotLabel() throws {
+        // ffprobe shapes captured from a 320k NetEase MP3 (with cover stream) and a 96 kHz / 24-bit FLAC.
+        let mp3 = Data(#"{"streams":[{"codec_type":"audio","codec_name":"mp3","sample_rate":"44100","bits_per_sample":0,"bit_rate":"320000","channels":2},{"codec_type":"video","codec_name":"mjpeg"}],"format":{"duration":"166.4","bit_rate":"346374"}}"#.utf8)
+        let report = try XCTUnwrap(AudioQualityReport.parse(ffprobeJSON: mp3, expectedTier: .high))
+        XCTAssertEqual(report.tier, .high)
+        XCTAssertTrue(report.meetsExpectation)
+        XCTAssertEqual(report.summary, "MP3 · 44.1 kHz · 320 kbps")
+
+        let flac = Data(#"{"streams":[{"codec_type":"audio","codec_name":"flac","sample_rate":"96000","bits_per_raw_sample":"24"}],"format":{"duration":"1.0"}}"#.utf8)
+        let hires = try XCTUnwrap(AudioQualityReport.parse(ffprobeJSON: flac, expectedTier: .lossless))
+        XCTAssertEqual(hires.tier, .hires)
+        XCTAssertEqual(hires.summary, "FLAC · 96.0 kHz · 24-bit")
+
+        // Platform said lossless, file is a 128k MP3: flagged.
+        let fake = Data(#"{"streams":[{"codec_type":"audio","codec_name":"mp3","sample_rate":"44100","bit_rate":"128000"}],"format":{}}"#.utf8)
+        XCTAssertFalse(try XCTUnwrap(AudioQualityReport.parse(ffprobeJSON: fake, expectedTier: .lossless)).meetsExpectation)
+    }
 }

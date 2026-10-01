@@ -299,6 +299,14 @@ struct MusicDownloadView: View {
                         else if let error = job.errorMessage { Text(error).font(.caption).lineLimit(1).foregroundStyle(MediaFetchTheme.danger) }
                     }
                     Spacer()
+                    if let audio = job.audioQuality {
+                        QualityBadge(tier: audio.tier, emphasized: true).help(audio.summary)
+                        if !audio.meetsExpectation {
+                            Label("低于平台标称", systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption).foregroundStyle(MediaFetchTheme.warning)
+                                .help("平台标称 \(audio.expectedTier?.displayName ?? "-")，实际文件 \(audio.summary)")
+                        }
+                    }
                     if let manifest = job.manifestPath {
                         Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: manifest).deletingLastPathComponent()]) }
                             .buttonStyle(.link)

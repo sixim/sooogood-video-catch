@@ -181,3 +181,49 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
         }
     }
 }
+
+/// What the downloaded file actually is, measured with ffprobe — not what the
+/// platform labelled it. Written into the package manifest.
+public struct AudioQualityReport: Codable, Equatable, Sendable {
+    public let codec: String
+    public let sampleRate: Int?
+    public let bitsPerSample: Int?
+    public let bitrate: Int?
+    public let channels: Int?
+    public let durationSeconds: Double?
+    public let tier: MusicQualityTier
+    /// Tier the selected platform format promised (from its format id / codec).
+    public let expectedTier: MusicQualityTier?
+
+    /// False when the file is worse than what the platform said it would be.
+    public var meetsExpectation: Bool { expectedTier.map { tier >= $0 } ?? true }
+
+    public var summary: String {
+        var parts = [codec.uppercased()]
+        if let rate = sampleRate { parts.append(String(format: "%.1f kHz", Double(rate) / 1000)) }
+        if let bits = bitsPerSample, tier.isLossless { parts.append("\(bits)-bit") }
+        if let bitrate, !tier.isLossless { parts.append("\(bitrate / 1000) kbps") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Parses `ffprobe -of json -show_format -show_streams`; the first real audio stream counts.
+    public static func parse(ffprobeJSON data: Data, expectedTier: MusicQualityTier?) -> AudioQualityReport? {
+        guard let json = try? JSONDecoder().decode(JSONValue.self, from: data),
+              let stream = json["streams"]?.arrayValue?.first(where: { $0["codec_type"]?.stringValue == "audio" }),
+              let codec = stream["codec_name"]?.stringValue else { return nil }
+        func int(_ value: JSONValue?) -> Int? { value?.stringValue.flatMap(Int.init) ?? value?.intValue }
+        let sampleRate = int(stream["sample_rate"])
+        var bits = int(stream["bits_per_raw_sample"])
+        if bits == nil || bits == 0 { bits = int(stream["bits_per_sample"]) }
+        if bits == 0 { bits = nil }
+        let duration = stream["duration"]?.stringValue.flatMap(Double.init) ?? json["format"]?["duration"]?.stringValue.flatMap(Double.init)
+        var bitrate = int(stream["bit_rate"])
+        if bitrate == nil, let total = int(json["format"]?["bit_rate"]) { bitrate = total }
+        var tier = MusicQualityTier.classify(formatID: nil, codec: codec, ext: nil,
+                                             bitrate: bitrate.map { Double($0) / 1000 }, sampleRate: sampleRate.map(Double.init))
+        if tier == .lossless, let bits, bits > 16 { tier = .hires }
+        return AudioQualityReport(codec: codec, sampleRate: sampleRate, bitsPerSample: bits, bitrate: bitrate,
+                                  channels: int(stream["channels"]), durationSeconds: duration,
+                                  tier: tier, expectedTier: expectedTier)
+    }
+}

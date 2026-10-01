@@ -80,6 +80,8 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     /// Set for music-service downloads: picks audio formats, tags and layout.
     public var musicQuality: MusicQualityPreference?
     public var musicLayout: MusicLayout?
+    /// Measured quality of the downloaded audio (music jobs).
+    public var audioQuality: AudioQualityReport?
     public var speedText: String?
     public var etaText: String?
 

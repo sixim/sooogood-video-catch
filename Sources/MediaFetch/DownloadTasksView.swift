@@ -187,7 +187,11 @@ struct DownloadTasksView: View {
                 }
 
                 HStack(spacing: 7) {
-                    Text(job.profile.rawValue)
+                    Text(job.musicQuality.map { "音乐 · \($0.displayName)" } ?? job.profile.rawValue)
+                    if let audio = job.audioQuality {
+                        Text("· 实测 \(audio.summary)")
+                            .foregroundStyle(audio.meetsExpectation ? MediaFetchTheme.secondaryText : MediaFetchTheme.warning)
+                    }
                     if let source = job.browserCookieSource {
                         Text("· \(source.displayName) 登录态")
                     }

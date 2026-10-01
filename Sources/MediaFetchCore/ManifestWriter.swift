@@ -39,6 +39,9 @@ struct MediaManifest: Codable {
     let subtitlesRequested: Bool
     let tools: ToolVersions
     let engine: EngineRecord?
+    /// Added in schema 3: measured audio quality and the requested preference (music).
+    let audio: AudioQualityReport?
+    let musicQualityPreference: String?
     let files: [FileRecord]
 }
 
@@ -112,6 +115,8 @@ public enum ManifestWriter {
                 youtubePlayerClient: job.youtubePlayerClient,
                 command: job.lastCommand
             ),
+            audio: job.audioQuality,
+            musicQualityPreference: job.musicQuality?.rawValue,
             files: records
         )
 

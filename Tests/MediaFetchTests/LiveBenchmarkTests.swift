@@ -236,6 +236,10 @@ final class LiveBenchmarkTests: XCTestCase {
             let package = URL(fileURLWithPath: try XCTUnwrap(job.manifestPath)).deletingLastPathComponent()
             let files = try FileManager.default.contentsOfDirectory(atPath: package.path).sorted()
             report("package \(package.path.replacingOccurrences(of: dir.path + "/", with: "")): \(files)")
+            let manifest = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: URL(fileURLWithPath: job.manifestPath!)))
+            report("  measured: \(job.audioQuality?.summary ?? "-") tier=\(job.audioQuality?.tier.displayName ?? "-") expected=\(job.audioQuality?.expectedTier?.displayName ?? "-") manifest.schema=\(manifest["schemaVersion"]?.intValue ?? 0) manifest.audio=\(manifest["audio"]?["codec"]?.stringValue ?? "-")")
+            XCTAssertNotNil(job.audioQuality)
+            XCTAssertEqual(manifest["audio"]?["codec"]?.stringValue, job.audioQuality?.codec)
             report("  attempts=\(job.attempts ?? 1) created→updated \(String(format: "%.1f", job.updatedAt.timeIntervalSince(job.createdAt)))s cmd=\(job.lastCommand ?? "-")")
             XCTAssertTrue(files.contains { $0.hasSuffix(".mp3") || $0.hasSuffix(".flac") })
             XCTAssertTrue(files.contains { $0.hasSuffix(".jpg") }, "cover kept")
@@ -274,6 +278,25 @@ final class LiveBenchmarkTests: XCTestCase {
         }
         for mark in marks { report("  " + mark) }
         report("engine log tail: \(downloader.recentMessages.suffix(4))")
+    }
+
+    /// Free account + "lossless only": must fail fast with a clear reason, no retries.
+    @MainActor
+    func testLosslessOnlyFailsFastWithoutVIP() async throws {
+        let dir = try liveDirectory("lossless-\(Int(Date().timeIntervalSince1970))")
+        let downloader = DownloaderService(jobs: [], toolchain: .local(), historyWriter: { _ in })
+        let started = Date()
+        downloader.enqueueMusic([("https://music.163.com/song?id=1973665667", "x", nil)], quality: .losslessOnly, layout: .flat,
+                                destination: dir, cookieSource: nil, usesInAppLogin: false)
+        while Date().timeIntervalSince(started) < 120, downloader.jobs.contains(where: { ![.completed, .failed].contains($0.status) }) {
+            try await Task.sleep(nanoseconds: 200_000_000)
+        }
+        let job = try XCTUnwrap(downloader.jobs.first)
+        report(String(format: "lossless-only on free account: %@ after %.1f s, attempts %d: %@", job.status.rawValue,
+                      Date().timeIntervalSince(started), job.attempts ?? 1, job.errorMessage ?? "-"))
+        XCTAssertEqual(job.status, .failed)
+        XCTAssertEqual(job.attempts ?? 1, 1, "no pointless retries")
+        XCTAssertTrue(job.errorMessage?.contains("只要无损") == true)
     }
 }
 #endif

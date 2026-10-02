@@ -83,6 +83,17 @@ public struct EngineDiagnosis: Codable, Equatable, Sendable {
 /// "unavailable". Unknown output returns nil — a wrong diagnosis sends the
 /// user after the wrong fix, which is worse than none.
 public enum EngineDiagnostics {
+    /// yt-dlp's QQ Music extractor only understands QQ-number sessions (`uin`);
+    /// a WeChat login looks "logged out" to it. Users who are logged in with
+    /// WeChat must be told that instead of a bare "needs login".
+    public static let qqMusicLoginHint = "QQ 音乐目前只支持 QQ 号登录，暂不支持微信登录（下载引擎的限制）。用微信登录的话，建议改用网易云音乐下载；有 QQ 号可以用手机 QQ 扫码登录后重试。"
+
+    /// Platform-specific replacement for a diagnosis, when the generic text would mislead.
+    public static func platformHint(for diagnosis: EngineDiagnosis?, platform: StreamingPlatform) -> String? {
+        guard platform == .qqmusic, diagnosis?.cause == .needsLogin else { return nil }
+        return qqMusicLoginHint
+    }
+
     public static func diagnose(_ output: String) -> EngineDiagnosis? {
         let s = output.lowercased()
         if EngineErrorClassifier.isDRMError(output) {

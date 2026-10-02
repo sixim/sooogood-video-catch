@@ -436,12 +436,15 @@ public final class DownloaderService: ObservableObject {
         return result
     }
 
-    private static func engineError(_ stderr: Data) -> EngineCallError {
+    private static func engineError(_ stderr: Data, url: URL) -> EngineCallError {
         let text = String(decoding: stderr, as: UTF8.self)
+        let platform = StreamingPlatform.detect(url)
         if text.contains("expected string or bytes-like object") {
-            return EngineCallError("平台网页暂时没有响应（已自动重试 3 次）。请稍后再试；QQ 音乐还需要先登录。")
+            return EngineCallError("平台网页暂时没有响应（已自动重试 3 次），请稍后再试。"
+                + (platform == .qqmusic ? "\n" + EngineDiagnostics.qqMusicLoginHint : ""))
         }
         let diagnosis = EngineDiagnostics.diagnose(text)
+        if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: platform) { return EngineCallError(hint) }
         return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
     }
 
@@ -449,7 +452,7 @@ public final class DownloaderService: ObservableObject {
         let (status, output, errors) = try await runEngine(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
             YtDLPArgumentBuilder.analysisArguments(url: url.absoluteString, sessionRateLimitCount: self.sessionRateLimitCount, cookieArguments: $0)
         }
-        guard status == 0 else { throw Self.engineError(errors) }
+        guard status == 0 else { throw Self.engineError(errors, url: url) }
         return try JSONDecoder().decode(MediaMetadata.self, from: output)
     }
 
@@ -458,7 +461,7 @@ public final class DownloaderService: ObservableObject {
         let (status, output, errors) = try await runEngineRetrying(url, cookieSource: cookieSource, usesInAppLogin: usesInAppLogin) {
             YtDLPArgumentBuilder.analysisArguments(url: url.absoluteString, sessionRateLimitCount: self.sessionRateLimitCount, cookieArguments: $0)
         }
-        guard status == 0 else { throw Self.engineError(errors) }
+        guard status == 0 else { throw Self.engineError(errors, url: url) }
         guard let json = try? JSONDecoder().decode(JSONValue.self, from: output), let track = MusicTrackInfo.parse(json) else {
             throw EngineCallError("无法读取歌曲信息")
         }
@@ -513,6 +516,7 @@ public final class DownloaderService: ObservableObject {
         }
         let text = String(decoding: errors, as: UTF8.self)
         if status != 0, let diagnosis = EngineDiagnostics.diagnose(text) {
+            if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(url)) { throw EngineCallError(hint) }
             throw EngineCallError([diagnosis.title, diagnosis.guidance, EngineDiagnostics.lastErrorLine(in: text)].joined(separator: "\n"))
         }
         throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
@@ -767,6 +771,11 @@ public final class DownloaderService: ObservableObject {
             jobs[jobIndex].diagnosis = diagnosis
             if EngineErrorClassifier.isDRMError(engineOutput) {
                 failCurrentJob("该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。")
+                return
+            }
+            if let sourceURL = URL(string: jobs[jobIndex].sourceURL),
+               let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(sourceURL)) {
+                failCurrentJob(hint)
                 return
             }
             if EngineErrorClassifier.isAuthenticationRequiredError(engineOutput) {

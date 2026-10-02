@@ -230,4 +230,16 @@ final class EngineResilienceTests: XCTestCase {
         XCTAssertEqual(files.first?["signature"] as? String, "isoBMFF")
     }
 #endif
+
+    /// Real yt-dlp stderr for a QQ Music track without a QQ-number session.
+    func testQQMusicLoginFailureExplainsWeChatLimit() {
+        let stderr = "ERROR: [qqmusic] 0039MnYb0qxYhV: This video is only available for registered users. Use --cookies-from-browser or --cookies for the authentication."
+        let diagnosis = EngineDiagnostics.diagnose(stderr)
+        XCTAssertEqual(diagnosis?.cause, .needsLogin)
+        XCTAssertEqual(EngineDiagnostics.platformHint(for: diagnosis, platform: .qqmusic), EngineDiagnostics.qqMusicLoginHint)
+        XCTAssertTrue(EngineDiagnostics.qqMusicLoginHint.contains("微信"))
+        XCTAssertNil(EngineDiagnostics.platformHint(for: diagnosis, platform: .netease))
+        XCTAssertNil(EngineDiagnostics.platformHint(for: .init(cause: .rateLimited, remedy: .waitAndRetry), platform: .qqmusic))
+        XCTAssertNil(EngineDiagnostics.platformHint(for: nil, platform: .qqmusic))
+    }
 }

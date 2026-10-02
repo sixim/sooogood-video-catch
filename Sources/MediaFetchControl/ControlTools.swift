@@ -53,7 +53,7 @@ public struct ControlTool: Sendable, Equatable {
                 "destination": ["type": "string"]
               ], required: ["url"])),
         .init(name: "analyze_music",
-              description: "Resolve a NetEase Cloud Music or QQ Music link (song, album, playlist, artist, chart; share text and short links accepted): artists, album, duration, lyrics, and which qualities this account can download (128k…320k, lossless, Hi-Res). Lists expand to their tracks.",
+              description: "Resolve a NetEase Cloud Music or QQ Music link (song, album, playlist, artist, chart; share text and short links accepted): artists, album, duration, lyrics, and which qualities this account can download (128k…320k, lossless, Hi-Res). Lists expand to their tracks; NetEase tracks the platform has no rights to carry unavailable_reason and are skipped by enqueue_music.",
               inputSchema: schema(["url": string], required: ["url"])),
         .init(name: "enqueue_music",
               description: "Download NetEase Cloud Music / QQ Music tracks as tagged packages (original audio, embedded cover and lyrics, .lrc, manifest with measured quality). Lists take optional indices. Never transcodes; tracks without the requested quality are skipped and reported.",

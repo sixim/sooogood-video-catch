@@ -200,7 +200,12 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
             return ["kind": .string(link.kind.rawValue), "title": .string(outline.title),
                     "unavailable": .number(Double(outline.unavailableCount)),
-                    "tracks": .array(outline.entries.map { ["index": .number(Double($0.index)), "title": .string($0.title), "url": .string($0.url)] })]
+                    "no_rights": .number(Double(outline.restricted.count)),
+                    "tracks": .array(outline.entries.map { entry -> JSONValue in
+                        var track: [String: JSONValue] = ["index": .number(Double(entry.index)), "title": .string(entry.title), "url": .string(entry.url)]
+                        if let reason = outline.restriction(for: entry) { track["unavailable_reason"] = .string(reason) }
+                        return .object(track)
+                    })]
         }
         var result = musicJSON(try await downloader.inspectMusic(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)).objectValue ?? [:]
         result["kind"] = "song"
@@ -221,11 +226,15 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? MusicPreferences.destination
         let login = loginRouting(for: url)
         var items: [(url: String, title: String?, collection: CollectionContext?)] = []
+        var noRights: [String] = []
         if link.kind.isCollection {
             let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
             let wanted: Set<Int>? = args.raw["indices"]?.arrayValue.map { Set($0.compactMap(\.intValue)) }
-            items = outline.entries.filter { wanted?.contains($0.index) ?? true }
+            let picked = outline.entries.filter { wanted?.contains($0.index) ?? true }
+            noRights = picked.filter { outline.restriction(for: $0) != nil }.map(\.title)
+            items = picked.filter { outline.restriction(for: $0) == nil }
                 .map { ($0.url, $0.title, layout == .collection ? outline.context(for: $0) : nil) }
+            if items.isEmpty, !noRights.isEmpty { throw ControlError.failed(NetEaseAvailability.noRightsMessage + "：" + noRights.joined(separator: "、")) }
         } else {
             items = [(link.canonicalURL.absoluteString, nil, nil)]
         }
@@ -235,6 +244,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
                                             cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
         guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有曲目被加入队列") }
         return ["enqueued": .number(Double(count)), "quality": .string(quality.displayName), "destination": .string(destination.path),
+                "skipped_no_rights": .array(noRights.map(JSONValue.string)),
                 "tasks": .array(downloader.jobs.filter { !before.contains($0.id) }.map(videoSummary))]
     }
 

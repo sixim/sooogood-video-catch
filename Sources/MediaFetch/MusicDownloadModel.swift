@@ -81,8 +81,10 @@ final class MusicDownloadModel: ObservableObject {
                 if MusicLink.parse(url)?.kind.isCollection == true {
                     let outline = try await downloader.expandCollection(url, cookieSource: session.cookieSource, usesInAppLogin: session.inApp)
                     phase = .list(outline)
-                    selected = Set(outline.entries.map(\.id))
-                    probe(Array(outline.entries.prefix(Self.autoProbeLimit)))
+                    // Tracks the platform cannot serve are never selected or probed.
+                    let obtainable = outline.entries.filter { outline.restriction(for: $0) == nil }
+                    selected = Set(obtainable.map(\.id))
+                    probe(Array(obtainable.prefix(Self.autoProbeLimit)))
                 } else {
                     let track = try await downloader.inspectMusic(url, cookieSource: session.cookieSource, usesInAppLogin: session.inApp)
                     phase = .single(url: url.absoluteString, track: track)
@@ -104,7 +106,7 @@ final class MusicDownloadModel: ObservableObject {
     }
 
     func probe(_ entries: [CollectionEntry]) {
-        for entry in entries where probes[entry.id] == nil || probes[entry.id] == .pending {
+        for entry in entries where (probes[entry.id] == nil || probes[entry.id] == .pending) && restriction(for: entry) == nil {
             probes[entry.id] = .pending
             if !probeQueue.contains(where: { $0.id == entry.id }) { probeQueue.append(entry) }
         }
@@ -197,8 +199,13 @@ final class MusicDownloadModel: ObservableObject {
         return order.map { ($0, groups[$0] ?? []) }
     }
 
+    /// Why the platform cannot serve this entry at all (e.g. no rights on NetEase).
+    func restriction(for entry: CollectionEntry) -> String? { outline?.restriction(for: entry) }
+
     func toggle(_ entries: [CollectionEntry], on: Bool) {
-        for entry in entries { if on { selected.insert(entry.id) } else { selected.remove(entry.id) } }
+        for entry in entries {
+            if on, restriction(for: entry) == nil { selected.insert(entry.id) } else if !on { selected.remove(entry.id) }
+        }
     }
 
     // MARK: Queue
@@ -220,6 +227,10 @@ final class MusicDownloadModel: ObservableObject {
             }
         case .list(let outline):
             for entry in outline.entries where selected.contains(entry.id) {
+                if outline.restriction(for: entry) != nil {
+                    skipped.append(entry.title)
+                    continue
+                }
                 if let track = probes[entry.id]?.track, !track.formats.isEmpty,
                    quality.expectedTier(from: track.availableTiers) == nil {
                     skipped.append(entry.title)

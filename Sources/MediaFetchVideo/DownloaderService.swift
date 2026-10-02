@@ -44,6 +44,8 @@ public final class DownloaderService: ObservableObject {
 #if !MEDIAFETCH_STORE_PROFILE
     /// Injected by the app's WebKit session owner; the video module has no UI dependency.
     public var inAppCookieProvider: (@MainActor (URL) async throws -> Data)?
+    /// Which NetEase tracks the platform can serve; replaceable in tests.
+    var neteaseAvailability = NetEaseAvailabilityClient()
     private var activeCookieFile: TemporaryCookieFile?
     private var preparationTask: Task<Void, Never>?
     private var preparingJobID: UUID?
@@ -444,7 +446,7 @@ public final class DownloaderService: ObservableObject {
                 + (platform == .qqmusic ? "\n" + EngineDiagnostics.qqMusicLoginHint : ""))
         }
         let diagnosis = EngineDiagnostics.diagnose(text)
-        if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: platform) { return EngineCallError(hint) }
+        if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: platform, output: text) { return EngineCallError(hint) }
         return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
     }
 
@@ -511,12 +513,19 @@ public final class DownloaderService: ObservableObject {
         // Paid or private entries make yt-dlp exit non-zero even though it printed
         // the listing; a usable listing wins over the exit status.
         if let json = try? JSONDecoder().decode(JSONValue.self, from: output),
-           let outline = CollectionOutline.parse(json) {
+           var outline = CollectionOutline.parse(json) {
+            if StreamingPlatform.detect(url) == .netease {
+                // Albums list tracks NetEase has no rights to; flag them up front.
+                let statuses = await neteaseAvailability.statuses(for: outline.entries.map(\.mediaID))
+                for entry in outline.entries where statuses[entry.mediaID] == .noRights {
+                    outline.restricted[entry.id] = NetEaseAvailability.noRightsMessage
+                }
+            }
             return outline
         }
         let text = String(decoding: errors, as: UTF8.self)
         if status != 0, let diagnosis = EngineDiagnostics.diagnose(text) {
-            if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(url)) { throw EngineCallError(hint) }
+            if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(url), output: text) { throw EngineCallError(hint) }
             throw EngineCallError([diagnosis.title, diagnosis.guidance, EngineDiagnostics.lastErrorLine(in: text)].joined(separator: "\n"))
         }
         throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
@@ -774,7 +783,7 @@ public final class DownloaderService: ObservableObject {
                 return
             }
             if let sourceURL = URL(string: jobs[jobIndex].sourceURL),
-               let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(sourceURL)) {
+               let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(sourceURL), output: engineOutput) {
                 failCurrentJob(hint)
                 return
             }

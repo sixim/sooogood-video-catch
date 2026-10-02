@@ -51,6 +51,11 @@ public struct CollectionOutline: Equatable, Sendable {
     public let entries: [CollectionEntry]
     /// Entries the extractor could not list for this account (e.g. paid lessons).
     public var unavailableCount = 0
+    /// Listed entries the platform itself cannot serve (entry id → reason),
+    /// e.g. NetEase tracks without playback rights. Never selected by default.
+    public var restricted: [String: String] = [:]
+
+    public func restriction(for entry: CollectionEntry) -> String? { restricted[entry.id] }
 
     public var isCourse: Bool {
         let key = extractor.lowercased()

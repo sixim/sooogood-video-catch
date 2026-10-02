@@ -209,18 +209,24 @@ struct MusicDownloadView: View {
                         Text(outline.title.isEmpty ? outline.id : outline.title).font(.title3.bold()).foregroundStyle(MediaFetchTheme.primaryText)
                         Text("\(outline.entries.count) 首 · 已选 \(model.selected.count) · 已检测音质 \(probed)" +
                              (model.localMatches.isEmpty ? "" : " · 本地已有 \(model.localMatches.count)（默认不选）") +
-                             (outline.unavailableCount > 0 ? " · \(outline.unavailableCount) 首当前账号不可见" : ""))
+                             (outline.unavailableCount > 0 ? " · \(outline.unavailableCount) 首当前账号不可见" : "") +
+                             (outline.restricted.isEmpty ? "" : " · \(outline.restricted.count) 首平台无版权（不可下载）"))
                             .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
                     Spacer()
                     Toggle("按专辑分组", isOn: $groupByAlbum).toggleStyle(.checkbox)
-                    if probed < outline.entries.count {
+                    if probed < outline.entries.count - outline.restricted.count {
                         Button("检测全部音质") { model.probeAll() }.buttonStyle(.bordered)
                     }
                     Button("全选") { model.toggle(outline.entries, on: true) }.buttonStyle(.link)
                     Button("全不选") { model.selected = [] }.buttonStyle(.link)
                 }
                 .font(.caption)
+                if !outline.entries.isEmpty, outline.restricted.count == outline.entries.count {
+                    Label("这张\(outline.extractor.contains("album") ? "专辑" : "列表")里的歌网易云全部没有播放版权，无法下载。换个平台试试。",
+                          systemImage: "nosign")
+                        .font(.callout).foregroundStyle(MediaFetchTheme.warning)
+                }
                 if groupByAlbum {
                     ForEach(model.albumGroups(), id: \.album) { group in
                         HStack {
@@ -246,6 +252,7 @@ struct MusicDownloadView: View {
         return HStack(spacing: 10) {
             Toggle("", isOn: Binding(get: { model.selected.contains(entry.id) },
                                      set: { model.toggle([entry], on: $0) })).toggleStyle(.checkbox).labelsHidden()
+                .disabled(model.restriction(for: entry) != nil)
             Text(String(format: "%03d", entry.index)).font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText)
             VStack(alignment: .leading, spacing: 2) {
                 Text(track?.title ?? entry.title).lineLimit(1).foregroundStyle(MediaFetchTheme.primaryText)
@@ -261,6 +268,10 @@ struct MusicDownloadView: View {
                     .foregroundStyle(MediaFetchTheme.success)
                     .help(match.path)
             }
+            if let reason = model.restriction(for: entry) {
+                Label(NetEaseAvailability.noRightsBadge, systemImage: "nosign")
+                    .font(.caption).foregroundStyle(MediaFetchTheme.warning).help(reason)
+            } else {
             switch probe {
             case .pending:
                 Button("检测") { model.probe([entry]) }.buttonStyle(.link).font(.caption)
@@ -280,6 +291,7 @@ struct MusicDownloadView: View {
                         Text("最高 \(best.displayName)").font(.caption2).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
                 }
+            }
             }
             Text(entry.duration.map(CollectionSheet.format) ?? track?.duration.map(CollectionSheet.format) ?? "")
                 .font(.caption.monospacedDigit()).foregroundStyle(MediaFetchTheme.secondaryText).frame(width: 48, alignment: .trailing)

@@ -12,6 +12,14 @@ final class MusicCoverTests: XCTestCase {
         XCTAssertNil(MusicCover.sidecar(for: audio, in: Array(files.prefix(3))))
     }
 
+    func testAttachedPictureCount() {
+        let two = #"{"streams":[{"codec_type":"audio"},{"disposition":{"attached_pic":1}},{"disposition":{"attached_pic":1}}]}"#
+        XCTAssertEqual(MusicCover.attachedPictureCount(ffprobeJSON: Data(two.utf8)), 2)
+        let args = MusicCover.dedupeArguments(audio: URL(fileURLWithPath: "/m/a.flac"), output: URL(fileURLWithPath: "/m/.t.flac"))
+        XCTAssertEqual(args.map { Array($0[($0.firstIndex(of: "-map") ?? 0)...].prefix(4)) }, ["-map", "0:a", "-map", "0:v:0"])
+        XCTAssertNil(MusicCover.dedupeArguments(audio: URL(fileURLWithPath: "/m/a.opus"), output: URL(fileURLWithPath: "/m/.t.opus")))
+    }
+
     func testAttachedPictureDetection() {
         let with = #"{"streams":[{"codec_type":"audio"},{"codec_type":"video","disposition":{"attached_pic":1}}]}"#
         let without = #"{"streams":[{"codec_type":"audio","disposition":{"attached_pic":0}}]}"#
@@ -61,6 +69,18 @@ final class MusicCoverTests: XCTestCase {
             let after = ProcessRunner.run(ffmpeg, ["-v", "error", "-i", track.path, "-map", "0:a", "-c", "copy", "-f", "md5", "-"], environment: env).stdout
             XCTAssertEqual(before, after, "\(ext) audio must be untouched")
         }
+        // Re-processing an existing file appends the cover again; dedupe keeps one and the audio.
+        let flac = dir.appendingPathComponent("t.flac")
+        let audioBefore = ProcessRunner.run(ffmpeg, ["-v", "error", "-i", flac.path, "-map", "0:a", "-c", "copy", "-f", "md5", "-"], environment: env).stdout
+        let doubled = dir.appendingPathComponent("d.flac")
+        XCTAssertEqual(ProcessRunner.run(ffmpeg, ["-v", "error", "-i", flac.path, "-i", image.path, "-map", "0", "-map", "1", "-c", "copy",
+                                                  "-disposition:v", "attached_pic", doubled.path], environment: env).status, 0)
+        try FileManager.default.removeItem(at: flac)
+        try FileManager.default.moveItem(at: doubled, to: flac)
+        XCTAssertEqual(MusicTagger.embeddedCoverCount(flac, ffprobe: ffprobe, environment: env), 2)
+        XCTAssertTrue(MusicTagger.removeDuplicateCovers(audio: flac, ffmpeg: ffmpeg, environment: env))
+        XCTAssertEqual(MusicTagger.embeddedCoverCount(flac, ffprobe: ffprobe, environment: env), 1)
+        XCTAssertEqual(audioBefore, ProcessRunner.run(ffmpeg, ["-v", "error", "-i", flac.path, "-map", "0:a", "-c", "copy", "-f", "md5", "-"], environment: env).stdout)
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix(".") }, [], "no temp files left")
     }
 }

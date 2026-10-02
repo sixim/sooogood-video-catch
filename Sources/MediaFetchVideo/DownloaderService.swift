@@ -918,7 +918,8 @@ public final class DownloaderService: ObservableObject {
 
 #if !MEDIAFETCH_STORE_PROFILE
     /// yt-dlp only warns when a cover fails to download, so a music track can
-    /// finish without one. Fetch the cover again if needed and embed it.
+    /// finish without one, and it appends a second copy when re-processing an
+    /// existing file. Leaves exactly one cover: dedupe, or fetch and embed.
     /// Returns false when the track still has no cover afterwards.
     private func ensureMusicCover(job: DownloadJob, audio: URL) async -> Bool {
         let ffmpeg = ffmpegPath.map(URL.init(fileURLWithPath:))
@@ -928,9 +929,11 @@ public final class DownloaderService: ObservableObject {
         func sidecar() -> URL? {
             MusicCover.sidecar(for: audio, in: (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
         }
-        if await Task.detached(operation: { MusicTagger.hasEmbeddedCover(audio, ffprobe: ffprobe, environment: environment) }).value {
-            return true
+        let embedded = await Task.detached(operation: { MusicTagger.embeddedCoverCount(audio, ffprobe: ffprobe, environment: environment) }).value
+        if embedded > 1 {
+            _ = await Task.detached(operation: { MusicTagger.removeDuplicateCovers(audio: audio, ffmpeg: ffmpeg, environment: environment) }).value
         }
+        if embedded > 0 { return true }
         var image = sidecar()
         if image == nil, let url = URL(string: job.sourceURL) {
             let ffmpegPath = self.ffmpegPath

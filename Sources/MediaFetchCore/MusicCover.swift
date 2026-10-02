@@ -16,10 +16,23 @@ public enum MusicCover {
 
     /// Whether `ffprobe -of json -show_streams` reports an attached picture.
     public static func hasAttachedPicture(ffprobeJSON data: Data) -> Bool {
-        guard let json = try? JSONDecoder().decode(JSONValue.self, from: data) else { return false }
-        return json["streams"]?.arrayValue?.contains {
-            $0["disposition"]?["attached_pic"]?.doubleValue == 1
-        } == true
+        attachedPictureCount(ffprobeJSON: data) > 0
+    }
+
+    /// yt-dlp re-runs its embed step on files it skips as "already downloaded",
+    /// appending the same cover again; more than one means duplicates.
+    public static func attachedPictureCount(ffprobeJSON data: Data) -> Int {
+        guard let json = try? JSONDecoder().decode(JSONValue.self, from: data) else { return 0 }
+        return json["streams"]?.arrayValue?.filter { $0["disposition"]?["attached_pic"]?.doubleValue == 1 }.count ?? 0
+    }
+
+    /// ffmpeg arguments that keep the audio and only the first attached picture.
+    public static func dedupeArguments(audio: URL, output: URL) -> [String]? {
+        let ext = audio.pathExtension.lowercased()
+        guard ["mp3", "flac", "m4a", "mp4"].contains(ext) else { return nil }
+        return ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", audio.path,
+                "-map", "0:a", "-map", "0:v:0", "-c", "copy", "-map_metadata", "0", "-disposition:v:0", "attached_pic"]
+            + (ext == "mp3" ? ["-id3v2_version", "3"] : []) + [output.path]
     }
 
     /// ffmpeg arguments that add `image` as the front cover without re-encoding

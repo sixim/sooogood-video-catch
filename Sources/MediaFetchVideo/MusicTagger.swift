@@ -27,9 +27,23 @@ enum MusicTagger {
 
     /// Whether the audio file already carries an embedded cover.
     static func hasEmbeddedCover(_ audio: URL, ffprobe: URL?, environment: [String: String]) -> Bool {
-        guard let ffprobe else { return false }
+        embeddedCoverCount(audio, ffprobe: ffprobe, environment: environment) > 0
+    }
+
+    static func embeddedCoverCount(_ audio: URL, ffprobe: URL?, environment: [String: String]) -> Int {
+        guard let ffprobe else { return 0 }
         let result = ProcessRunner.run(ffprobe, ["-v", "error", "-of", "json", "-show_streams", audio.path], environment: environment)
-        return result.status == 0 && MusicCover.hasAttachedPicture(ffprobeJSON: result.stdout)
+        return result.status == 0 ? MusicCover.attachedPictureCount(ffprobeJSON: result.stdout) : 0
+    }
+
+    /// Keeps only the first embedded cover. Returns true when the file was rewritten.
+    @discardableResult
+    static func removeDuplicateCovers(audio: URL, ffmpeg: URL?, environment: [String: String]) -> Bool {
+        guard let ffmpeg else { return false }
+        let temporary = audio.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString).\(audio.pathExtension)")
+        guard let arguments = MusicCover.dedupeArguments(audio: audio, output: temporary) else { return false }
+        return replace(audio, with: temporary, after: ProcessRunner.run(ffmpeg, arguments, environment: environment).status)
     }
 
     /// Embeds `image` as the front cover (audio copied, never re-encoded).

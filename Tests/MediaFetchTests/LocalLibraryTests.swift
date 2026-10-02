@@ -65,4 +65,22 @@ final class LocalLibraryTests: XCTestCase {
         let index = LocalMusicIndex(items: items)
         XCTAssertEqual(index.match(platform: StreamingPlatform.netease.extractorFamily, mediaID: "1973665667", title: "", artists: [], durationSeconds: nil)?.isExact, true)
     }
+
+    func testExistingPathIsExactAndRequiresTheFile() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("existing-\(UUID().uuidString)")
+        let package = root.appendingPathComponent("A/B/A - 晴天 [186016]")
+        try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let audio = package.appendingPathComponent("A - 晴天 [186016].flac")
+        try Data("x".utf8).write(to: audio)
+        let manifest = #"{"platform":"netease:song","mediaID":"186016","title":"晴天","files":[{"relativePath":"A - 晴天 [186016].flac"}]}"#
+        try Data(manifest.utf8).write(to: package.appendingPathComponent("manifest.json"))
+        let index = LocalMusicIndex(items: LocalMusicIndex.manifestItems(under: root))
+        XCTAssertEqual(index.existingPath(platform: .netease, mediaID: "186016").map { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path },
+                       audio.resolvingSymlinksInPath().path)
+        XCTAssertNil(index.existingPath(platform: .qqmusic, mediaID: "186016"), "same id on another platform is a different track")
+        XCTAssertNil(index.existingPath(platform: .netease, mediaID: "1"))
+        try FileManager.default.removeItem(at: audio)
+        XCTAssertNil(index.existingPath(platform: .netease, mediaID: "186016"), "a deleted file is not 'already have'")
+    }
 }

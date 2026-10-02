@@ -53,16 +53,17 @@ public struct ControlTool: Sendable, Equatable {
                 "destination": ["type": "string"]
               ], required: ["url"])),
         .init(name: "analyze_music",
-              description: "Resolve a NetEase Cloud Music or QQ Music link (song, album, playlist, artist, chart; share text and short links accepted): artists, album, duration, lyrics, and which qualities this account can download (128k…320k, lossless, Hi-Res). Lists expand to their tracks; NetEase tracks the platform has no rights to carry unavailable_reason and are skipped by enqueue_music.",
+              description: "Resolve a NetEase Cloud Music or QQ Music link (song, album, playlist, artist, chart; share text and short links accepted): artists, album, duration, lyrics, and which qualities this account can download (128k…320k, lossless, Hi-Res). Lists expand to their tracks; NetEase tracks the platform has no rights to carry unavailable_reason and are skipped by enqueue_music; tracks already in the music folder carry local_path.",
               inputSchema: schema(["url": string], required: ["url"])),
         .init(name: "enqueue_music",
-              description: "Download NetEase Cloud Music / QQ Music tracks as tagged packages (original audio, embedded cover and lyrics, .lrc, manifest with measured quality). Lists take optional indices. Never transcodes; tracks without the requested quality are skipped and reported.",
+              description: "Download NetEase Cloud Music / QQ Music tracks as tagged packages (original audio, embedded cover and lyrics, .lrc, manifest with measured quality). Lists take optional indices. Never transcodes; tracks without the requested quality, without platform rights, or already in the destination are skipped and reported.",
               inputSchema: schema([
                 "url": string,
                 "indices": ["type": "array", "items": ["type": "integer"], "description": "Track indices from analyze_music (lists only)"],
                 "quality": ["type": "string", "enum": ["best", "losslessOnly", "upTo320"]],
                 "layout": ["type": "string", "enum": ["artistAlbum", "flat", "collection"]],
-                "destination": ["type": "string", "description": "Folder; defaults to the app's music folder"]
+                "destination": ["type": "string", "description": "Folder; defaults to the app's music folder"],
+                "skip_existing": ["type": "boolean", "description": "Skip tracks already downloaded into the destination (same platform + track id). Default true."]
               ], required: ["url"])),
         .init(name: "list_tasks",
               description: "List video downloads, torrents and toolbox jobs with status and progress.",

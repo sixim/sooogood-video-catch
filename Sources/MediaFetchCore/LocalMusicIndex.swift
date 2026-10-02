@@ -77,6 +77,15 @@ public struct LocalMusicIndex: Sendable {
         return nil
     }
 
+    /// Exact "already have" for one platform track: a package manifest with the
+    /// same platform and id whose file is still on disk. No title guessing.
+    public func existingPath(platform: StreamingPlatform, mediaID: String) -> String? {
+        guard case .sameTrack(let path)? = match(platform: platform.extractorFamily, mediaID: mediaID,
+                                                 title: "", artists: [], durationSeconds: nil),
+              FileManager.default.fileExists(atPath: path) else { return nil }
+        return path
+    }
+
     /// Package manifests under `root` (video/music packages written by this app).
     public static func manifestItems(under root: URL, maxDepth: Int = 5) -> [Item] {
         guard let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: [.isDirectoryKey],

@@ -196,6 +196,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         let url = try args.url("url")
         guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
         let login = loginRouting(for: url)
+        let local = await Self.localIndex(under: MusicPreferences.destination)
         if link.kind.isCollection {
             let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
             return ["kind": .string(link.kind.rawValue), "title": .string(outline.title),
@@ -204,12 +205,19 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
                     "tracks": .array(outline.entries.map { entry -> JSONValue in
                         var track: [String: JSONValue] = ["index": .number(Double(entry.index)), "title": .string(entry.title), "url": .string(entry.url)]
                         if let reason = outline.restriction(for: entry) { track["unavailable_reason"] = .string(reason) }
+                        if let path = local.existingPath(platform: link.platform, mediaID: entry.mediaID) { track["local_path"] = .string(path) }
                         return .object(track)
                     })]
         }
         var result = musicJSON(try await downloader.inspectMusic(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)).objectValue ?? [:]
         result["kind"] = "song"
+        if let path = local.existingPath(platform: link.platform, mediaID: link.id) { result["local_path"] = .string(path) }
         return .object(result)
+    }
+
+    /// Package manifests under `root`, read off the main thread.
+    nonisolated private static func localIndex(under root: URL) async -> LocalMusicIndex {
+        await Task.detached(priority: .userInitiated) { LocalMusicIndex(items: LocalMusicIndex.manifestItems(under: root)) }.value
     }
 
     @MainActor private func enqueueMusic(_ args: Arguments) async throws -> JSONValue {
@@ -225,6 +233,15 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         } ?? .artistAlbum
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? MusicPreferences.destination
         let login = loginRouting(for: url)
+        // Tracks already downloaded into the destination are skipped unless asked otherwise.
+        let local = args.bool("skip_existing") == false ? LocalMusicIndex(items: []) : await Self.localIndex(under: destination)
+        var existing: [JSONValue] = []
+        func alreadyHave(_ mediaID: String, title: String?) -> Bool {
+            guard let path = local.existingPath(platform: link.platform, mediaID: mediaID) else { return false }
+            let name = title ?? URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            existing.append(["title": .string(name), "path": .string(path)])
+            return true
+        }
         var items: [(url: String, title: String?, collection: CollectionContext?)] = []
         var noRights: [String] = []
         if link.kind.isCollection {
@@ -232,11 +249,15 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             let wanted: Set<Int>? = args.raw["indices"]?.arrayValue.map { Set($0.compactMap(\.intValue)) }
             let picked = outline.entries.filter { wanted?.contains($0.index) ?? true }
             noRights = picked.filter { outline.restriction(for: $0) != nil }.map(\.title)
-            items = picked.filter { outline.restriction(for: $0) == nil }
+            items = picked.filter { outline.restriction(for: $0) == nil && !alreadyHave($0.mediaID, title: $0.title) }
                 .map { ($0.url, $0.title, layout == .collection ? outline.context(for: $0) : nil) }
             if items.isEmpty, !noRights.isEmpty { throw ControlError.failed(NetEaseAvailability.noRightsMessage + "：" + noRights.joined(separator: "、")) }
-        } else {
+        } else if !alreadyHave(link.id, title: nil) {
             items = [(link.canonicalURL.absoluteString, nil, nil)]
+        }
+        if items.isEmpty, !existing.isEmpty {
+            return ["enqueued": 0, "skipped_existing": .array(existing), "skipped_no_rights": .array(noRights.map(JSONValue.string)),
+                    "note": "都已在本地，没有重新下载；需要重下请传 skip_existing: false"]
         }
         guard !items.isEmpty else { throw ControlError.invalidParams("没有匹配的曲目") }
         let before = Set(downloader.jobs.map(\.id))
@@ -245,6 +266,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有曲目被加入队列") }
         return ["enqueued": .number(Double(count)), "quality": .string(quality.displayName), "destination": .string(destination.path),
                 "skipped_no_rights": .array(noRights.map(JSONValue.string)),
+                "skipped_existing": .array(existing),
                 "tasks": .array(downloader.jobs.filter { !before.contains($0.id) }.map(videoSummary))]
     }
 

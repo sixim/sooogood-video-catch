@@ -367,6 +367,11 @@ struct MusicDownloadView: View {
                                 .help("平台标称 \(audio.expectedTier?.displayName ?? "-")，实际文件 \(audio.summary)")
                         }
                     }
+                    if job.musicCoverMissing == true {
+                        Label("封面缺失", systemImage: "photo.badge.exclamationmark")
+                            .font(.caption).foregroundStyle(MediaFetchTheme.warning)
+                            .help("平台没有返回封面图，已自动补抓一次仍未成功")
+                    }
                     if let manifest = job.manifestPath {
                         Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: manifest).deletingLastPathComponent()]) }
                             .buttonStyle(.link)

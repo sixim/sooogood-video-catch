@@ -192,6 +192,9 @@ struct DownloadTasksView: View {
                         Text("· 实测 \(audio.summary)")
                             .foregroundStyle(audio.meetsExpectation ? MediaFetchTheme.secondaryText : MediaFetchTheme.warning)
                     }
+                    if job.musicCoverMissing == true {
+                        Text("· 封面缺失").foregroundStyle(MediaFetchTheme.warning)
+                    }
                     if let source = job.browserCookieSource {
                         Text("· \(source.displayName) 登录态")
                     }

@@ -86,6 +86,8 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public var musicAlbum: String?
     /// Measured quality of the downloaded audio (music jobs).
     public var audioQuality: AudioQualityReport?
+    /// True when a music track ended without any cover (file or embedded).
+    public var musicCoverMissing: Bool?
     public var speedText: String?
     public var etaText: String?
 

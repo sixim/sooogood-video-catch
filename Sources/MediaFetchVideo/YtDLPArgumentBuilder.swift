@@ -33,6 +33,16 @@ public enum YtDLPArgumentBuilder {
         "--write-subs", "--sub-langs", "lyrics,lrc", "--sub-format", "lrc/best"
     ]
 
+    /// Fetches only the cover of a music track into `directory`, named after
+    /// the audio file (used when the download finished without one).
+    public static func coverArguments(url: String, audio: URL, ffmpegPath: String?, cookieArguments: [String]) -> [String] {
+        ["--skip-download", "--no-playlist", "--no-warnings", "--write-thumbnail", "--convert-thumbnails", "jpg",
+         "--socket-timeout", "15", "--extractor-retries", "3",
+         "--paths", audio.deletingLastPathComponent().path, "--output", "thumbnail:" + MusicCover.thumbnailTemplate(for: audio)]
+            + (ffmpegPath.map { ["--ffmpeg-location", $0] } ?? [])
+            + cookieArguments + [url]
+    }
+
     public static func isCoursePlatform(_ url: String) -> Bool {
         guard let parsed = URL(string: url) else { return false }
         let host = parsed.host?.lowercased() ?? ""

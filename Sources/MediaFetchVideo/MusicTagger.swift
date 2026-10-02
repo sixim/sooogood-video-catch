@@ -1,8 +1,8 @@
 import Foundation
 import MediaFetchCore
 
-/// Embeds downloaded `.lrc` lyrics into the audio file's own tags, so players
-/// show lyrics without the sidecar. Audio streams are never re-encoded.
+/// Embeds downloaded `.lrc` lyrics and recovered covers into the audio file's
+/// own tags, so players show them without sidecars. Audio is never re-encoded.
 enum MusicTagger {
     /// Returns true when lyrics were embedded.
     @discardableResult
@@ -25,6 +25,24 @@ enum MusicTagger {
         }
     }
 
+    /// Whether the audio file already carries an embedded cover.
+    static func hasEmbeddedCover(_ audio: URL, ffprobe: URL?, environment: [String: String]) -> Bool {
+        guard let ffprobe else { return false }
+        let result = ProcessRunner.run(ffprobe, ["-v", "error", "-of", "json", "-show_streams", audio.path], environment: environment)
+        return result.status == 0 && MusicCover.hasAttachedPicture(ffprobeJSON: result.stdout)
+    }
+
+    /// Embeds `image` as the front cover (audio copied, never re-encoded).
+    /// Returns true when the file was rewritten.
+    @discardableResult
+    static func embedCover(audio: URL, image: URL, ffmpeg: URL?, environment: [String: String]) -> Bool {
+        guard let ffmpeg else { return false }
+        let temporary = audio.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString).\(audio.pathExtension)")
+        guard let arguments = MusicCover.embedArguments(audio: audio, image: image, output: temporary) else { return false }
+        return replace(audio, with: temporary, after: ProcessRunner.run(ffmpeg, arguments, environment: environment).status)
+    }
+
     private static func remux(_ audio: URL, metadata: [String: String], ffmpeg: URL?, environment: [String: String]) -> Bool {
         guard let ffmpeg else { return false }
         let temporary = audio.deletingLastPathComponent()
@@ -32,8 +50,11 @@ enum MusicTagger {
         var arguments = ["-hide_banner", "-loglevel", "error", "-nostdin", "-y", "-i", audio.path, "-map", "0", "-c", "copy", "-map_metadata", "0"]
         for (key, value) in metadata { arguments += ["-metadata", "\(key)=\(value)"] }
         arguments.append(temporary.path)
-        let result = ProcessRunner.run(ffmpeg, arguments, environment: environment)
-        guard result.status == 0, FileManager.default.fileExists(atPath: temporary.path) else {
+        return replace(audio, with: temporary, after: ProcessRunner.run(ffmpeg, arguments, environment: environment).status)
+    }
+
+    private static func replace(_ audio: URL, with temporary: URL, after status: Int32) -> Bool {
+        guard status == 0, FileManager.default.fileExists(atPath: temporary.path) else {
             try? FileManager.default.removeItem(at: temporary)
             return false
         }

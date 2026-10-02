@@ -428,7 +428,8 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             "manifest": job.manifestPath.map(JSONValue.string) ?? .null,
             "error": job.errorMessage.map(JSONValue.string) ?? .null,
             "retry_note": job.retryNote.map(JSONValue.string) ?? .null,
-            "measured_quality": job.audioQuality.map { .string($0.summary) } ?? .null
+            "measured_quality": job.audioQuality.map { .string($0.summary) } ?? .null,
+            "cover_missing": job.musicCoverMissing == true ? .bool(true) : .null
         ]
     }
 

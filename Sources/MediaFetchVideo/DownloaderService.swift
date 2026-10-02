@@ -820,6 +820,13 @@ public final class DownloaderService: ObservableObject {
         }
         let ffprobe = ffmpeg.map { URL(fileURLWithPath: $0).deletingLastPathComponent().appendingPathComponent("ffprobe") }
         let environment = toolchain.processEnvironment
+        Task { [weak self] in
+        var job = job
+        #if !MEDIAFETCH_STORE_PROFILE
+        if job.musicQuality != nil, let self, let audio = audioFiles.first {
+            job.musicCoverMissing = await self.ensureMusicCover(job: job, audio: audio) ? nil : true
+        }
+        #endif
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
                 if job.musicQuality != nil, let audio = audioFiles.first,
@@ -872,6 +879,7 @@ public final class DownloaderService: ObservableObject {
                     self.updateJob(job.id) {
                         $0.stage = nil
                         $0.audioQuality = job.audioQuality
+                        $0.musicCoverMissing = job.musicCoverMissing
                         $0.status = .completed
                         $0.updatedAt = Date()
                         $0.manifestPath = finalManifest.path
@@ -887,7 +895,38 @@ public final class DownloaderService: ObservableObject {
                 }
             }
         }
+        }
     }
+
+#if !MEDIAFETCH_STORE_PROFILE
+    /// yt-dlp only warns when a cover fails to download, so a music track can
+    /// finish without one. Fetch the cover again if needed and embed it.
+    /// Returns false when the track still has no cover afterwards.
+    private func ensureMusicCover(job: DownloadJob, audio: URL) async -> Bool {
+        let ffmpeg = ffmpegPath.map(URL.init(fileURLWithPath:))
+        let ffprobe = ffmpeg?.deletingLastPathComponent().appendingPathComponent("ffprobe")
+        let environment = toolchain.processEnvironment
+        let directory = audio.deletingLastPathComponent()
+        func sidecar() -> URL? {
+            MusicCover.sidecar(for: audio, in: (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [])
+        }
+        if await Task.detached(operation: { MusicTagger.hasEmbeddedCover(audio, ffprobe: ffprobe, environment: environment) }).value {
+            return true
+        }
+        var image = sidecar()
+        if image == nil, let url = URL(string: job.sourceURL) {
+            let ffmpegPath = self.ffmpegPath
+            _ = try? await runEngineRetrying(url, cookieSource: job.browserCookieSource, usesInAppLogin: job.usesInAppLogin == true) {
+                YtDLPArgumentBuilder.coverArguments(url: url.absoluteString, audio: audio, ffmpegPath: ffmpegPath, cookieArguments: $0)
+            }
+            image = sidecar()
+        }
+        guard let image else { return false }
+        // Best effort: containers without attached-picture support keep the file.
+        _ = await Task.detached(operation: { MusicTagger.embedCover(audio: audio, image: image, ffmpeg: ffmpeg, environment: environment) }).value
+        return true
+    }
+#endif
 
     /// Applies `RetryPolicy`; returns true when another attempt was scheduled.
     private func scheduleRetryIfUseful(jobIndex: Int, output: String) -> Bool {

@@ -51,7 +51,8 @@ public struct DownloadJob: Codable, Identifiable, Sendable {
     public let id: UUID
     public let sourceURL: String
     public let profile: DownloadProfile
-    public let destinationPath: String
+    /// Download folder; changes when the finished package is moved elsewhere.
+    public var destinationPath: String
     public let includeSidecars: Bool
     public let includeSubtitles: Bool
     public let browserCookieSource: BrowserCookieSource?

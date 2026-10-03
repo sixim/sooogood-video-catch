@@ -613,6 +613,79 @@ public final class DownloaderService: ObservableObject {
     }
 
 #if !MEDIAFETCH_STORE_PROFILE
+    // MARK: Moving packages
+
+    public struct RelocatablePackage: Identifiable {
+        public let package: URL
+        public let job: DownloadJob
+        public var id: String { package.path }
+    }
+
+    public struct RelocationReport {
+        public var moved: [String] = []
+        public var copiedAcrossVolumes = 0
+        public var skipped: [(title: String, reason: String)] = []
+        public var failed: [(title: String, reason: String)] = []
+    }
+
+    /// Finished packages still on disk, one entry per package folder (several
+    /// history entries can point at the same package after a re-download).
+    public func relocatablePackages(musicOnly: Bool = false) -> [RelocatablePackage] {
+        var seen: Set<String> = []
+        var result: [RelocatablePackage] = []
+        for job in jobs.reversed() where job.status == .completed && (!musicOnly || job.musicQuality != nil) {
+            guard let manifest = job.manifestPath else { continue }
+            let package = URL(fileURLWithPath: manifest).deletingLastPathComponent()
+            guard seen.insert(package.path).inserted, FileManager.default.fileExists(atPath: manifest) else { continue }
+            result.append(RelocatablePackage(package: package, job: job))
+        }
+        return result
+    }
+
+    /// Moves packages into `target`, keeping 歌手/专辑 structure, and points
+    /// every history entry of a moved package at its new location.
+    public func relocatePackages(_ packages: [RelocatablePackage], to target: URL,
+                                 progress: @escaping (Int) -> Void = { _ in }) async -> RelocationReport {
+        var report = RelocationReport()
+        for (offset, item) in packages.enumerated() {
+            progress(offset)
+            let title = item.job.title ?? item.package.lastPathComponent
+            if item.job.collection != nil { report.skipped.append((title, PackageRelocation.Skip.partOfCollection.message)); continue }
+            guard FileManager.default.fileExists(atPath: item.package.path) else {
+                report.skipped.append((title, PackageRelocation.Skip.missingPackage.message)); continue
+            }
+            let downloadRoot = URL(fileURLWithPath: item.job.destinationPath, isDirectory: true)
+            let destination = PackageRelocation.destination(for: item.package, downloadRoot: downloadRoot, target: target)
+            if destination.standardizedFileURL.resolvingSymlinksInPath() == item.package.standardizedFileURL.resolvingSymlinksInPath() {
+                report.skipped.append((title, PackageRelocation.Skip.alreadyThere.message)); continue
+            }
+            if FileManager.default.fileExists(atPath: destination.path) {
+                report.skipped.append((title, PackageRelocation.Skip.targetExists(destination.path).message)); continue
+            }
+            let source = item.package
+            do {
+                let copied = try await Task.detached(priority: .userInitiated) {
+                    let copied = try PackageMover.move(package: source, to: destination)
+                    PackageMover.removeEmptyParents(of: source.deletingLastPathComponent(), stopAt: downloadRoot)
+                    return copied
+                }.value
+                if copied { report.copiedAcrossVolumes += 1 }
+                report.moved.append(title)
+                for index in jobs.indices where jobs[index].manifestPath.map({ URL(fileURLWithPath: $0).deletingLastPathComponent().path }) == source.path {
+                    jobs[index].manifestPath = destination.appendingPathComponent("manifest.json").path
+                    jobs[index].completedFiles = PackageRelocation.rebase(jobs[index].completedFiles, from: source, to: destination)
+                    jobs[index].destinationPath = target.path
+                    jobs[index].updatedAt = Date()
+                }
+                persistJobs()
+            } catch {
+                report.failed.append((title, error.localizedDescription))
+            }
+        }
+        progress(packages.count)
+        return report
+    }
+
     private func startNextIfNeeded() {
         guard !isDownloading && !isAnalyzing,
               let index = jobs.firstIndex(where: { $0.status == .queued }) else { return }

@@ -93,18 +93,32 @@ public struct LocalMusicIndex: Sendable {
         var items: [Item] = []
         for case let url as URL in enumerator {
             if enumerator.level > maxDepth { enumerator.skipDescendants(); continue }
-            guard url.lastPathComponent == "manifest.json",
-                  let data = try? Data(contentsOf: url),
-                  let json = try? JSONDecoder().decode(JSONValue.self, from: data),
-                  let mediaID = json["mediaID"]?.stringValue else { continue }
-            let audio = json["files"]?.arrayValue?.compactMap { $0["relativePath"]?.stringValue }
-                .first { ["mp3", "flac", "m4a", "ogg", "opus", "ape", "wav"].contains(($0 as NSString).pathExtension.lowercased()) }
-            items.append(Item(
-                path: audio.map { url.deletingLastPathComponent().appendingPathComponent($0).path } ?? url.deletingLastPathComponent().path,
-                platform: json["platform"]?.stringValue, mediaID: mediaID,
-                title: json["title"]?.stringValue ?? "", artists: [], durationSeconds: json["audio"]?["durationSeconds"]?.doubleValue
-            ))
+            guard url.lastPathComponent == "manifest.json", let item = item(manifest: url) else { continue }
+            items.append(item)
         }
         return items
+    }
+
+    /// Package manifests of specific package folders (e.g. packages moved out
+    /// of the music folder, found through the task history). Skips `except`.
+    public static func manifestItems(packages: [URL], except root: URL? = nil) -> [Item] {
+        let rootPath = root.map { $0.standardizedFileURL.path + "/" }
+        return packages.compactMap { package in
+            if let rootPath, package.standardizedFileURL.path.hasPrefix(rootPath) { return nil }
+            return item(manifest: package.appendingPathComponent("manifest.json"))
+        }
+    }
+
+    static func item(manifest url: URL) -> Item? {
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONDecoder().decode(JSONValue.self, from: data),
+              let mediaID = json["mediaID"]?.stringValue else { return nil }
+        let audio = json["files"]?.arrayValue?.compactMap { $0["relativePath"]?.stringValue }
+            .first { ["mp3", "flac", "m4a", "ogg", "opus", "ape", "wav"].contains(($0 as NSString).pathExtension.lowercased()) }
+        return Item(
+            path: audio.map { url.deletingLastPathComponent().appendingPathComponent($0).path } ?? url.deletingLastPathComponent().path,
+            platform: json["platform"]?.stringValue, mediaID: mediaID,
+            title: json["title"]?.stringValue ?? "", artists: [], durationSeconds: json["audio"]?["durationSeconds"]?.doubleValue
+        )
     }
 }

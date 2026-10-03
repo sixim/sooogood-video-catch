@@ -158,8 +158,10 @@ final class MusicDownloadModel: ObservableObject {
     /// audio tags read through the shared probe cache (fast on rescans).
     func loadIndexIfNeeded(root: URL = MusicPreferences.destination) {
         guard indexTask == nil else { return }
+        // Packages moved out of the music folder are still found through history.
+        let moved = downloader.relocatablePackages(musicOnly: true).map(\.package)
         indexTask = Task.detached(priority: .utility) {
-            var items = LocalMusicIndex.manifestItems(under: root)
+            var items = LocalMusicIndex.manifestItems(under: root) + LocalMusicIndex.manifestItems(packages: moved, except: root)
             let toolchain = AudioToolchain.local()
             if toolchain.ffprobeURL != nil, FileManager.default.fileExists(atPath: root.path) {
                 var scanner = LocalAudioScanner(toolchain: toolchain)

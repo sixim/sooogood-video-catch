@@ -196,7 +196,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         let url = try args.url("url")
         guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
         let login = loginRouting(for: url)
-        let local = await Self.localIndex(under: MusicPreferences.destination)
+        let local = await Self.localIndex(under: MusicPreferences.destination, moved: downloader.relocatablePackages(musicOnly: true).map(\.package))
         if link.kind.isCollection {
             let outline = try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
             return ["kind": .string(link.kind.rawValue), "title": .string(outline.title),
@@ -216,8 +216,10 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
     }
 
     /// Package manifests under `root`, read off the main thread.
-    nonisolated private static func localIndex(under root: URL) async -> LocalMusicIndex {
-        await Task.detached(priority: .userInitiated) { LocalMusicIndex(items: LocalMusicIndex.manifestItems(under: root)) }.value
+    nonisolated private static func localIndex(under root: URL, moved: [URL] = []) async -> LocalMusicIndex {
+        await Task.detached(priority: .userInitiated) {
+            LocalMusicIndex(items: LocalMusicIndex.manifestItems(under: root) + LocalMusicIndex.manifestItems(packages: moved, except: root))
+        }.value
     }
 
     @MainActor private func enqueueMusic(_ args: Arguments) async throws -> JSONValue {
@@ -234,7 +236,8 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? MusicPreferences.destination
         let login = loginRouting(for: url)
         // Tracks already downloaded into the destination are skipped unless asked otherwise.
-        let local = args.bool("skip_existing") == false ? LocalMusicIndex(items: []) : await Self.localIndex(under: destination)
+        let local = args.bool("skip_existing") == false ? LocalMusicIndex(items: [])
+            : await Self.localIndex(under: destination, moved: downloader.relocatablePackages(musicOnly: true).map(\.package))
         var existing: [JSONValue] = []
         func alreadyHave(_ mediaID: String, title: String?) -> Bool {
             guard let path = local.existingPath(platform: link.platform, mediaID: mediaID) else { return false }

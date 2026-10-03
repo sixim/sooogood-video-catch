@@ -31,6 +31,7 @@ struct MusicDownloadView: View {
     @State private var input = ""
     @State private var groupByAlbum = false
     @State private var notice: String?
+    @State private var showMove = false
     @State private var destination = MusicPreferences.destination
     @AppStorage(MusicPreferences.qualityKey) private var qualityRaw = MusicQualityPreference.best.rawValue
     @AppStorage(MusicPreferences.layoutKey) private var layoutRaw = MusicLayout.artistAlbum.rawValue
@@ -347,6 +348,16 @@ struct MusicDownloadView: View {
                 HStack {
                     Text("最近的音乐任务").font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
                     Spacer()
+                    Button {
+                        showMove = true
+                    } label: {
+                        Label("移动到…", systemImage: "folder.badge.gearshape")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("把已下载的歌曲（整个素材包）移动到另一个文件夹")
+                    .sheet(isPresented: $showMove) {
+                        MovePackagesSheet(downloader: downloader, musicOnly: true) { showMove = false; model.refreshIndex() }
+                    }
                 }
                 .padding(.top, 8)
             }

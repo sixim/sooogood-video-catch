@@ -63,7 +63,7 @@ public struct ControlTool: Sendable, Equatable {
                 "quality": ["type": "string", "enum": ["best", "losslessOnly", "upTo320"]],
                 "layout": ["type": "string", "enum": ["artistAlbum", "flat", "collection"]],
                 "destination": ["type": "string", "description": "Folder; defaults to the app's music folder"],
-                "skip_existing": ["type": "boolean", "description": "Skip tracks already downloaded into the destination (same platform + track id). Default true."]
+                "skip_existing": ["type": "boolean", "description": "Skip tracks already downloaded (same platform + track id) in the destination or moved elsewhere by the app. Default true."]
               ], required: ["url"])),
         .init(name: "list_tasks",
               description: "List video downloads, torrents and toolbox jobs with status and progress.",

@@ -12,6 +12,7 @@ enum TaskSection: String, CaseIterable {
 struct DownloadTasksView: View {
     @ObservedObject var downloader: DownloaderService
     @State private var section: TaskSection = .video
+    @State private var showMove = false
     let onBack: () -> Void
     let openVideo: () -> Void
     var openSettings: () -> Void = {}
@@ -90,6 +91,19 @@ struct DownloadTasksView: View {
                 }
                 .buttonStyle(.bordered)
             }
+
+#if !MEDIAFETCH_STORE_PROFILE
+            Button {
+                showMove = true
+            } label: {
+                Label("移动到…", systemImage: "folder.badge.gearshape")
+            }
+            .buttonStyle(.bordered)
+            .help("把已完成的素材包移动到另一个文件夹")
+            .sheet(isPresented: $showMove) {
+                MovePackagesSheet(downloader: downloader, musicOnly: false) { showMove = false }
+            }
+#endif
 
             Button("清除已结束记录") {
                 downloader.clearFinishedHistory()

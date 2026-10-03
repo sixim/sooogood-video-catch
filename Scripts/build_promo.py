@@ -47,7 +47,7 @@ h1 { font-size: 72px; line-height: 1.06; font-weight: 800; letter-spacing: -1.5p
 .row span:first-child { color: #8A93A5; }
 .pills { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 46px; }
 .pill { font-size: 32px; padding: 14px 28px; border-radius: 40px; background: #141821; border: 2px solid rgba(155,164,181,.3); }
-.facts { position: absolute; left: 84px; right: 84px; bottom: 130px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.facts { position: absolute; left: 84px; right: 84px; bottom: 130px; display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; }
 .fact { background: #141821; border: 2px solid rgba(155,164,181,.18); border-radius: 20px; padding: 24px 28px; }
 .fact b { display: block; font-size: 34px; } .fact span { font-size: 22px; color: #9BA4B5; }
 .hero-logo { width: 150px; height: 150px; }
@@ -124,8 +124,8 @@ SLIDES = [
           '<div class="pills" style="margin-top:40px">'
           + "".join(f'<div class="pill">{l}</div>' for l in ["English", "Français", "Deutsch", "日本語", "한국어", "中文"])
           + '</div><div class="facts" style="bottom:130px">'
-          '<div class="fact"><b>Open source</b><span>Search “Sooogood Video Catch” on GitHub</span></div>'
-          '<div class="fact"><b>Homebrew engines</b><span>yt-dlp · FFmpeg · deno</span></div>'
+          '<div class="fact"><b>Open source</b><span style="white-space:nowrap">github.com/sixim/sooogood-video-catch</span></div>'
+          '<div class="fact"><b>Via Homebrew</b><span>yt-dlp · FFmpeg · deno</span></div>'
           '</div>'),
 ]
 

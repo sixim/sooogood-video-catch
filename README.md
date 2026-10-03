@@ -55,8 +55,8 @@ brew install transmission-cli whisper-cpp
 ## Build and run
 
 ```bash
-git clone <this repository>
-cd "Youtube Download App"
+git clone https://github.com/sixim/sooogood-video-catch.git
+cd sooogood-video-catch
 ./Scripts/package_app.sh
 open "dist/Sooogood Video Catch.app"
 ```

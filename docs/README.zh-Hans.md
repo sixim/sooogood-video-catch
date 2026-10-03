@@ -57,6 +57,8 @@ brew install transmission-cli whisper-cpp
 ## 编译与运行
 
 ```bash
+git clone https://github.com/sixim/sooogood-video-catch.git
+cd sooogood-video-catch
 ./Scripts/package_app.sh
 open "dist/Sooogood Video Catch.app"
 ```

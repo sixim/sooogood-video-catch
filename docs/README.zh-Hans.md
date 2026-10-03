@@ -6,6 +6,22 @@
 
 ![首页](images/home.png)
 
+## 一行命令安装
+
+粘贴到终端，或直接交给 AI agent：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+```
+
+脚本会下载最新版本（通用版：Apple 芯片 + Intel），校验 SHA-256 和代码签名，装进「应用程序」，并用 [Homebrew](https://brew.sh) 安装 yt-dlp、FFmpeg、deno。不需要 sudo，全程无交互。给 agent 用的版本，会顺便把 MCP 服务注册到 Claude Code：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+```
+
+其他参数：`--no-deps`、`--dir <文件夹>`、`--version vX.Y.Z`、`--open`。应用是临时签名（未经苹果公证）；如果改用浏览器从 Releases 页面下载 zip，第一次请右键 → 打开。
+
 ## 功能亮点
 
 - **视频** —— YouTube、Vimeo、哔哩哔哩、优酷、HLS / DASH，以及 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 支持的约 1,700 个网站。下载前用格式检查器查看每条流（分辨率、帧率、编码、码率、大小）；「最高画质」模式把最佳视频和音频无损合并，不重新编码。

@@ -6,6 +6,22 @@ Une app macOS locale avant tout, pensée pour les créateurs : enregistrez les m
 
 ![Accueil](images/home.png)
 
+## Installation en une ligne
+
+À coller dans le Terminal (ou à confier à un agent IA) :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+```
+
+Le script télécharge la dernière version (universelle : Apple silicon + Intel), vérifie son SHA-256 et sa signature, l’installe dans /Applications et installe yt-dlp, FFmpeg et deno avec [Homebrew](https://brew.sh). Sans sudo ni question. Pour un agent — enregistre aussi le serveur MCP dans Claude Code :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+```
+
+Autres options : `--no-deps`, `--dir <dossier>`, `--version vX.Y.Z`, `--open`. L’app est signée ad hoc (non notariée) ; si vous téléchargez le zip depuis la page Releases avec un navigateur, ouvrez-la la première fois par clic droit → Ouvrir.
+
 ## Points forts
 
 - **Vidéo** — YouTube, Vimeo, Bilibili, Youku, HLS / DASH et les quelque 1 700 sites pris en charge par [yt-dlp](https://github.com/yt-dlp/yt-dlp). L’inspecteur de format affiche chaque flux (résolution, fps, codec, débit, taille) avant le téléchargement. Le mode Qualité maximale fusionne la meilleure vidéo et le meilleur audio sans réencodage.

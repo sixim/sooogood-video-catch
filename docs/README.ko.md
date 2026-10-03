@@ -6,6 +6,22 @@
 
 ![홈](images/home.png)
 
+## 한 줄로 설치
+
+터미널에 붙여 넣거나 AI 에이전트에게 맡기세요:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+```
+
+최신 릴리스(유니버설: Apple 실리콘 + Intel)를 다운로드해 SHA-256과 코드 서명을 검증하고 /Applications에 설치하며, [Homebrew](https://brew.sh)로 yt-dlp, FFmpeg, deno를 설치합니다. sudo도 질문도 없습니다. 에이전트용 — Claude Code에 MCP 서버까지 등록:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+```
+
+기타 옵션: `--no-deps`, `--dir <폴더>`, `--version vX.Y.Z`, `--open`. 앱은 애드혹 서명(공증 없음)입니다. Releases 페이지에서 브라우저로 zip을 받았다면 처음 한 번은 오른쪽 클릭 → 열기로 실행하세요.
+
 ## 주요 기능
 
 - **동영상** — YouTube, Vimeo, Bilibili, Youku, HLS / DASH, 그리고 [yt-dlp](https://github.com/yt-dlp/yt-dlp)가 지원하는 약 1,700개 사이트. 형식 검사기로 다운로드 전에 모든 스트림(해상도, fps, 코덱, 비트레이트, 크기)을 보여 줍니다. 최고 화질 모드는 최고 영상과 오디오를 다시 인코딩하지 않고 합칩니다.

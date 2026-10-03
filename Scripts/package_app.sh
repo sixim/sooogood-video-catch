@@ -53,13 +53,19 @@ build_arguments=(-c release --scratch-path "$scratch_path")
 if [[ "$build_profile" == "store" ]]; then
     build_arguments+=( -Xswiftc -DMEDIAFETCH_STORE_PROFILE )
 fi
+# UNIVERSAL=1 builds one binary for Apple silicon and Intel (used for releases).
+product_dir="$scratch_path/release"
+if [[ "${UNIVERSAL:-0}" == "1" ]]; then
+    build_arguments+=( --arch arm64 --arch x86_64 )
+    product_dir="$scratch_path/apple/Products/Release"
+fi
 swift build "${build_arguments[@]}"
 
 mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
-rsync -a --delete "$scratch_path/release/MediaFetch" "$contents_dir/MacOS/MediaFetch"
+rsync -a --delete "$product_dir/MediaFetch" "$contents_dir/MacOS/MediaFetch"
 if [[ "$build_profile" == "local" ]]; then
     # MCP helper for AI agents (Local only; the Store validator rejects it).
-    rsync -a "$scratch_path/release/sooogood-mcp" "$contents_dir/MacOS/sooogood-mcp"
+    rsync -a "$product_dir/sooogood-mcp" "$contents_dir/MacOS/sooogood-mcp"
 fi
 plist_source="Resources/Info.plist"
 if [[ "$build_profile" == "store" ]]; then

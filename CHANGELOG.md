@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.0 · 一行安装（发布说明补充）
+
+- 新增 `install.sh`：`curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash` 下载最新 Release，校验 SHA-256 与代码签名后安装到「应用程序」（不可写时用 ~/Applications），用 Homebrew 补装 yt-dlp / FFmpeg / deno；无 sudo、无交互，适合交给 agent。`--with-mcp` 同时注册 Claude Code MCP，另有 `--no-deps`、`--dir`、`--version`、`--open`。
+- `Scripts/build_release.sh` 生成 Release 资产：通用二进制（arm64 + x86_64）的 zip 及 `.sha256`；`package_app.sh` 新增 `UNIVERSAL=1`。
+
 ## 0.22.0 (build 34) · 多语言
 
 - 界面支持 6 种语言：English、Français、Deutsch、日本語、한국어、中文（简体）。默认跟随 macOS 语言，不支持的系统语言回退到英文；「设置 › Language · 语言」可单独指定，重新打开应用后生效（提供「立即重新打开」）。

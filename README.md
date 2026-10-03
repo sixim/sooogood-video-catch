@@ -6,6 +6,22 @@ A local-first macOS app for creators: save the best media streams a platform act
 
 ![Home](docs/images/home.png)
 
+## Install in one line
+
+Paste into Terminal (or hand it to an AI agent):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+```
+
+It downloads the latest release (universal: Apple silicon + Intel), verifies its SHA-256 and code signature, installs to /Applications and installs yt-dlp, FFmpeg and deno with [Homebrew](https://brew.sh). No sudo, no prompts. For agents — also registers the MCP server with Claude Code:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+```
+
+Other options: `--no-deps`, `--dir <folder>`, `--version vX.Y.Z`, `--open`. The app is ad-hoc signed (not notarized); if you download the zip from the Releases page in a browser instead, open it the first time with right-click → Open.
+
 ## Highlights
 
 - **Video** — YouTube, Vimeo, Bilibili, Youku, HLS / DASH and the ~1,700 sites supported by [yt-dlp](https://github.com/yt-dlp/yt-dlp). A format inspector shows every stream (resolution, fps, codec, bitrate, size) before you download. Highest-quality mode merges the best video and audio without re-encoding.

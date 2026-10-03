@@ -74,6 +74,10 @@ claude mcp add sooogood -- "/pfad/zu/Sooogood Video Catch.app/Contents/MacOS/soo
 
 **Lade nur Inhalte, die dir gehören, für die du eine Lizenz hast oder deren Speicherung die Plattform ausdrücklich erlaubt.**
 
+## Lizenz
+
+GPL-3.0 – siehe [LICENSE](../LICENSE). Die externen Engines (yt-dlp, FFmpeg, deno, Transmission, whisper.cpp) sind nicht enthalten; sie werden separat über Homebrew installiert und behalten ihre eigenen Lizenzen.
+
 ## Dokumentation
 
 - [Architektur](../ARCHITECTURE.md) · [Entwicklerhandbuch (Chinesisch)](DEVELOPMENT.zh-Hans.md) · [Änderungsprotokoll](../CHANGELOG.md) · [Broschüre](brochure/Sooogood-Video-Catch-de.pdf)

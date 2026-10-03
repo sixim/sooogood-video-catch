@@ -74,6 +74,10 @@ claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/soo
 
 **権利を持っている、許諾を得ている、またはプラットフォームが保存を明示的に許可しているコンテンツだけをダウンロードしてください。**
 
+## ライセンス
+
+GPL-3.0 — [LICENSE](../LICENSE) を参照。外部エンジン（yt-dlp、FFmpeg、deno、Transmission、whisper.cpp）は同梱せず、Homebrew で個別に導入し、それぞれのライセンスに従います。
+
 ## ドキュメント
 
 - [アーキテクチャ](../ARCHITECTURE.md) · [開発者ガイド（中国語）](DEVELOPMENT.zh-Hans.md) · [変更履歴](../CHANGELOG.md) · [パンフレット](brochure/Sooogood-Video-Catch-ja.pdf)

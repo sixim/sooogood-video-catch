@@ -74,6 +74,10 @@ claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/soo
 
 **권리를 가진 콘텐츠, 허가를 받은 콘텐츠, 또는 플랫폼이 저장을 명시적으로 허용한 콘텐츠만 다운로드하세요.**
 
+## 라이선스
+
+GPL-3.0 — [LICENSE](../LICENSE) 참조. 외부 엔진(yt-dlp, FFmpeg, deno, Transmission, whisper.cpp)은 포함하지 않으며 Homebrew로 따로 설치하고 각자의 라이선스를 따릅니다.
+
 ## 문서
 
 - [아키텍처](../ARCHITECTURE.md) · [개발자 가이드(중국어)](DEVELOPMENT.zh-Hans.md) · [변경 기록](../CHANGELOG.md) · [브로슈어](brochure/Sooogood-Video-Catch-ko.pdf)

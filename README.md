@@ -74,6 +74,10 @@ claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/soo
 
 **Only download content you own, are licensed for, or that the platform explicitly allows you to save.**
 
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE). The external engines (yt-dlp, FFmpeg, deno, Transmission, whisper.cpp) are not bundled; they are installed separately with Homebrew and keep their own licenses.
+
 ## Documentation
 
 - [Architecture](ARCHITECTURE.md) — modules and dependency rules

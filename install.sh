@@ -76,11 +76,13 @@ fi
 mkdir -p "$target_dir"
 dest="$target_dir/$APP_NAME"
 
-if pgrep -f "$APP_NAME/Contents/MacOS/MediaFetch" >/dev/null 2>&1; then
+# Only a copy running from the folder being replaced needs to quit.
+running="$dest/Contents/MacOS/MediaFetch"
+if pgrep -f "$running" >/dev/null 2>&1; then
   say "Quitting the running app"
   osascript -e "tell application id \"$BUNDLE_ID\" to quit" >/dev/null 2>&1 || true
   for _ in 1 2 3 4 5 6 7 8 9 10; do
-    pgrep -f "$APP_NAME/Contents/MacOS/MediaFetch" >/dev/null 2>&1 || break
+    pgrep -f "$running" >/dev/null 2>&1 || break
     sleep 1
   done
 fi

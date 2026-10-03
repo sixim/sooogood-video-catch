@@ -17,6 +17,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 IMG = ROOT / "docs" / "images"
 LOGO = (ROOT / "Resources" / "Brand" / "MediaFetchLogo.svg").as_uri()
+CREATOR = (ROOT / "Resources" / "Brand" / "creator-logo-white.png").as_uri()  # 瓜皮巨甜 SIMON Li
 
 CSS = """
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,6 +38,9 @@ h1 { font-size: 72px; line-height: 1.06; font-weight: 800; letter-spacing: -1.5p
   font-size: 22px; color: #8A93A5; }
 .foot img { width: 36px; height: 36px; }
 .foot b { color: #D7DCE5; font-weight: 600; }
+.foot img.creator { width: auto; height: 50px; margin-left: auto; opacity: .92; }
+.madeby { display: flex; align-items: center; gap: 22px; margin-top: 30px; font-size: 22px; color: #8A93A5; letter-spacing: 2px; text-transform: uppercase; }
+.madeby img { height: 92px; }
 .badge { position: absolute; right: 120px; bottom: 150px; padding: 18px 26px; border-radius: 18px; font-size: 30px; font-weight: 700;
   background: rgba(20,24,33,.92); border: 2px solid #32C7A0; color: #8DE6CF; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
 .panel { position: absolute; left: 84px; right: 84px; bottom: 120px; border-radius: 22px; background: #141821;
@@ -55,14 +59,15 @@ h1 { font-size: 72px; line-height: 1.06; font-weight: 800; letter-spacing: -1.5p
 
 
 def foot():
-    return f'<div class="foot"><img src="{LOGO}"><b>Sooogood Video Catch</b> · for macOS</div>'
+    return (f'<div class="foot"><img src="{LOGO}"><b>Sooogood Video Catch</b> · for macOS'
+            f'<img class="creator" src="{CREATOR}" alt="瓜皮巨甜 SIMON Li"></div>')
 
 
-def shot(name, x=0, y=0, zoom=1.0):
+def shot(name, x=0, y=0, zoom=1.0, height=470):
     """Crop of a screenshot that always fills the frame: zoom enlarges,
     x / y (0–100 %) choose which part stays visible."""
     src = (IMG / f"{name}.png").as_uri()
-    return (f'<div class="shot" style="background: #0A0C11 url(\'{src}\') no-repeat {x}% {y}% / {zoom * 100}% auto;"></div>')
+    return (f'<div class="shot" style="height: {height}px; background: #0A0C11 url(\'{src}\') no-repeat {x}% {y}% / {zoom * 100}% auto;"></div>')
 
 
 def slide(i, kicker, title, sub, body):
@@ -74,7 +79,8 @@ def slide(i, kicker, title, sub, body):
 SLIDES = [
     slide(1, "macOS · local-first · open source", "Save what you’re<br>allowed to keep.",
           "In the best quality the platform offers — with proof for every file.",
-          shot("home", y=0)),
+          f'<div class="madeby">Made by<img src="{CREATOR}" alt="瓜皮巨甜 SIMON Li"></div>'
+          + shot("home", y=0, height=400)),
     slide(2, "Video", "See every stream<br>before you download.",
           "4K60, VP9, AV1, bitrate and size — YouTube, Vimeo, Bilibili and ~1,700 sites.",
           shot("video", x=0, y=100, zoom=1.2)),

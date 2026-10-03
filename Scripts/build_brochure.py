@@ -142,6 +142,8 @@ body { font-family: -apple-system, "SF Pro Text", %(font)s, "Helvetica Neue", sa
 .brand img { width: 18mm; height: 18mm; }
 .brand .name { font-size: 22pt; font-weight: 700; letter-spacing: -.3pt; }
 .brand .kind { font-size: 9pt; color: #9BA4B5; margin-top: 1mm; }
+.brand img.creator { width: auto; height: 15mm; margin-left: auto; }
+.accent img { height: 6mm; vertical-align: middle; margin-left: 2.5mm; }
 .cover { display: grid; grid-template-columns: 92mm 1fr; gap: 10mm; margin-top: 8mm; align-items: start; }
 h1 { font-size: 25pt; line-height: 1.18; font-weight: 800; letter-spacing: -.4pt; color: #F5F7FA; }
 h1::after { content: ""; display: block; width: 22mm; height: 1.2mm; margin-top: 5mm; border-radius: 1mm;
@@ -185,9 +187,12 @@ def page_html(t: dict, logo: pathlib.Path, images: pathlib.Path) -> str:
     caps = [f'<div><img class="shot" src="{img(s)}"><div class="cap"><b>{e(a)}</b><span>{e(b)}</span></div></div>'
             for s, (a, b) in zip(shots, t["caps"])]
     feats = "".join(f'<div class="feat"><b>{e(a)}</b><span>{e(b)}</span></div>' for a, b in t["feats"])
+    creator = (ROOT / "Resources" / "Brand" / "creator-logo-white.png").as_uri()  # 瓜皮巨甜 SIMON Li
     brand = (f'<div class="brand"><img src="{logo.as_uri()}"><div><div class="name">Sooogood Video Catch</div>'
-             f'<div class="kind">macOS · local-first media toolkit</div></div></div>')
-    footer = f'<div class="accent"><span>Sooogood Video Catch</span><span>{e(t["credit"])}</span></div>'
+             f'<div class="kind">macOS · local-first media toolkit</div></div>'
+             f'<img class="creator" src="{creator}" alt="瓜皮巨甜 SIMON Li"></div>')
+    footer = (f'<div class="accent"><span>Sooogood Video Catch · by<img src="{creator}" alt="瓜皮巨甜 SIMON Li"></span>'
+              f'<span>{e(t["credit"])}</span></div>')
     return f"""<!doctype html><html lang="{t['lang']}"><head><meta charset="utf-8">
 <style>{CSS % {'font': FONTS.get(t['lang'], '"Helvetica Neue"')}}{CJK_CSS if t['lang'] in FONTS else ''}</style></head><body>
 <section class="page">{brand}

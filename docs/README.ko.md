@@ -29,6 +29,16 @@
 
 *스크린샷은 영어 화면입니다. 앱은 macOS 언어 또는 설정 › Language · 语言에서 고른 언어로 표시됩니다.*
 
+## 홍보 자료
+
+SNS 게시용 1080×1080 이미지 9장(3×3 그리드, 순서대로, 영어). 파일: [promo](promo/) · `python3 Scripts/build_promo.py`로 다시 생성.
+
+| | | |
+|---|---|---|
+| <img src="promo/01.png" width="260"> | <img src="promo/02.png" width="260"> | <img src="promo/03.png" width="260"> |
+| <img src="promo/04.png" width="260"> | <img src="promo/05.png" width="260"> | <img src="promo/06.png" width="260"> |
+| <img src="promo/07.png" width="260"> | <img src="promo/08.png" width="260"> | <img src="promo/09.png" width="260"> |
+
 ## 요구 사항
 
 - macOS 14 Sonoma 이상

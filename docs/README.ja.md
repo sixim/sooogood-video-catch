@@ -29,6 +29,16 @@
 
 *スクリーンショットは英語表示です。アプリは macOS の言語、または 設定 › Language · 语言 で選んだ言語で表示されます。*
 
+## プロモーション素材
+
+SNS 投稿用の 1080×1080 画像 9 枚（3×3 グリッド、順番どおり、英語）。ファイル：[promo](promo/) · `python3 Scripts/build_promo.py` で再生成。
+
+| | | |
+|---|---|---|
+| <img src="promo/01.png" width="260"> | <img src="promo/02.png" width="260"> | <img src="promo/03.png" width="260"> |
+| <img src="promo/04.png" width="260"> | <img src="promo/05.png" width="260"> | <img src="promo/06.png" width="260"> |
+| <img src="promo/07.png" width="260"> | <img src="promo/08.png" width="260"> | <img src="promo/09.png" width="260"> |
+
 ## 動作環境
 
 - macOS 14 Sonoma 以降

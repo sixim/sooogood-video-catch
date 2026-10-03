@@ -27,6 +27,16 @@ A local-first macOS app for creators: save the best media streams a platform act
 |---|---|
 | ![Downloads](docs/images/downloads.png) | ![Toolbox](docs/images/toolbox.png) |
 
+## Promo kit
+
+Nine 1080×1080 cards for social posts (a 3×3 grid, in order). Files: [docs/promo](docs/promo/) · rebuild with `python3 Scripts/build_promo.py`.
+
+| | | |
+|---|---|---|
+| <img src="docs/promo/01.png" width="260"> | <img src="docs/promo/02.png" width="260"> | <img src="docs/promo/03.png" width="260"> |
+| <img src="docs/promo/04.png" width="260"> | <img src="docs/promo/05.png" width="260"> | <img src="docs/promo/06.png" width="260"> |
+| <img src="docs/promo/07.png" width="260"> | <img src="docs/promo/08.png" width="260"> | <img src="docs/promo/09.png" width="260"> |
+
 ## Requirements
 
 - macOS 14 Sonoma or later

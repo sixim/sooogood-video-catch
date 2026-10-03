@@ -29,6 +29,16 @@ Une app macOS locale avant tout, pensée pour les créateurs : enregistrez les m
 
 *Captures d’écran en anglais ; l’app suit la langue de macOS ou celle choisie dans Réglages › Language · 语言.*
 
+## Kit promotionnel
+
+Neuf visuels 1080×1080 pour les réseaux sociaux (grille 3×3, dans l’ordre, en anglais). Fichiers : [promo](promo/) · régénérer avec `python3 Scripts/build_promo.py`.
+
+| | | |
+|---|---|---|
+| <img src="promo/01.png" width="260"> | <img src="promo/02.png" width="260"> | <img src="promo/03.png" width="260"> |
+| <img src="promo/04.png" width="260"> | <img src="promo/05.png" width="260"> | <img src="promo/06.png" width="260"> |
+| <img src="promo/07.png" width="260"> | <img src="promo/08.png" width="260"> | <img src="promo/09.png" width="260"> |
+
 ## Configuration requise
 
 - macOS 14 Sonoma ou ultérieur

@@ -29,6 +29,16 @@ Eine lokal ausgerichtete macOS-App für Kreative: Sichere die besten Medienstrea
 
 *Bildschirmfotos auf Englisch; die App folgt der macOS-Sprache oder der Auswahl unter Einstellungen › Language · 语言.*
 
+## Promo-Kit
+
+Neun 1080×1080-Karten für soziale Netzwerke (3×3-Raster, in Reihenfolge, auf Englisch). Dateien: [promo](promo/) · neu erzeugen mit `python3 Scripts/build_promo.py`.
+
+| | | |
+|---|---|---|
+| <img src="promo/01.png" width="260"> | <img src="promo/02.png" width="260"> | <img src="promo/03.png" width="260"> |
+| <img src="promo/04.png" width="260"> | <img src="promo/05.png" width="260"> | <img src="promo/06.png" width="260"> |
+| <img src="promo/07.png" width="260"> | <img src="promo/08.png" width="260"> | <img src="promo/09.png" width="260"> |
+
 ## Voraussetzungen
 
 - macOS 14 Sonoma oder neuer

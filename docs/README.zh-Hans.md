@@ -29,6 +29,16 @@
 
 *截图为英文界面；应用跟随 macOS 语言，也可在「设置 › Language · 语言」中切换。*
 
+## 宣发素材
+
+9 张 1080×1080 英文宣传图，按顺序正好组成朋友圈 / 社交平台九宫格。文件在 [promo](promo/)，用 `python3 Scripts/build_promo.py` 重新生成。
+
+| | | |
+|---|---|---|
+| <img src="promo/01.png" width="260"> | <img src="promo/02.png" width="260"> | <img src="promo/03.png" width="260"> |
+| <img src="promo/04.png" width="260"> | <img src="promo/05.png" width="260"> | <img src="promo/06.png" width="260"> |
+| <img src="promo/07.png" width="260"> | <img src="promo/08.png" width="260"> | <img src="promo/09.png" width="260"> |
+
 ## 运行环境
 
 - macOS 14 Sonoma 或更新版本

@@ -18,6 +18,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header
+                    LanguageSettingsPanel()
 #if !MEDIAFETCH_STORE_PROFILE
                     DependencyStatusPanel()
                     TorrentSettingsPanel()
@@ -57,9 +58,9 @@ struct SettingsView: View {
 
     private var settingsSubtitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "Spotify 连接、隐私与本地音频工具"
+        return String(localized: "Spotify 连接、隐私与本地音频工具")
 #else
-        return "账号连接、隐私与本机工具"
+        return String(localized: "账号连接、隐私与本机工具")
 #endif
     }
 
@@ -124,7 +125,7 @@ struct SettingsView: View {
                         Button {
                             copyCallback()
                         } label: {
-                            Label(copiedCallback ? "已复制" : "复制", systemImage: copiedCallback ? "checkmark" : "doc.on.doc")
+                            Label(copiedCallback ? String(localized: "已复制") : String(localized: "复制"), systemImage: copiedCallback ? "checkmark" : "doc.on.doc")
                         }
                         .buttonStyle(.bordered)
                     }

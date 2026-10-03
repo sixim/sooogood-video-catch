@@ -47,7 +47,7 @@ public enum TorrentSource: Equatable, Sendable {
     public var displayHint: String {
         switch self {
         case .magnet(let link):
-            return URLComponents(string: link)?.queryItems?.first(where: { $0.name == "dn" })?.value ?? "磁力链接"
+            return URLComponents(string: link)?.queryItems?.first(where: { $0.name == "dn" })?.value ?? String(localized: "磁力链接")
         case .metainfo(let name, _):
             return name
         }
@@ -65,13 +65,13 @@ public enum TorrentError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .engineMissing: return "未找到 transmission-daemon，请执行 brew install transmission-cli"
-        case .engineFailedToStart(let detail): return "Torrent 引擎启动失败：\(detail)"
-        case .invalidTorrentFile: return "这不是有效的 .torrent 文件"
-        case .invalidMagnet: return "磁力链接格式无效（需要 xt=urn:btih: 或 urn:btmh:）"
-        case .rpc(_, let message): return "Torrent 引擎返回错误：\(message)"
-        case .http(let code): return "Torrent 引擎连接失败（HTTP \(code)）"
-        case .unauthorized: return "Torrent 引擎认证失败，请重启应用"
+        case .engineMissing: return String(localized: "未找到 transmission-daemon，请执行 brew install transmission-cli")
+        case .engineFailedToStart(let detail): return String(localized: "Torrent 引擎启动失败：\(detail)")
+        case .invalidTorrentFile: return String(localized: "这不是有效的 .torrent 文件")
+        case .invalidMagnet: return String(localized: "磁力链接格式无效（需要 xt=urn:btih: 或 urn:btmh:）")
+        case .rpc(_, let message): return String(localized: "Torrent 引擎返回错误：\(message)")
+        case .http(let code): return String(localized: "Torrent 引擎连接失败（HTTP \(code)）")
+        case .unauthorized: return String(localized: "Torrent 引擎认证失败，请重启应用")
         }
     }
 }
@@ -87,12 +87,12 @@ public enum TorrentState: Int, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .stopped: return "已停止"
-        case .queuedToVerify, .verifying: return "校验中"
-        case .queuedToDownload: return "排队下载"
-        case .downloading: return "下载中"
-        case .queuedToSeed: return "排队做种"
-        case .seeding: return "做种中"
+        case .stopped: return String(localized: "已停止")
+        case .queuedToVerify, .verifying: return String(localized: "校验中")
+        case .queuedToDownload: return String(localized: "排队下载")
+        case .downloading: return String(localized: "下载中")
+        case .queuedToSeed: return String(localized: "排队做种")
+        case .seeding: return String(localized: "做种中")
         }
     }
 }
@@ -189,9 +189,9 @@ public enum SeedPolicy: Codable, Hashable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .stopWhenDone: return "下载完成即停止"
-        case .ratio(let r): return String(format: "分享率达到 %.1f 后停止", r)
-        case .idleMinutes(let m): return "空闲 \(m) 分钟后停止"
+        case .stopWhenDone: return String(localized: "下载完成即停止")
+        case .ratio(let r): return String(format: String(localized: "分享率达到 %.1f 后停止"), r)
+        case .idleMinutes(let m): return String(localized: "空闲 \(m) 分钟后停止")
         }
     }
 

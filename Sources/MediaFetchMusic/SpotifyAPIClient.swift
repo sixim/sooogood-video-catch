@@ -40,25 +40,27 @@ public enum SpotifyAPIError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidResourceURL:
-            return "请输入 Spotify 曲目、专辑或歌单链接。"
+            return String(localized: "请输入 Spotify 曲目、专辑或歌单链接。")
         case let .forbidden(message):
-            return "Spotify 拒绝访问。请确认账号已加入 Developer App allowlist，且具备该内容权限\(message.map { "：\($0)" } ?? "")。"
+            let detail = message.map { "：\($0)" } ?? ""
+            return String(localized: "Spotify 拒绝访问。请确认账号已加入 Developer App allowlist，且具备该内容权限\(detail)。")
         case let .rateLimited(retryAfter):
             if let retryAfter {
-                return "Spotify 请求过于频繁，请在 \(Int(ceil(retryAfter))) 秒后重试。"
+                return String(localized: "Spotify 请求过于频繁，请在 \(Int(ceil(retryAfter))) 秒后重试。")
             }
-            return "Spotify 请求过于频繁，请稍后重试。"
+            return String(localized: "Spotify 请求过于频繁，请稍后重试。")
         case .quotaExceeded:
-            return "Spotify Developer App 的 API 配额已用完，请等待配额恢复或检查开发模式限制。"
+            return String(localized: "Spotify Developer App 的 API 配额已用完，请等待配额恢复或检查开发模式限制。")
         case let .playlistAccessDenied(owner):
-            let suffix = owner.map { "（所有者：\($0)）" } ?? ""
-            return "\(MediaFetchRelease.displayName) 只载入当前账号拥有或可协作的歌单\(suffix)。"
+            let suffix = owner.map { String(localized: "（所有者：\($0)）") } ?? ""
+            return String(localized: "\(MediaFetchRelease.displayName) 只载入当前账号拥有或可协作的歌单\(suffix)。")
         case .reauthorizationRequired:
-            return "Spotify 授权已失效。请在设置中删除旧凭据后重新连接。"
+            return String(localized: "Spotify 授权已失效。请在设置中删除旧凭据后重新连接。")
         case let .response(status, message):
-            return "Spotify API 返回错误 \(status)\(message.map { "：\($0)" } ?? "")。"
+            let detail = message.map { "：\($0)" } ?? ""
+            return String(localized: "Spotify API 返回错误 \(status)\(detail)。")
         case .malformedResponse:
-            return "Spotify 返回了无法识别的元数据。"
+            return String(localized: "Spotify 返回了无法识别的元数据。")
         }
     }
 }

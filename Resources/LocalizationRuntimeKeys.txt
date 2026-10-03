@@ -1,0 +1,12 @@
+# Keys looked up with L10n.string(_:) at runtime (persisted enum raw values).
+最高画质（无损合并）
+保留平台原始音视频流
+兼容 MP4（无损封装）
+仅保存最佳原始音频
+视频
+Torrent
+处理
+剪辑
+音频与字幕
+分享
+导出器不可用

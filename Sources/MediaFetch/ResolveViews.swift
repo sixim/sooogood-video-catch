@@ -35,7 +35,7 @@ struct ResolveSendButton: View {
             } else if let result = resolve.lastResults[target.key] {
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(MediaFetchTheme.success)
                 Text("已导入达芬奇「\(result.project)」· \(result.clips.count) 个片段")
-                    .help("媒体夹：" + result.bin.joined(separator: " › "))
+                    .help(String(localized: "媒体夹：") + result.bin.joined(separator: " › "))
                 if let warning = resolve.warnings[target.key]?.first {
                     Image(systemName: "speaker.slash.fill")
                         .foregroundStyle(MediaFetchTheme.warning)
@@ -103,12 +103,12 @@ struct ResolveSettingsPanel: View {
     private var statusLine: some View {
         switch resolve.connection {
         case .unknown:
-            Text(resolve.isInstalled ? "尚未检测" : "没有找到 DaVinci Resolve")
+            Text(resolve.isInstalled ? String(localized: "尚未检测") : String(localized: "没有找到 DaVinci Resolve"))
                 .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
         case .checking:
             HStack { ProgressView().controlSize(.small); Text("正在连接达芬奇…").font(.caption) }
         case .connected(let status):
-            Label("\(status.product) \(status.version) · 当前项目：\(status.project ?? "无")",
+            Label("\(status.product) \(status.version) · 当前项目：\(status.project ?? String(localized: "无"))",
                   systemImage: "checkmark.circle.fill")
                 .font(.caption)
                 .foregroundStyle(MediaFetchTheme.success)

@@ -77,6 +77,7 @@ final class ResolveTests: XCTestCase {
         let request = try ResolveImportPlanner.plan(packageDirectory: package)
         XCTAssertEqual(request.clips.map { ($0.path as NSString).lastPathComponent }, ["v.mkv"], ".ogg is never sent to Resolve")
         XCTAssertEqual(ResolveImportPlanner.compatibilityWarnings(packageDirectory: package).count, 1)
+        XCTAssertTrue(ResolveImportPlanner.compatibilityWarnings(packageDirectory: package).first?.hasPrefix("音轨是 opus，") == true)
         try DerivativeLog.append(DerivativeRecord(
             tool: "ffmpeg", preset: "wavForEdit", role: .audio,
             source: .init(relativePath: "v.mkv", byteSize: 6, sha256: "a"),

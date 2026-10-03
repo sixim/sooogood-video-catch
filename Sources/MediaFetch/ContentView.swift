@@ -141,7 +141,7 @@ struct VideoDownloadView: View {
         )) {
             Button("知道了") { downloader.errorMessage = nil }
         } message: {
-            Text(downloader.errorMessage ?? "未知错误")
+            Text(downloader.errorMessage ?? String(localized: "未知错误"))
         }
         .alert("Safari Cookie 受到 macOS 保护", isPresented: $downloader.safariPermissionRequired) {
             Button("改用 Chrome") {
@@ -190,7 +190,7 @@ struct VideoDownloadView: View {
 
     private var dependencyBadge: some View {
         Label(
-            downloader.dependenciesReady ? "下载引擎就绪" : "缺少下载引擎",
+            downloader.dependenciesReady ? String(localized: "下载引擎就绪") : String(localized: "缺少下载引擎"),
             systemImage: downloader.dependenciesReady ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
         )
         .font(.caption.weight(.semibold))
@@ -331,7 +331,7 @@ struct VideoDownloadView: View {
             VStack(alignment: .leading, spacing: 15) {
                 Picker("保存方式", selection: $profile) {
                     ForEach(DownloadProfile.allCases) { item in
-                        Text(item.rawValue).tag(item)
+                        Text(item.displayName).tag(item)
                     }
                 }
                 .pickerStyle(.menu)
@@ -477,7 +477,7 @@ struct VideoDownloadView: View {
                             }
                             ProgressView(value: job.progressFraction)
                             HStack {
-                                Text(job.profile.rawValue)
+                                Text(job.profile.displayName)
                                 if let source = job.browserCookieSource {
                                     Text("· \(source.displayName) 登录态")
                                 }
@@ -509,7 +509,7 @@ struct VideoDownloadView: View {
 
     private var legalNote: some View {
         Label(
-            "请只下载你拥有权利、已获许可，或平台明确允许保存的内容。本应用不绕过 DRM 或付费访问控制。",
+            String(localized: "请只下载你拥有权利、已获许可，或平台明确允许保存的内容。本应用不绕过 DRM 或付费访问控制。"),
             systemImage: "checkmark.shield"
         )
         .font(.caption)
@@ -682,14 +682,14 @@ struct VideoDownloadView: View {
                     Button {
                         loginStore.beginInAppLogin(for: platform)
                     } label: {
-                        Label("登录 " + platform.displayName, systemImage: "person.crop.rectangle")
+                        Label(String(localized: "登录 ") + platform.displayName, systemImage: "person.crop.rectangle")
                     }.buttonStyle(.borderedProminent)
-                    Text(loginStore.method(for: platform) == .inApp ? "应用内会话" : "外部浏览器兼容方式")
+                    Text(loginStore.method(for: platform) == .inApp ? String(localized: "应用内会话") : String(localized: "外部浏览器兼容方式"))
                         .font(.caption).foregroundStyle(.secondary)
                     Spacer()
                 }
                 Toggle(
-                    "使用 \(platform.displayName) 登录会话",
+                    String(localized: "使用 \(platform.displayName) 登录会话"),
                     isOn: Binding(
                         get: { loginStore.isEnabled(for: platform) },
                         set: { loginStore.setEnabled($0, for: platform) }
@@ -703,7 +703,7 @@ struct VideoDownloadView: View {
                 if loginStore.isEnabled(for: platform) && loginStore.method(for: platform) == .browser {
                     HStack(spacing: 12) {
                         Picker(
-                            "读取登录状态",
+                            String(localized: "读取登录状态"),
                             selection: Binding(
                                 get: { loginStore.browser(for: platform) },
                                 set: { loginStore.setBrowser($0, for: platform) }
@@ -726,7 +726,7 @@ struct VideoDownloadView: View {
                     }
 
                     Label(
-                        "下载引擎将读取所选浏览器的 Cookie 库，\(MediaFetchRelease.displayName) 不持久化导出的 Cookie。",
+                        String(localized: "下载引擎将读取所选浏览器的 Cookie 库，\(MediaFetchRelease.displayName) 不持久化导出的 Cookie。"),
                         systemImage: "lock.shield"
                     )
                     .font(.caption)

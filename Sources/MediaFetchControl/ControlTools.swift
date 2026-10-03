@@ -42,7 +42,7 @@ public struct ControlTool: Sendable, Equatable {
                 "subtitles": ["type": "boolean"], "sidecars": ["type": "boolean", "description": "Thumbnail and info.json"]
               ], required: ["urls"])),
         .init(name: "expand_collection",
-              description: "List the entries of a playlist or course (YouTube playlist, Udemy course, Bilibili 课堂) with chapters, without downloading.",
+              description: String(localized: "List the entries of a playlist or course (YouTube playlist, Udemy course, Bilibili 课堂) with chapters, without downloading."),
               inputSchema: schema(["url": string], required: ["url"])),
         .init(name: "enqueue_collection",
               description: "Queue entries of a playlist or course into one folder with chapter sub-folders and a collection-manifest.json. Omit indices to take every entry. DRM-protected lectures are skipped and recorded.",
@@ -118,6 +118,9 @@ public struct ControlTool: Sendable, Equatable {
 public struct ControlError: Error, Equatable, Sendable, LocalizedError {
     public let code: Int
     public let message: String
+
+    /// Compared by the MCP helper to reconnect once after the app restarts.
+    public static let disconnectedMessage = String(localized: "应用断开了连接")
 
     public init(code: Int, message: String) {
         self.code = code

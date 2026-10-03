@@ -10,8 +10,8 @@ public enum NetEaseAvailability {
         case noRights
     }
 
-    public static let noRightsMessage = "网易云没有这首歌的播放版权（无版权或已下架），换个平台试试"
-    public static let noRightsBadge = "无版权"
+    public static let noRightsMessage = String(localized: "网易云没有这首歌的播放版权（无版权或已下架），换个平台试试")
+    public static let noRightsBadge = String(localized: "无版权")
     /// Ids per request; the endpoint accepts long lists, this keeps URLs short.
     public static let batchSize = 200
 

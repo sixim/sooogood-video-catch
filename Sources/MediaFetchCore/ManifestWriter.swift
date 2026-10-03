@@ -58,7 +58,7 @@ public enum ManifestWriterError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .errorPageInsteadOfMedia(let name):
-            return "“\(name)” 实际是网页错误页而不是媒体文件，已停止生成清单。请重试或检查登录状态。"
+            return String(localized: "“\(name)” 实际是网页错误页而不是媒体文件，已停止生成清单。请重试或检查登录状态。")
         }
     }
 }

@@ -105,7 +105,7 @@ public enum AppConnector {
             if let client = try? ControlClient(socketURL: socketURL) { return client }
             Thread.sleep(forTimeInterval: 0.3)
         }
-        throw ControlError.failed("无法连接 Sooogood Video Catch：请确认应用已安装并能正常启动")
+        throw ControlError.failed(String(localized: "无法连接 Sooogood Video Catch：请确认应用已安装并能正常启动"))
     }
 }
 #endif

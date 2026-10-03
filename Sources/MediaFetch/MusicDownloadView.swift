@@ -166,7 +166,7 @@ struct MusicDownloadView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(message, systemImage: "exclamationmark.triangle.fill").foregroundStyle(MediaFetchTheme.warning)
                         .fixedSize(horizontal: false, vertical: true)
-                    if message.contains("登录") { Button("去登录", action: openSettings).buttonStyle(.bordered) }
+                    if model.phaseNeedsLogin { Button("去登录", action: openSettings).buttonStyle(.bordered) }
                 }
             }
         case .single(_, let track):
@@ -207,10 +207,10 @@ struct MusicDownloadView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(outline.title.isEmpty ? outline.id : outline.title).font(.title3.bold()).foregroundStyle(MediaFetchTheme.primaryText)
-                        Text("\(outline.entries.count) 首 · 已选 \(model.selected.count) · 已检测音质 \(probed)" +
-                             (model.localMatches.isEmpty ? "" : " · 本地已有 \(model.localMatches.count)（默认不选）") +
-                             (outline.unavailableCount > 0 ? " · \(outline.unavailableCount) 首当前账号不可见" : "") +
-                             (outline.restricted.isEmpty ? "" : " · \(outline.restricted.count) 首平台无版权（不可下载）"))
+                        Text(String(localized: "\(outline.entries.count) 首 · 已选 \(model.selected.count) · 已检测音质 \(probed)") +
+                             (model.localMatches.isEmpty ? "" : String(localized: " · 本地已有 \(model.localMatches.count)（默认不选）")) +
+                             (outline.unavailableCount > 0 ? String(localized: " · \(outline.unavailableCount) 首当前账号不可见") : "") +
+                             (outline.restricted.isEmpty ? "" : String(localized: " · \(outline.restricted.count) 首平台无版权（不可下载）")))
                             .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
                     Spacer()
@@ -223,7 +223,9 @@ struct MusicDownloadView: View {
                 }
                 .font(.caption)
                 if !outline.entries.isEmpty, outline.restricted.count == outline.entries.count {
-                    Label("这张\(outline.extractor.contains("album") ? "专辑" : "列表")里的歌网易云全部没有播放版权，无法下载。换个平台试试。",
+                    Label(outline.extractor.contains("album")
+                          ? String(localized: "这张专辑里的歌网易云全部没有播放版权，无法下载。换个平台试试。")
+                          : String(localized: "这个列表里的歌网易云全部没有播放版权，无法下载。换个平台试试。"),
                           systemImage: "nosign")
                         .font(.callout).foregroundStyle(MediaFetchTheme.warning)
                 }
@@ -261,7 +263,7 @@ struct MusicDownloadView: View {
             }
             Spacer()
             if let match = model.localMatches[entry.id] {
-                Text(match.isExact ? "本地已有" : "本地可能已有")
+                Text(match.isExact ? String(localized: "本地已有") : String(localized: "本地可能已有"))
                     .font(.caption2.weight(.semibold))
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(MediaFetchTheme.success.opacity(0.18), in: Capsule())
@@ -278,14 +280,14 @@ struct MusicDownloadView: View {
             case .loading:
                 ProgressView().controlSize(.mini)
             case .failed(let message):
-                Label(message.contains("登录") ? "需要登录" : "不可用", systemImage: "exclamationmark.circle")
+                Label(model.loginProbeFailures.contains(entry.id) ? String(localized: "需要登录") : String(localized: "不可用"), systemImage: "exclamationmark.circle")
                     .font(.caption).foregroundStyle(MediaFetchTheme.warning).help(message)
             case .loaded(let track):
                 HStack(spacing: 4) {
                     if let expected = quality.expectedTier(from: track.availableTiers) {
                         QualityBadge(tier: expected, emphasized: true)
                     } else {
-                        Text(quality == .losslessOnly ? "无无损" : "无匹配音质").font(.caption2).foregroundStyle(MediaFetchTheme.warning)
+                        Text(quality == .losslessOnly ? String(localized: "无无损") : String(localized: "无匹配音质")).font(.caption2).foregroundStyle(MediaFetchTheme.warning)
                     }
                     if let best = track.bestTier, best != quality.expectedTier(from: track.availableTiers) {
                         Text("最高 \(best.displayName)").font(.caption2).foregroundStyle(MediaFetchTheme.secondaryText)
@@ -302,7 +304,7 @@ struct MusicDownloadView: View {
     private func localBanner(_ match: LocalMusicIndex.Match) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.seal.fill").foregroundStyle(MediaFetchTheme.success)
-            Text(match.isExact ? "本地已有这首歌" : "本地可能已有（歌名、歌手、时长一致）")
+            Text(match.isExact ? String(localized: "本地已有这首歌") : String(localized: "本地可能已有（歌名、歌手、时长一致）"))
             Button("显示") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: match.path)]) }.buttonStyle(.link)
         }
         .font(.caption)
@@ -325,11 +327,11 @@ struct MusicDownloadView: View {
             Button {
                 let result = model.enqueue(quality: quality, layout: layout, destination: destination, nameTemplate: nameTemplate)
                 var parts: [String] = []
-                if result.queued > 0 { parts.append("已加入 \(result.queued) 首") }
-                if !result.skipped.isEmpty { parts.append("跳过 \(result.skipped.count) 首（没有「\(quality.displayName)」）：" + result.skipped.prefix(3).joined(separator: "、")) }
+                if result.queued > 0 { parts.append(String(localized: "已加入 \(result.queued) 首")) }
+                if !result.skipped.isEmpty { parts.append(String(localized: "跳过 \(result.skipped.count) 首（没有「\(quality.displayName)」）：") + result.skipped.prefix(3).joined(separator: "、")) }
                 notice = parts.isEmpty ? downloader.errorMessage : parts.joined(separator: "；")
             } label: {
-                Label("下载\(count > 1 ? "选中的 \(count) 首" : "")", systemImage: "arrow.down.circle.fill")
+                Label(count > 1 ? String(localized: "下载选中的 \(count) 首") : String(localized: "下载"), systemImage: "arrow.down.circle.fill")
             }
             .buttonStyle(.borderedProminent)
             .tint(accent)

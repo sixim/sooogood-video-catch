@@ -73,10 +73,10 @@ public enum EngineHealthStatus: Equatable, Sendable {
 
     public var summary: String {
         switch self {
-        case .missing: return "未安装 yt-dlp，请执行 brew install yt-dlp"
-        case .unreadable: return "无法读取 yt-dlp 版本"
-        case .belowMinimum(let v): return "yt-dlp \(v) 低于最低安全版本 \(EngineVersion.minimumSupported)，请执行 brew upgrade yt-dlp"
-        case .stale(let v, let days): return "yt-dlp \(v) 已发布 \(days) 天，建议执行 brew upgrade yt-dlp"
+        case .missing: return String(localized: "未安装 yt-dlp，请执行 brew install yt-dlp")
+        case .unreadable: return String(localized: "无法读取 yt-dlp 版本")
+        case .belowMinimum(let v): return String(localized: "yt-dlp \(v) 低于最低安全版本 \(EngineVersion.minimumSupported)，请执行 brew upgrade yt-dlp")
+        case .stale(let v, let days): return String(localized: "yt-dlp \(v) 已发布 \(days) 天，建议执行 brew upgrade yt-dlp")
         case .current(let v): return "yt-dlp \(v)"
         }
     }

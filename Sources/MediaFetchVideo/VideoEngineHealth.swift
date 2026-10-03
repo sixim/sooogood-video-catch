@@ -13,8 +13,8 @@ public struct VideoEngineHealth: Equatable, Sendable {
     public var issues: [String] {
         var result: [String] = []
         if ytDLP.needsAttention { result.append(ytDLP.summary) }
-        if !ffmpegInstalled { result.append("未安装 FFmpeg，请执行 brew install ffmpeg") }
-        if jsRuntimePath == nil { result.append("未找到 deno，YouTube 可能只能解析到部分格式，请执行 brew install deno") }
+        if !ffmpegInstalled { result.append(String(localized: "未安装 FFmpeg，请执行 brew install ffmpeg")) }
+        if jsRuntimePath == nil { result.append(String(localized: "未找到 deno，YouTube 可能只能解析到部分格式，请执行 brew install deno")) }
         return result
     }
 

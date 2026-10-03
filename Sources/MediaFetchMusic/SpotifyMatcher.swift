@@ -89,14 +89,14 @@ public struct SpotifyMatcher: Sendable {
                 return MatchEvidence(
                     score: 85,
                     matchedFields: [.isrc],
-                    reasons: ["ISRC 一致，但检测到 Live、Remaster、Explicit、Clean、Deluxe 等版本证据冲突，必须人工确认"],
+                    reasons: [String(localized: "ISRC 一致，但检测到 Live、Remaster、Explicit、Clean、Deluxe 等版本证据冲突，必须人工确认")],
                     versionConflict: true
                 )
             }
             return MatchEvidence(
                 score: 100,
                 matchedFields: [.isrc],
-                reasons: ["ISRC 完全一致"]
+                reasons: [String(localized: "ISRC 完全一致")]
             )
         }
 
@@ -104,7 +104,7 @@ public struct SpotifyMatcher: Sendable {
             return MatchEvidence(
                 score: 85,
                 matchedFields: [.artist, .title] + (durationMatches ? [.duration] : []),
-                reasons: ["检测到 Live、Remaster、Explicit、Clean、Deluxe 等版本证据冲突，必须人工确认"],
+                reasons: [String(localized: "检测到 Live、Remaster、Explicit、Clean、Deluxe 等版本证据冲突，必须人工确认")],
                 versionConflict: true
             )
         }
@@ -115,26 +115,26 @@ public struct SpotifyMatcher: Sendable {
                     return MatchEvidence(
                         score: 90,
                         matchedFields: [.artist, .title, .album, .duration],
-                        reasons: ["歌手、标题、专辑和时长一致，但本地文件缺少 Explicit/Clean 版本证据，必须人工确认"]
+                        reasons: [String(localized: "歌手、标题、专辑和时长一致，但本地文件缺少 Explicit/Clean 版本证据，必须人工确认")]
                     )
                 }
                 return MatchEvidence(
                     score: 95,
                     matchedFields: [.artist, .title, .album, .duration],
-                    reasons: ["歌手、标题、专辑一致，时长误差不超过 2 秒"]
+                    reasons: [String(localized: "歌手、标题、专辑一致，时长误差不超过 2 秒")]
                 )
             }
             return MatchEvidence(
                 score: 90,
                 matchedFields: [.artist, .title, .duration],
-                reasons: ["歌手、标题一致，时长误差不超过 2 秒"]
+                reasons: [String(localized: "歌手、标题一致，时长误差不超过 2 秒")]
             )
         }
 
         if artistsMatch && exactTitleMatch {
-            var reasons = ["歌手和标题一致，但缺少可靠的时长或专辑证据"]
+            var reasons = [String(localized: "歌手和标题一致，但缺少可靠的时长或专辑证据")]
             if let durationDifference, durationDifference > 2_000 {
-                reasons = ["歌手和标题一致，但时长相差超过 2 秒，必须人工确认"]
+                reasons = [String(localized: "歌手和标题一致，但时长相差超过 2 秒，必须人工确认")]
             }
             var fields: [SpotifyMatchField] = [.artist, .title]
             if albumsMatch { fields.append(.album) }
@@ -153,7 +153,7 @@ public struct SpotifyMatcher: Sendable {
             return MatchEvidence(
                 score: artistsMatch && durationMatches ? 85 : 80,
                 matchedFields: fields,
-                reasons: ["仅文件名看起来相符，不能自动匹配"]
+                reasons: [String(localized: "仅文件名看起来相符，不能自动匹配")]
             )
         }
 
@@ -161,7 +161,7 @@ public struct SpotifyMatcher: Sendable {
             return MatchEvidence(
                 score: 80,
                 matchedFields: [.artist, .title],
-                reasons: ["歌手和标题主体相似，证据不足，必须人工确认"],
+                reasons: [String(localized: "歌手和标题主体相似，证据不足，必须人工确认")],
                 versionConflict: versionConflict
             )
         }

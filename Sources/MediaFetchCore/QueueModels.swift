@@ -15,15 +15,15 @@ public enum DownloadJobStatus: String, Codable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .queued: return "等待中"
-        case .downloading: return "下载中"
-        case .packaging: return "正在生成清单"
-        case .completed: return "已完成"
-        case .failed: return "失败"
-        case .cancelled: return "已取消"
-        case .paused: return "已暂停"
-        case .suspended: return "已暂停（可继续）"
-        case .retrying: return "等待自动重试"
+        case .queued: return String(localized: "等待中")
+        case .downloading: return String(localized: "下载中")
+        case .packaging: return String(localized: "正在生成清单")
+        case .completed: return String(localized: "已完成")
+        case .failed: return String(localized: "失败")
+        case .cancelled: return String(localized: "已取消")
+        case .paused: return String(localized: "已暂停")
+        case .suspended: return String(localized: "已暂停（可继续）")
+        case .retrying: return String(localized: "等待自动重试")
         }
     }
 }
@@ -38,11 +38,11 @@ public enum DownloadStage: Int, Codable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .resolving: return "解析"
-        case .downloading: return "下载"
-        case .merging: return "合并"
-        case .verifying: return "校验"
-        case .manifest: return "清单"
+        case .resolving: return String(localized: "解析")
+        case .downloading: return String(localized: "下载")
+        case .merging: return String(localized: "合并")
+        case .verifying: return String(localized: "校验")
+        case .manifest: return String(localized: "清单")
         }
     }
 }

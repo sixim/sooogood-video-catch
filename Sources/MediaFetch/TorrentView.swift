@@ -272,10 +272,10 @@ struct TorrentView: View {
 
     private var engineText: String {
         switch service.engineStatus {
-        case .idle: return "引擎未启动"
-        case .starting: return "引擎启动中"
+        case .idle: return String(localized: "引擎未启动")
+        case .starting: return String(localized: "引擎启动中")
         case .running(let version): return "Transmission \(version.split(separator: " ").first ?? "")"
-        case .unavailable: return "引擎不可用"
+        case .unavailable: return String(localized: "引擎不可用")
         }
     }
 
@@ -374,9 +374,9 @@ struct TorrentRow: View {
     private var awaitingSelection: Bool { record?.awaitingFileSelection == true && snapshot.state == .stopped }
 
     private var statusText: String {
-        if !snapshot.hasMetadata { return "获取元数据" }
-        if awaitingSelection { return "等待选择文件" }
-        if snapshot.isComplete && snapshot.state == .stopped { return "已完成" }
+        if !snapshot.hasMetadata { return String(localized: "获取元数据") }
+        if awaitingSelection { return String(localized: "等待选择文件") }
+        if snapshot.isComplete && snapshot.state == .stopped { return String(localized: "已完成") }
         return snapshot.state.displayName
     }
 
@@ -395,9 +395,9 @@ struct TorrentRow: View {
         var parts = [String(format: "%.1f%%", snapshot.percentDone * 100), size]
         if snapshot.downloadRate > 0 { parts.append("↓ " + ByteCountFormatter.string(fromByteCount: snapshot.downloadRate, countStyle: .file) + "/s") }
         if snapshot.uploadRate > 0 { parts.append("↑ " + ByteCountFormatter.string(fromByteCount: snapshot.uploadRate, countStyle: .file) + "/s") }
-        if snapshot.eta > 0 { parts.append("剩余 " + Self.duration(snapshot.eta)) }
-        parts.append("\(snapshot.peersConnected) 个连接")
-        parts.append(String(format: "分享率 %.2f", max(snapshot.uploadRatio, 0)))
+        if snapshot.eta > 0 { parts.append(String(localized: "剩余 ") + Self.duration(snapshot.eta)) }
+        parts.append(String(localized: "\(snapshot.peersConnected) 个连接"))
+        parts.append(String(format: String(localized: "分享率 %.2f"), max(snapshot.uploadRatio, 0)))
         return parts.joined(separator: " · ")
     }
 
@@ -418,7 +418,7 @@ struct CopyableCommand: View {
         HStack {
             Text(command).font(.body.monospaced()).textSelection(.enabled)
             Spacer()
-            Button(copied ? "已复制" : "复制") {
+            Button(copied ? String(localized: "已复制") : String(localized: "复制")) {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(command, forType: .string)
                 copied = true
@@ -440,7 +440,7 @@ struct TorrentTaskList: View {
         LazyVStack(spacing: 12) {
             if service.torrents.isEmpty {
                 VStack(spacing: 10) {
-                    Text(service.engineStatus == .idle ? "Torrent 引擎尚未启动" : "还没有 Torrent 任务")
+                    Text(service.engineStatus == .idle ? String(localized: "Torrent 引擎尚未启动") : String(localized: "还没有 Torrent 任务"))
                         .foregroundStyle(MediaFetchTheme.secondaryText)
                     Button("打开 Torrent 页", action: openTorrent).buttonStyle(.bordered)
                 }

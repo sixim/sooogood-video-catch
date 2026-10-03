@@ -40,23 +40,23 @@ public struct SpotifyBridgeService {
         public var errorDescription: String? {
             switch self {
             case .noReadyItems:
-                return "没有已确认的音频可以保存"
+                return String(localized: "没有已确认的音频可以保存")
             case .invalidLocalFile(let path):
-                return "本地音频不存在或不是普通文件：\(path)"
+                return String(localized: "本地音频不存在或不是普通文件：\(path)")
             case .unsupportedAudioExtension(let value):
-                return "不支持此音频格式：\(value)"
+                return String(localized: "不支持此音频格式：\(value)")
             case .directURLMustUseHTTPS:
-                return "授权音频直链必须使用 HTTPS"
+                return String(localized: "授权音频直链必须使用 HTTPS")
             case .spotifyAudioSourceForbidden(let host):
-                return "不能把 Spotify 或 Spotify CDN 当作音频来源：\(host)"
+                return String(localized: "不能把 Spotify 或 Spotify CDN 当作音频来源：\(host)")
             case .directDownloadFailed(let status):
-                return "授权音频直链下载失败，HTTP 状态码：\(status)"
+                return String(localized: "授权音频直链下载失败，HTTP 状态码：\(status)")
             case .redirectedToInsecureURL:
-                return "授权音频直链重定向到了非 HTTPS 地址"
+                return String(localized: "授权音频直链重定向到了非 HTTPS 地址")
             case .redirectedToForbiddenSource(let host):
-                return "授权音频直链重定向到了被禁止的 Spotify 来源：\(host)"
+                return String(localized: "授权音频直链重定向到了被禁止的 Spotify 来源：\(host)")
             case .checksumMismatch(let file):
-                return "复制校验失败，源文件和目标文件 SHA-256 不一致：\(file)"
+                return String(localized: "复制校验失败，源文件和目标文件 SHA-256 不一致：\(file)")
             }
         }
     }
@@ -91,7 +91,7 @@ public struct SpotifyBridgeService {
                 items[index].failureReason = nil
             } else {
                 items[index].status = .failed
-                items[index].failureReason = "旧素材包记录缺少可重新复制的音频来源"
+                items[index].failureReason = String(localized: "旧素材包记录缺少可重新复制的音频来源")
             }
         }
 
@@ -250,7 +250,7 @@ public struct SpotifyBridgeService {
     private func validatedExtension(_ value: String) throws -> String {
         let normalized = value.lowercased()
         guard LocalAudioScanner.supportedExtensions.contains(normalized) else {
-            throw BridgeError.unsupportedAudioExtension(value.isEmpty ? "未知" : value)
+            throw BridgeError.unsupportedAudioExtension(value.isEmpty ? String(localized: "未知") : value)
         }
         return normalized
     }
@@ -285,7 +285,7 @@ public struct SpotifyBridgeService {
         if let mimeType = download.mimeType?.lowercased(), let mapped = mimeMap[mimeType] {
             return mapped
         }
-        throw BridgeError.unsupportedAudioExtension(candidates.first ?? download.mimeType ?? "未知")
+        throw BridgeError.unsupportedAudioExtension(candidates.first ?? download.mimeType ?? String(localized: "未知"))
     }
 
     private func availableOutputURL(

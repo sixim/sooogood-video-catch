@@ -13,11 +13,11 @@ public enum PackageRelocation {
 
         public var message: String {
             switch self {
-            case .notFinished: return "任务还没完成"
-            case .missingPackage: return "原文件夹已不存在"
-            case .alreadyThere: return "已经在目标文件夹里"
-            case .targetExists(let path): return "目标位置已有同名文件夹，未覆盖：\(path)"
-            case .partOfCollection: return "属于课程 / 歌单合集，请整体移动合集文件夹"
+            case .notFinished: return String(localized: "任务还没完成")
+            case .missingPackage: return String(localized: "原文件夹已不存在")
+            case .alreadyThere: return String(localized: "已经在目标文件夹里")
+            case .targetExists(let path): return String(localized: "目标位置已有同名文件夹，未覆盖：\(path)")
+            case .partOfCollection: return String(localized: "属于课程 / 歌单合集，请整体移动合集文件夹")
             }
         }
     }

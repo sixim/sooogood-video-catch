@@ -81,17 +81,17 @@ public enum ResolveBridgeError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .notInstalled: return "没有找到 DaVinci Resolve（/Applications/DaVinci Resolve）"
-        case .pythonMissing: return "没有找到可用的 Python 3，请执行 brew install python"
-        case .notRunning: return "DaVinci Resolve 没有运行，请先打开达芬奇并载入一个项目"
+        case .notInstalled: return String(localized: "没有找到 DaVinci Resolve（/Applications/DaVinci Resolve）")
+        case .pythonMissing: return String(localized: "没有找到可用的 Python 3，请执行 brew install python")
+        case .notRunning: return String(localized: "DaVinci Resolve 没有运行，请先打开达芬奇并载入一个项目")
         case .notConnected:
-            return "无法连接达芬奇脚本接口。请在达芬奇「偏好设置 › 系统 › 常规 › 外部脚本使用」中选择「本地」，然后重启达芬奇。外部脚本需要 DaVinci Resolve Studio。"
-        case .noProject: return "达芬奇里没有打开的项目，请先打开或新建一个项目"
-        case .notReady: return "达芬奇还没完全打开（或停在项目管理器），请等项目界面出现后再试"
-        case .scriptModuleMissing(let detail): return "达芬奇脚本模块无法加载：\(detail)"
-        case .binFailed(let name): return "无法在媒体池中创建媒体夹「\(name)」"
-        case .timedOut: return "达芬奇在规定时间内没有响应"
-        case .bridgeFailed(let detail): return "发送到达芬奇失败：\(detail)"
+            return String(localized: "无法连接达芬奇脚本接口。请在达芬奇「偏好设置 › 系统 › 常规 › 外部脚本使用」中选择「本地」，然后重启达芬奇。外部脚本需要 DaVinci Resolve Studio。")
+        case .noProject: return String(localized: "达芬奇里没有打开的项目，请先打开或新建一个项目")
+        case .notReady: return String(localized: "达芬奇还没完全打开（或停在项目管理器），请等项目界面出现后再试")
+        case .scriptModuleMissing(let detail): return String(localized: "达芬奇脚本模块无法加载：\(detail)")
+        case .binFailed(let name): return String(localized: "无法在媒体池中创建媒体夹「\(name)」")
+        case .timedOut: return String(localized: "达芬奇在规定时间内没有响应")
+        case .bridgeFailed(let detail): return String(localized: "发送到达芬奇失败：\(detail)")
         }
     }
 

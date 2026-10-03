@@ -66,35 +66,35 @@ public enum RetryPolicy {
             next.subtitlesEnabled = false
             if onlySubtitles {
                 delay = 3
-                reasons.append("字幕请求被限流，本次不再下载字幕")
+                reasons.append(String(localized: "字幕请求被限流，本次不再下载字幕"))
             } else {
                 countsAsRateLimit = true
                 delay = 10 * (1 << index) + (index * 7 + sessionRateLimitCount) % 5
-                reasons.append("平台限流（429），等待 \(delay) 秒")
+                reasons.append(String(localized: "平台限流（429），等待 \(delay) 秒"))
                 if isYouTube { next.youtubePlayerClient = cascadeClient(index) }
             }
         }
         if isYouTube && (s.contains("sabr") || s.contains("not a bot") || causedByClientOverride) {
             next.youtubePlayerClient = cascadeClient(index)
             reasons.append(s.contains("sabr")
-                ? "YouTube 仅提供 SABR 流，改用 \(next.youtubePlayerClient!) 客户端"
-                : "YouTube 要求人机验证，改用 \(next.youtubePlayerClient!) 客户端")
+                ? String(localized: "YouTube 仅提供 SABR 流，改用 \(next.youtubePlayerClient!) 客户端")
+                : String(localized: "YouTube 要求人机验证，改用 \(next.youtubePlayerClient!) 客户端"))
         } else if isYouTube && s.contains("nsig") && !s.contains("http error 429") {
             next.youtubePlayerClient = cascadeClient(index)
-            reasons.append("签名解析失败，改用 \(next.youtubePlayerClient!) 客户端")
+            reasons.append(String(localized: "签名解析失败，改用 \(next.youtubePlayerClient!) 客户端"))
         }
         if (s.contains("http error 403") || s.contains("forbidden")) && !state.forceIPv4 {
             next.forceIPv4 = true
-            reasons.append("403 拒绝访问，改用 IPv4 重试")
+            reasons.append(String(localized: "403 拒绝访问，改用 IPv4 重试"))
         }
         if s.contains("subtitle") && !s.contains("http error 429") && state.subtitlesEnabled {
             next.subtitlesEnabled = false
-            reasons.append("字幕下载失败，本次跳过字幕")
+            reasons.append(String(localized: "字幕下载失败，本次跳过字幕"))
         }
         if reasons.isEmpty {
             // Unknown transient failure: one more plain attempt with backoff.
             delay = 5 * state.attempt
-            reasons.append("下载引擎返回错误，\(delay) 秒后重试")
+            reasons.append(String(localized: "下载引擎返回错误，\(delay) 秒后重试"))
         }
         return RetryDecision(delaySeconds: delay, nextState: next, reason: reasons.joined(separator: "；"), countsAsRateLimit: countsAsRateLimit)
     }

@@ -19,11 +19,11 @@ let session = MCPSession { tool, arguments in
                 client = try socketOverride.map { try ControlClient(socketURL: $0) } ?? AppConnector.connect()
             }
             return try client!.call(tool, arguments)
-        } catch let error as ControlError where error.message == "应用断开了连接" && attempt == 0 {
+        } catch let error as ControlError where error.message == ControlError.disconnectedMessage && attempt == 0 {
             client = nil // app restarted: reconnect once
         }
     }
-    throw ControlError.failed("应用断开了连接")
+    throw ControlError.failed(ControlError.disconnectedMessage)
 }
 
 while let line = readLine(strippingNewline: true) {

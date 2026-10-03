@@ -9,11 +9,11 @@ public struct ToolJob: Codable, Identifiable, Equatable, Sendable {
 
         public var displayName: String {
             switch self {
-            case .queued: return "等待中"
-            case .running: return "处理中"
-            case .completed: return "已完成"
-            case .failed: return "失败"
-            case .cancelled: return "已取消"
+            case .queued: return String(localized: "等待中")
+            case .running: return String(localized: "处理中")
+            case .completed: return String(localized: "已完成")
+            case .failed: return String(localized: "失败")
+            case .cancelled: return String(localized: "已取消")
             }
         }
     }
@@ -253,7 +253,7 @@ public final class ToolService: ObservableObject {
             try FileManager.default.createDirectory(at: historyURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try encoder.encode(jobs).write(to: historyURL, options: .atomic)
         } catch {
-            errorMessage = "工具箱记录无法保存：\(error.localizedDescription)"
+            errorMessage = String(localized: "工具箱记录无法保存：\(error.localizedDescription)")
         }
     }
 

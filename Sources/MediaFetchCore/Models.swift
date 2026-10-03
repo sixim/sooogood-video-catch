@@ -9,7 +9,7 @@ public enum BrowserCookieSource: String, CaseIterable, Identifiable, Codable, Se
     case firefox
 
     public var id: String { rawValue }
-    public var displayName: String { "不适用（商店版）" }
+    public var displayName: String { String(localized: "不适用（商店版）") }
     public var ytDLPArguments: [String] { [] }
     public static var recommendedDefault: BrowserCookieSource { .safari }
 }
@@ -103,16 +103,19 @@ public enum DownloadProfile: String, CaseIterable, Identifiable, Codable, Sendab
 
     public var id: String { rawValue }
 
+    /// Raw values are persisted in history; show the translated name instead.
+    public var displayName: String { L10n.string(rawValue) }
+
     public var detail: String {
         switch self {
         case .highest:
-            return "选择最佳视频流 + 最佳音频流，仅重新封装为 MKV，不重新编码。"
+            return String(localized: "选择最佳视频流 + 最佳音频流，仅重新封装为 MKV，不重新编码。")
         case .sourceStreams:
-            return "分别保存平台直接提供的视频流和音频流，内容不转码、不合并。"
+            return String(localized: "分别保存平台直接提供的视频流和音频流，内容不转码、不合并。")
         case .compatibleMP4:
-            return "优先选择 H.264 + M4A 并无损封装为 MP4；为兼容剪辑软件，画质可能低于最高画质模式。"
+            return String(localized: "优先选择 H.264 + M4A 并无损封装为 MP4；为兼容剪辑软件，画质可能低于最高画质模式。")
         case .audioOnly:
-            return "只保存平台直接提供的最佳音频流，不转换为 MP3，不伪装来源。"
+            return String(localized: "只保存平台直接提供的最佳音频流，不转换为 MP3，不伪装来源。")
         }
     }
 
@@ -171,8 +174,8 @@ public struct MediaMetadata: Decodable, Sendable {
 
         public var resolutionText: String {
             if let width, let height { return "\(width)×\(height)" }
-            if videoCodec == "none" { return "纯音频" }
-            return height.map { "\($0)p" } ?? "未知"
+            if videoCodec == "none" { return String(localized: "纯音频") }
+            return height.map { "\($0)p" } ?? String(localized: "未知")
         }
 
         public var codecText: String {
@@ -183,12 +186,12 @@ public struct MediaMetadata: Decodable, Sendable {
         }
 
         public var sizeText: String {
-            guard let bytes = filesize ?? approximateFilesize else { return "大小未知" }
+            guard let bytes = filesize ?? approximateFilesize else { return String(localized: "大小未知") }
             return ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         }
 
         public var bitrateText: String {
-            guard let bitrate = totalBitrate ?? videoBitrate ?? audioBitrate else { return "未知" }
+            guard let bitrate = totalBitrate ?? videoBitrate ?? audioBitrate else { return String(localized: "未知") }
             if bitrate >= 1_000 { return String(format: "%.1f Mbps", bitrate / 1_000) }
             return String(format: "%.0f kbps", bitrate)
         }
@@ -206,7 +209,7 @@ public struct MediaMetadata: Decodable, Sendable {
         guard let format = formats?
             .filter({ ($0.height ?? 0) > 0 })
             .max(by: { ($0.height ?? 0, $0.fps ?? 0) < ($1.height ?? 0, $1.fps ?? 0) })
-        else { return "未知" }
+        else { return String(localized: "未知") }
 
         let dimensions: String
         if let width = format.width, let height = format.height {
@@ -221,7 +224,7 @@ public struct MediaMetadata: Decodable, Sendable {
     }
 
     public var durationText: String {
-        guard let duration else { return "时长未知" }
+        guard let duration else { return String(localized: "时长未知") }
         let total = Int(duration.rounded())
         return String(format: "%02d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
     }

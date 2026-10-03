@@ -14,12 +14,12 @@ public enum BatchPreflight {
 
         public var displayName: String {
             switch self {
-            case .unsupported: return "不支持的链接"
-            case .needsLogin: return "需要登录"
-            case .unavailable: return "不存在或已删除"
-            case .blocked: return "受保护平台"
-            case .alreadyDownloaded: return "已经下载过"
-            case .engineError: return "解析失败"
+            case .unsupported: return String(localized: "不支持的链接")
+            case .needsLogin: return String(localized: "需要登录")
+            case .unavailable: return String(localized: "不存在或已删除")
+            case .blocked: return String(localized: "受保护平台")
+            case .alreadyDownloaded: return String(localized: "已经下载过")
+            case .engineError: return String(localized: "解析失败")
             }
         }
 

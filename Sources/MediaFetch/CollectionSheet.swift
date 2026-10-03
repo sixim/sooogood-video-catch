@@ -39,7 +39,8 @@ struct CollectionSheet: View {
     private func loaded(_ outline: CollectionOutline) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(outline.title.isEmpty ? outline.id : outline.title).font(.title3.bold()).lineLimit(2)
-            Text("\(outline.isCourse ? "课程" : "播放列表") · \(outline.entries.count) 项 · 已选 \(selected.count) 项 · 保存到「\(outline.rootFolderName)」文件夹")
+            let kind = outline.isCourse ? String(localized: "课程") : String(localized: "播放列表")
+            Text("\(kind) · \(outline.entries.count) 项 · 已选 \(selected.count) 项 · 保存到「\(outline.rootFolderName)」文件夹")
                 .font(.caption).foregroundStyle(.secondary)
             if outline.unavailableCount > 0 {
                 Text("另有 \(outline.unavailableCount) 个课时当前账号无法观看（通常需要购买或登录），已隐藏。")

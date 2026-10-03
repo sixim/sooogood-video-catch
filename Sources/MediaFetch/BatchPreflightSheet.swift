@@ -22,7 +22,7 @@ struct BatchPreflightSheet: View {
                     if report.verdict == .goWithSkips {
                         Button("全部加入（\(report.items.count)）") { onEnqueue(report.items.map(\.url)) }
                     }
-                    Button(report.verdict == .go ? "加入队列（\(report.readyCount)）" : "只加入可下载的 \(report.readyCount) 条") {
+                    Button(report.verdict == .go ? String(localized: "加入队列（\(report.readyCount)）") : String(localized: "只加入可下载的 \(report.readyCount) 条")) {
                         onEnqueue(report.readyURLs)
                     }
                     .keyboardShortcut(.defaultAction)
@@ -43,11 +43,11 @@ struct BatchPreflightSheet: View {
 
     private func summary(_ report: BatchPreflight.Report) -> some View {
         let size = ByteCountFormatter.string(fromByteCount: report.estimatedBytes, countStyle: .file)
-        let free = report.availableBytes.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "未知"
+        let free = report.availableBytes.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? String(localized: "未知")
         return VStack(alignment: .leading, spacing: 4) {
-            Label("\(report.readyCount)/\(report.items.count) 条可以下载 · 预计 \(size)" +
-                  (report.unknownSizeCount > 0 ? "（另有 \(report.unknownSizeCount) 条大小未知）" : "") +
-                  " · 目标磁盘剩余 \(free)",
+            Label(String(localized: "\(report.readyCount)/\(report.items.count) 条可以下载 · 预计 \(size)") +
+                  (report.unknownSizeCount > 0 ? String(localized: "（另有 \(report.unknownSizeCount) 条大小未知）") : "") +
+                  String(localized: " · 目标磁盘剩余 \(free)"),
                   systemImage: report.verdict == .stop ? "xmark.octagon.fill" : "checkmark.seal.fill")
                 .foregroundStyle(report.verdict == .stop ? MediaFetchTheme.danger : MediaFetchTheme.success)
             if !report.fitsOnDisk {

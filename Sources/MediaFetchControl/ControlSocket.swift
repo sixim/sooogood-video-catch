@@ -35,7 +35,7 @@ public final class ControlServer: @unchecked Sendable {
         umask(previousMask)
         guard bound == 0, listen(fd, 8) == 0 else {
             close(fd)
-            throw ControlError.failed("无法监听控制端口：\(String(cString: strerror(errno)))")
+            throw ControlError.failed(String(localized: "无法监听控制端口：\(String(cString: strerror(errno)))"))
         }
         chmod(path, 0o600)
         lock.withLock { listenFD = fd; running = true }
@@ -118,7 +118,7 @@ public final class ControlServer: @unchecked Sendable {
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8)
         guard bytes.count < MemoryLayout.size(ofValue: address.sun_path) else {
-            throw ControlError.failed("控制端口路径过长")
+            throw ControlError.failed(String(localized: "控制端口路径过长"))
         }
         withUnsafeMutableBytes(of: &address.sun_path) { buffer in
             buffer.copyBytes(from: bytes)
@@ -144,7 +144,7 @@ public final class ControlClient: @unchecked Sendable {
         }
         guard connected == 0 else {
             close(fd)
-            throw ControlError.failed("Sooogood Video Catch 没有运行")
+            throw ControlError.failed(String(localized: "Sooogood Video Catch 没有运行"))
         }
         ControlServer.disableSigPipe(fd)
         self.fd = fd
@@ -162,7 +162,7 @@ public final class ControlClient: @unchecked Sendable {
             writer.send(["id": .number(Double(id)), "tool": .string(tool), "arguments": .object(arguments)])
             guard let line = reader.next(),
                   let reply = try? JSONDecoder().decode(JSONValue.self, from: Data(line.utf8)) else {
-                throw ControlError.failed("应用断开了连接")
+                throw ControlError.failed(ControlError.disconnectedMessage)
             }
             if let error = reply["error"] {
                 throw ControlError(code: error["code"]?.intValue ?? -32000, message: error["message"]?.stringValue ?? "error")

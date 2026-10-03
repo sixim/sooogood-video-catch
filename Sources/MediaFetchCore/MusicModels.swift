@@ -11,11 +11,11 @@ public enum MusicQualityTier: Int, Codable, Comparable, CaseIterable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .low: return "低音质"
-        case .standard: return "标准 128k"
-        case .higher: return "较高 192k"
-        case .high: return "极高 320k"
-        case .lossless: return "无损"
+        case .low: return String(localized: "低音质")
+        case .standard: return String(localized: "标准 128k")
+        case .higher: return String(localized: "较高 192k")
+        case .high: return String(localized: "极高 320k")
+        case .lossless: return String(localized: "无损")
         case .hires: return "Hi-Res"
         }
     }
@@ -74,7 +74,7 @@ public struct MusicTrackInfo: Equatable, Sendable {
     public let hasLyrics: Bool
     public let formats: [MusicFormatOption]
 
-    public var artistLine: String { artists.isEmpty ? "未知歌手" : artists.joined(separator: " / ") }
+    public var artistLine: String { artists.isEmpty ? String(localized: "未知歌手") : artists.joined(separator: " / ") }
     public var bestTier: MusicQualityTier? { formats.map(\.tier).max() }
     public var availableTiers: [MusicQualityTier] { Array(Set(formats.map(\.tier))).sorted() }
 
@@ -120,9 +120,9 @@ public enum MusicQualityPreference: String, Codable, CaseIterable, Sendable, Ide
 
     public var displayName: String {
         switch self {
-        case .best: return "最高可用音质"
-        case .losslessOnly: return "只要无损"
-        case .upTo320: return "最高 320k（省空间）"
+        case .best: return String(localized: "最高可用音质")
+        case .losslessOnly: return String(localized: "只要无损")
+        case .upTo320: return String(localized: "最高 320k（省空间）")
         }
     }
 
@@ -157,10 +157,10 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
 
     public var displayName: String {
         switch self {
-        case .artistAlbum: return "歌手 / 专辑 / 歌曲"
-        case .flat: return "歌手 - 歌曲（平铺）"
-        case .collection: return "按歌单顺序"
-        case .custom: return "自定义模板"
+        case .artistAlbum: return String(localized: "歌手 / 专辑 / 歌曲")
+        case .flat: return String(localized: "歌手 - 歌曲（平铺）")
+        case .collection: return String(localized: "按歌单顺序")
+        case .custom: return String(localized: "自定义模板")
         }
     }
 
@@ -168,8 +168,8 @@ public enum MusicLayout: String, Codable, CaseIterable, Sendable, Identifiable {
     /// folder names (collection) go through `CollectionPaths.safeComponent`.
     public func outputTemplate(collection: CollectionContext?, custom: String? = nil) -> String {
         if self == .custom { return MusicNameTemplate(custom ?? MusicNameTemplate.defaultTemplate).ytDLPTemplate(collection: collection) }
-        let artist = "%(creators.0,artists.0,artist,album_artists.0,uploader|未知歌手).80B"
-        let album = "%(album|未知专辑).80B"
+        let artist = "%(creators.0,artists.0,artist,album_artists.0,uploader|\(MusicFallbackName.artist)).80B"
+        let album = "%(album|\(MusicFallbackName.album)).80B"
         let track = "\(artist) - %(title).120B [%(id)s]"
         switch self {
         case .artistAlbum:
@@ -255,8 +255,8 @@ public struct MusicNameTemplate: Equatable, Sendable {
         if !(parts.last ?? "").contains("{id}") { parts[parts.count - 1] += " [{id}]" }
         let index = collection.map { String(format: "%03d", $0.index) } ?? "%(playlist_index|0)03d"
         let fields: [String: String] = [
-            "artist": "%(creators.0,artists.0,artist,album_artists.0,uploader|未知歌手).80B",
-            "album": "%(album|未知专辑).80B",
+            "artist": "%(creators.0,artists.0,artist,album_artists.0,uploader|\(MusicFallbackName.artist)).80B",
+            "album": "%(album|\(MusicFallbackName.album)).80B",
             "title": "%(title).120B",
             "id": "%(id)s",
             "index": index
@@ -281,9 +281,20 @@ public struct MusicNameTemplate: Equatable, Sendable {
     public func preview() -> String {
         var parts = segments.isEmpty ? MusicNameTemplate(Self.defaultTemplate).segments : segments
         if !(parts.last ?? "").contains("{id}") { parts[parts.count - 1] += " [{id}]" }
-        let sample = ["artist": "周杰伦", "album": "叶惠美", "title": "晴天", "id": "0039MnYb0qxYhV", "index": "001"]
+        let sample = ["artist": String(localized: "周杰伦"), "album": String(localized: "叶惠美"), "title": String(localized: "晴天"), "id": "0039MnYb0qxYhV", "index": "001"]
         var text = parts.joined(separator: "/")
         for (key, value) in sample { text = text.replacingOccurrences(of: "{\(key)}", with: value) }
         return text + "/" + (text.split(separator: "/").last.map(String.init) ?? "") + ".flac"
+    }
+}
+
+/// Folder names used when a track has no artist / album, in the UI language.
+/// Characters with meaning in yt-dlp output templates are removed.
+public enum MusicFallbackName {
+    public static var artist: String { sanitized(String(localized: "未知歌手")) }
+    public static var album: String { sanitized(String(localized: "未知专辑")) }
+
+    static func sanitized(_ name: String) -> String {
+        String(name.filter { !"%|()/\\".contains($0) })
     }
 }

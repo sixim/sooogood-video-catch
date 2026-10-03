@@ -76,7 +76,7 @@ struct AgentSettingsPanel: View {
                             .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
                     Spacer()
-                    StatusPill(text: host.isListening ? "已开启" : "未开启",
+                    StatusPill(text: host.isListening ? String(localized: "已开启") : String(localized: "未开启"),
                                systemImage: host.isListening ? "dot.radiowaves.left.and.right" : "pause.circle",
                                color: host.isListening ? MediaFetchTheme.success : MediaFetchTheme.secondaryText)
                 }

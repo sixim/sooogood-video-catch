@@ -195,7 +195,7 @@ public final class TorrentService: ObservableObject {
         let all = Set(snapshot.files.map(\.index))
         let wanted = wantedIndices.intersection(all)
         guard !wanted.isEmpty else {
-            errorMessage = "至少选择一个文件"
+            errorMessage = String(localized: "至少选择一个文件")
             return
         }
         var arguments: [String: JSONValue] = [
@@ -253,7 +253,7 @@ public final class TorrentService: ObservableObject {
             reconcile(snapshots)
         } catch {
             if daemon?.isRunning == false {
-                engineStatus = .unavailable("Torrent 引擎意外退出")
+                engineStatus = .unavailable(String(localized: "Torrent 引擎意外退出"))
                 resetEngineState()
             }
         }
@@ -330,7 +330,7 @@ public final class TorrentService: ObservableObject {
         case .success(let url):
             updateRecord(hash) { $0.manifestPath = url.path; $0.completedAt = Date(); $0.lastError = nil }
         case .failure(let error):
-            updateRecord(hash) { $0.lastError = "清单生成失败：\(error.localizedDescription)" }
+            updateRecord(hash) { $0.lastError = String(localized: "清单生成失败：\(error.localizedDescription)") }
         }
     }
 
@@ -351,7 +351,7 @@ public final class TorrentService: ObservableObject {
 
     private func persist() {
         do { try TorrentHistoryStore.save(records, to: historyURL) }
-        catch { errorMessage = "Torrent 记录无法保存：\(error.localizedDescription)" }
+        catch { errorMessage = String(localized: "Torrent 记录无法保存：\(error.localizedDescription)") }
     }
 }
 #endif

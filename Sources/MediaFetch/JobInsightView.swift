@@ -28,12 +28,12 @@ struct JobInsightView: View {
                             .foregroundStyle(MediaFetchTheme.secondaryText)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Button("复制") { copy(command, hint: "已复制命令") }
+                        Button("复制") { copy(command, hint: String(localized: "已复制命令")) }
                             .buttonStyle(.link)
                     }
                     .padding(.top, 4)
                 } label: {
-                    Text("实际执行的命令" + ((job.attempts ?? 1) > 1 ? "（第 \(job.attempts ?? 1) 次尝试）" : ""))
+                    Text(String(localized: "实际执行的命令") + ((job.attempts ?? 1) > 1 ? String(localized: "（第 \(job.attempts ?? 1) 次尝试）") : ""))
                         .font(.caption)
                         .foregroundStyle(MediaFetchTheme.secondaryText)
                 }
@@ -79,8 +79,8 @@ struct JobInsightView: View {
     private func perform(_ remedy: EngineRemedy) {
         switch remedy {
         case .signIn: openSettings()
-        case .updateEngine: copy("brew upgrade yt-dlp", hint: "已复制：brew upgrade yt-dlp，请在终端运行后重试")
-        case .installJSRuntime: copy("brew install deno", hint: "已复制：brew install deno，请在终端运行后重试")
+        case .updateEngine: copy("brew upgrade yt-dlp", hint: String(localized: "已复制：brew upgrade yt-dlp，请在终端运行后重试"))
+        case .installJSRuntime: copy("brew install deno", hint: String(localized: "已复制：brew install deno，请在终端运行后重试"))
         case .waitAndRetry: onRetry()
         case .freeDiskSpace:
             if let url = URL(string: "x-apple.systempreferences:com.apple.settings.Storage") {

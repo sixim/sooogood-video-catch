@@ -71,33 +71,34 @@ public enum SpotifyAuthError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .missingClientID:
-            return "请先在设置中填写 Spotify Developer App 的 Client ID。"
+            return String(localized: "请先在设置中填写 Spotify Developer App 的 Client ID。")
         case .invalidAuthorizationURL:
-            return "无法创建 Spotify 授权链接。"
+            return String(localized: "无法创建 Spotify 授权链接。")
         case let .randomGenerationFailed(status):
-            return "无法安全生成 Spotify 授权随机数（\(status)）。"
+            return String(localized: "无法安全生成 Spotify 授权随机数（\(status)）。")
         case .callbackTimedOut:
-            return "Spotify 登录等待超时，请重新连接。"
+            return String(localized: "Spotify 登录等待超时，请重新连接。")
         case .callbackCancelled:
-            return "Spotify 登录已取消。"
+            return String(localized: "Spotify 登录已取消。")
         case let .callbackRejected(message):
-            return "Spotify 未授权连接：\(message)"
+            return String(localized: "Spotify 未授权连接：\(message)")
         case .stateMismatch:
-            return "Spotify 登录回调校验失败，请重新连接。"
+            return String(localized: "Spotify 登录回调校验失败，请重新连接。")
         case .missingAuthorizationCode:
-            return "Spotify 登录回调中没有授权码。"
+            return String(localized: "Spotify 登录回调中没有授权码。")
         case .noStoredCredentials:
-            return "尚未连接 Spotify 账号。"
+            return String(localized: "尚未连接 Spotify 账号。")
         case .refreshTokenMissing:
-            return "Spotify 登录已过期且无法刷新，请重新连接。"
+            return String(localized: "Spotify 登录已过期且无法刷新，请重新连接。")
         case let .tokenEndpoint(status, message):
-            return "Spotify 登录服务返回错误 \(status)\(message.map { "：\($0)" } ?? "")。"
+            let detail = message.map { "：\($0)" } ?? ""
+            return String(localized: "Spotify 登录服务返回错误 \(status)\(detail)。")
         case .invalidTokenResponse:
-            return "Spotify 登录服务返回了无法识别的凭据。"
+            return String(localized: "Spotify 登录服务返回了无法识别的凭据。")
         case let .keychain(status):
-            return "无法访问 macOS 钥匙串（\(status)）。"
+            return String(localized: "无法访问 macOS 钥匙串（\(status)）。")
         case let .loopback(message):
-            return "无法接收 Spotify 登录回调：\(message)"
+            return String(localized: "无法接收 Spotify 登录回调：\(message)")
         }
     }
 }

@@ -38,13 +38,13 @@ public enum ToolError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .missingTool(let name): return "未找到 \(name)，请用 Homebrew 安装"
-        case .noVideoStream: return "这个文件没有视频流"
-        case .noAudioStream: return "这个文件没有音频流"
-        case .modelMissing: return "还没有 whisper 模型，请先在工具箱里下载一个"
-        case .outputExists(let name): return "输出文件已存在：\(name)（不会覆盖）"
-        case .cancelled: return "已取消"
-        case .failed(let detail): return "处理失败：\(detail)"
+        case .missingTool(let name): return String(localized: "未找到 \(name)，请用 Homebrew 安装")
+        case .noVideoStream: return String(localized: "这个文件没有视频流")
+        case .noAudioStream: return String(localized: "这个文件没有音频流")
+        case .modelMissing: return String(localized: "还没有 whisper 模型，请先在工具箱里下载一个")
+        case .outputExists(let name): return String(localized: "输出文件已存在：\(name)（不会覆盖）")
+        case .cancelled: return String(localized: "已取消")
+        case .failed(let detail): return String(localized: "处理失败：\(detail)")
         }
     }
 }
@@ -127,7 +127,7 @@ public enum ToolEngine {
             environment: toolchain.environment, onLine: { data.append(Data(($0 + "\n").utf8)) }
         )
         guard result.status == 0, let probe = MediaProbe(ffprobeJSON: data) else {
-            throw ToolError.failed(result.stderr.isEmpty ? "无法读取媒体信息" : result.stderr)
+            throw ToolError.failed(result.stderr.isEmpty ? String(localized: "无法读取媒体信息") : result.stderr)
         }
         return probe
     }

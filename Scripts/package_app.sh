@@ -67,6 +67,10 @@ if [[ "$build_profile" == "store" ]]; then
 fi
 rsync -a "$plist_source" "$contents_dir/Info.plist"
 rsync -a "Resources/PrivacyInfo.xcprivacy" "$contents_dir/Resources/PrivacyInfo.xcprivacy"
+# Interface translations: the String Catalog compiles to one .lproj per language
+# (en, fr, de, ja, ko, zh-Hans); Bundle.main serves all modules and the MCP helper.
+find "$contents_dir/Resources" -maxdepth 1 -name "*.lproj" -exec rm -rf {} +
+xcrun xcstringstool compile "Resources/Localizable.xcstrings" --output-directory "$contents_dir/Resources" >/dev/null
 
 if [[ -d "Resources/Assets.xcassets" ]]; then
     partial_info_plist="$contents_dir/Resources/Assets-PartialInfo.plist"

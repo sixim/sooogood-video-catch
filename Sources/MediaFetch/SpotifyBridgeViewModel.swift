@@ -13,11 +13,11 @@ enum SpotifyConnectionState: Equatable {
 
     var displayName: String {
         switch self {
-        case .checking: return "正在检查连接"
-        case .disconnected: return "Spotify 未连接"
-        case .connecting: return "等待 Spotify 授权"
-        case .connected: return "Spotify 已连接"
-        case .demo: return "演示模式"
+        case .checking: return String(localized: "正在检查连接")
+        case .disconnected: return String(localized: "Spotify 未连接")
+        case .connecting: return String(localized: "等待 Spotify 授权")
+        case .connected: return String(localized: "Spotify 已连接")
+        case .demo: return String(localized: "演示模式")
         }
     }
 
@@ -71,10 +71,10 @@ enum SpotifyBridgeFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .all: return "全部"
-        case .ready: return "已匹配"
-        case .ambiguous: return "待确认"
-        case .unmatched: return "未匹配"
+        case .all: return String(localized: "全部")
+        case .ready: return String(localized: "已匹配")
+        case .ambiguous: return String(localized: "待确认")
+        case .unmatched: return String(localized: "未匹配")
         }
     }
 }
@@ -92,7 +92,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
             apiClient = nil
             if connectionState == .connected {
                 connectionState = .disconnected
-                inlineError = "Client ID 已更改，请重新连接 Spotify。旧凭据仍可通过“断开并删除本地凭据”清除。"
+                inlineError = String(localized: "Client ID 已更改，请重新连接 Spotify。旧凭据仍可通过“断开并删除本地凭据”清除。")
             }
         }
     }
@@ -124,8 +124,8 @@ final class SpotifyBridgeViewModel: ObservableObject {
     @Published var filter: SpotifyBridgeFilter = .all
     @Published private(set) var phase: SpotifyMusicPhase = .waitingForLink
     @Published var inlineError: String?
-    @Published private(set) var scanProgressText = "等待扫描"
-    @Published private(set) var saveProgressText = "正在保存…"
+    @Published private(set) var scanProgressText = String(localized: "等待扫描")
+    @Published private(set) var saveProgressText = String(localized: "正在保存…")
     @Published private(set) var completedPackageURL: URL?
     @Published private(set) var history: [SpotifyBridgeHistoryRecord] = []
 
@@ -188,16 +188,16 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
     var homeSummary: String {
         switch connectionState {
-        case .checking: return "正在检查 Spotify 连接"
-        case .disconnected: return "连接 Spotify 后开始匹配"
-        case .connecting: return "正在等待账号授权"
+        case .checking: return String(localized: "正在检查 Spotify 连接")
+        case .disconnected: return String(localized: "连接 Spotify 后开始匹配")
+        case .connecting: return String(localized: "正在等待账号授权")
         case .connected:
             let pendingCount = ambiguousCount + unmatchedCount
-            if pendingCount > 0 { return "\(pendingCount) 首音乐等待匹配" }
-            if readyCount > 0 { return "\(readyCount) 首音乐可以保存" }
-            return "Spotify 已连接 · 等待链接"
+            if pendingCount > 0 { return String(localized: "\(pendingCount) 首音乐等待匹配") }
+            if readyCount > 0 { return String(localized: "\(readyCount) 首音乐可以保存") }
+            return String(localized: "Spotify 已连接 · 等待链接")
         case .demo:
-            return "演示模式 · 可载入本地音频"
+            return String(localized: "演示模式 · 可载入本地音频")
         }
     }
 
@@ -294,7 +294,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
                 demoItems[index].evidence = MatchEvidence(
                     score: 100,
                     matchedFields: [.artist, .title, .duration],
-                    reasons: ["应用生成的无版权演示 WAV"],
+                    reasons: [String(localized: "应用生成的无版权演示 WAV")],
                     userConfirmed: true
                 )
             }
@@ -302,8 +302,8 @@ final class SpotifyBridgeViewModel: ObservableObject {
         items = demoItems
         localCandidates = []
         sourceFolder = nil
-        scanProgressText = "演示音频已准备，可直接保存或选择自己的资料夹"
-        saveProgressText = "准备保存演示音频"
+        scanProgressText = String(localized: "演示音频已准备，可直接保存或选择自己的资料夹")
+        saveProgressText = String(localized: "准备保存演示音频")
         filter = .all
         phase = .chooseSource
         connectionState = .demo
@@ -356,7 +356,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
         }
         guard SpotifyResourceReference.parse(resourceURL) != nil else {
             if StreamingPlatform.detect(resourceURL) == .spotify {
-                inlineError = "这是 Spotify 短链接。请先在浏览器中打开它，再粘贴展开后的 open.spotify.com 单曲、专辑或歌单链接。"
+                inlineError = String(localized: "这是 Spotify 短链接。请先在浏览器中打开它，再粘贴展开后的 open.spotify.com 单曲、专辑或歌单链接。")
             } else {
                 inlineError = SpotifyAPIError.invalidResourceURL.localizedDescription
             }
@@ -384,7 +384,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
     func scanSourceFolder(_ directory: URL) async {
         guard let collection else {
-            inlineError = "请先载入 Spotify 曲目、专辑或歌单。"
+            inlineError = String(localized: "请先载入 Spotify 曲目、专辑或歌单。")
             return
         }
 
@@ -392,7 +392,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
         completedPackageURL = nil
         sourceFolder = directory
         phase = .scanning
-        scanProgressText = "正在读取 \(directory.lastPathComponent)…"
+        scanProgressText = String(localized: "正在读取 \(directory.lastPathComponent)…")
 
         do {
 #if MEDIAFETCH_STORE_PROFILE
@@ -408,14 +408,14 @@ final class SpotifyBridgeViewModel: ObservableObject {
             }.value
 #endif
             localCandidates = candidates
-            scanProgressText = "已检查 \(candidates.count) 个音频文件"
+            scanProgressText = String(localized: "已检查 \(candidates.count) 个音频文件")
             items = matcher.match(tracks: collection.tracks, candidates: candidates)
             filter = .all
             phase = .review
         } catch {
             phase = .chooseSource
             inlineError = error.localizedDescription
-            scanProgressText = "扫描未完成"
+            scanProgressText = String(localized: "扫描未完成")
         }
     }
 
@@ -428,7 +428,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
     func assignLocalFile(_ url: URL, to itemID: UUID) {
         guard LocalAudioScanner.supportedExtensions.contains(url.pathExtension.lowercased()) else {
-            inlineError = "请选择 m4a、mp3、flac、wav、aiff、alac、ogg 或 opus 音频文件。"
+            inlineError = String(localized: "请选择 m4a、mp3、flac、wav、aiff、alac、ogg 或 opus 音频文件。")
             return
         }
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
@@ -454,7 +454,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
     func saveReadyItems() async {
         guard let collection else {
-            inlineError = "请先载入 Spotify 音乐信息。"
+            inlineError = String(localized: "请先载入 Spotify 音乐信息。")
             return
         }
         guard readyCount > 0 else {
@@ -464,7 +464,7 @@ final class SpotifyBridgeViewModel: ObservableObject {
 
         inlineError = nil
         phase = .saving
-        saveProgressText = "正在准备素材包…"
+        saveProgressText = String(localized: "正在准备素材包…")
         let packageDirectory = availablePackageDirectory(for: collection)
 
         do {
@@ -478,13 +478,13 @@ final class SpotifyBridgeViewModel: ObservableObject {
                               let index = self.items.firstIndex(where: { $0.id == updatedItem.id }) else { return }
                         self.items[index] = updatedItem
                         let completed = self.items.filter { $0.status == .completed }.count
-                        self.saveProgressText = "已保存 \(completed) 首"
+                        self.saveProgressText = String(localized: "已保存 \(completed) 首")
                     }
                 }
             )
             items = result.items
             completedPackageURL = result.packageDirectory
-            saveProgressText = "已保存 \(result.completedCount) 首"
+            saveProgressText = String(localized: "已保存 \(result.completedCount) 首")
             let historyRecord = SpotifyBridgeHistoryRecord(
                 collectionID: collection.id,
                 collectionKind: collection.kind,
@@ -499,19 +499,19 @@ final class SpotifyBridgeViewModel: ObservableObject {
                 do {
                     try SpotifyHistoryStore.save(history)
                 } catch {
-                    inlineError = "素材包已保存，但 Spotify 音乐历史写入失败：\(error.localizedDescription)"
+                    inlineError = String(localized: "素材包已保存，但 Spotify 音乐历史写入失败：\(error.localizedDescription)")
                 }
             }
             let failureCount = result.items.filter { $0.status == .failed }.count
             if failureCount > 0 {
-                let failureMessage = "素材包已生成，其中 \(failureCount) 首保存失败。请查看曲目状态后重试。"
+                let failureMessage = String(localized: "素材包已生成，其中 \(failureCount) 首保存失败。请查看曲目状态后重试。")
                 inlineError = [inlineError, failureMessage].compactMap { $0 }.joined(separator: "\n")
             }
             phase = .completed
         } catch {
             phase = .review
             inlineError = error.localizedDescription
-            saveProgressText = "保存未完成"
+            saveProgressText = String(localized: "保存未完成")
         }
     }
 
@@ -604,8 +604,8 @@ extension SpotifyBridgeViewModel {
             kind: .playlist,
             uri: "spotify:playlist:37i9dQZF1DX-preview",
             externalURL: URL(string: "https://open.spotify.com/playlist/37i9dQZF1DX-preview"),
-            title: "夜行剪辑室 · Night Drive Selects",
-            subtitle: "Simon 的个人歌单 · 多语言与长标题布局预览",
+            title: String(localized: "夜行剪辑室 · Night Drive Selects"),
+            subtitle: String(localized: "Simon 的个人歌单 · 多语言与长标题布局预览"),
             tracks: tracks
         )
 
@@ -632,8 +632,8 @@ extension SpotifyBridgeViewModel {
             byteSize: 41_238_416
         )
         let liveCandidate = LocalAudioCandidate(
-            url: sourceFolder.appendingPathComponent("02 城市边缘 (Live).m4a"),
-            title: "城市边缘 (Live)",
+            url: sourceFolder.appendingPathComponent(String(localized: "02 城市边缘 (Live).m4a")),
+            title: String(localized: "城市边缘 (Live)"),
             artists: tracks[1].artists,
             album: tracks[1].album,
             durationMS: tracks[1].durationMS + 1_100,
@@ -641,7 +641,7 @@ extension SpotifyBridgeViewModel {
             byteSize: 35_991_204
         )
         let studioCandidate = LocalAudioCandidate(
-            url: sourceFolder.appendingPathComponent("02 城市边缘.m4a"),
+            url: sourceFolder.appendingPathComponent(String(localized: "02 城市边缘.m4a")),
             title: tracks[1].title,
             artists: tracks[1].artists,
             album: tracks[1].album,
@@ -652,22 +652,22 @@ extension SpotifyBridgeViewModel {
         let northernEvidence = MatchEvidence(
             score: 100,
             matchedFields: [.isrc, .artist, .title, .album, .duration],
-            reasons: ["ISRC 完全一致"]
+            reasons: [String(localized: "ISRC 完全一致")]
         )
         let studioEvidence = MatchEvidence(
             score: 95,
             matchedFields: [.artist, .title, .album, .duration],
-            reasons: ["歌手、标题、专辑和时长一致"]
+            reasons: [String(localized: "歌手、标题、专辑和时长一致")]
         )
         let liveEvidence = MatchEvidence(
             score: 82,
             matchedFields: [.artist, .album, .duration],
-            reasons: ["检测到 Live 版本差异"],
+            reasons: [String(localized: "检测到 Live 版本差异")],
             versionConflict: true
         )
 
         model.sourceFolder = sourceFolder
-        model.scanProgressText = "已检查 126 个音频文件"
+        model.scanProgressText = String(localized: "已检查 126 个音频文件")
         model.items = [
             SpotifyBridgeItem(
                 id: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!,
@@ -698,7 +698,7 @@ extension SpotifyBridgeViewModel {
                 evidence: MatchEvidence(
                     score: 0,
                     matchedFields: [],
-                    reasons: ["用户手动授权音频来源"],
+                    reasons: [String(localized: "用户手动授权音频来源")],
                     userConfirmed: true
                 ),
                 status: .ready
@@ -714,14 +714,14 @@ extension SpotifyBridgeViewModel {
             model.items[0].outputRelativePath = "audio/01-01 Aria North - Northern Lights.flac"
             model.items[3].status = .copying
             model.phase = .saving
-            model.saveProgressText = "已保存 1 首"
+            model.saveProgressText = String(localized: "已保存 1 首")
         case .completed:
             model.items[0].status = .completed
             model.items[0].outputRelativePath = "audio/01-01 Aria North - Northern Lights.flac"
             model.items[3].status = .completed
             model.items[3].outputRelativePath = "audio/01-04 Glass Harbor - Afterglow.opus"
             model.phase = .completed
-            model.saveProgressText = "已保存 2 首"
+            model.saveProgressText = String(localized: "已保存 2 首")
             model.completedPackageURL = URL(
                 fileURLWithPath: "/Users/preview/Music/Music Packages/Night Drive Selects",
                 isDirectory: true
@@ -749,9 +749,9 @@ extension SpotifyBridgeViewModel {
                 id: "preview-track-02",
                 uri: "spotify:track:preview-track-02",
                 externalURL: URL(string: "https://open.spotify.com/track/preview-track-02"),
-                title: "城市边缘",
-                artists: ["林屿", "Mira Chen"],
-                album: "夜航",
+                title: String(localized: "城市边缘"),
+                artists: [String(localized: "林屿"), "Mira Chen"],
+                album: String(localized: "夜航"),
                 discNumber: 1,
                 trackNumber: 2,
                 durationMS: 247_000,
@@ -761,7 +761,7 @@ extension SpotifyBridgeViewModel {
                 id: "preview-track-03",
                 uri: "spotify:track:preview-track-03",
                 externalURL: URL(string: "https://open.spotify.com/track/preview-track-03"),
-                title: "A Very Long Track Title for Multilingual Layout Verification — 未匹配版本",
+                title: String(localized: "A Very Long Track Title for Multilingual Layout Verification — 未匹配版本"),
                 artists: ["The Reference Ensemble"],
                 album: "Layout Stress Test",
                 discNumber: 1,

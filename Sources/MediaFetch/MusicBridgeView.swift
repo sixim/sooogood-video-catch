@@ -156,7 +156,7 @@ struct MusicBridgeView: View {
 
                     if viewModel.connectionState == .demo {
                         InlineMessage(
-                            text: "演示模式只使用合成 Spotify 元数据；不会访问 Spotify 账号或下载 Spotify 音频。你仍可以选择自己的本地资料夹测试匹配流程。",
+                            text: String(localized: "演示模式只使用合成 Spotify 元数据；不会访问 Spotify 账号或下载 Spotify 音频。你仍可以选择自己的本地资料夹测试匹配流程。"),
                             kind: .info
                         )
                     }
@@ -387,7 +387,7 @@ struct MusicBridgeView: View {
                         if viewModel.phase == .scanning {
                             ProgressView().controlSize(.small)
                         } else {
-                            Label(viewModel.sourceFolder == nil ? "选择资料夹" : "重新扫描", systemImage: "folder")
+                            Label(viewModel.sourceFolder == nil ? String(localized: "选择资料夹") : String(localized: "重新扫描"), systemImage: "folder")
                         }
                     }
                     .buttonStyle(.bordered)
@@ -408,9 +408,9 @@ struct MusicBridgeView: View {
                 }
 
                 HStack(spacing: 10) {
-                    MatchCountPill(title: "已匹配", count: viewModel.readyCount, icon: "checkmark.circle.fill", color: MediaFetchTheme.success)
-                    MatchCountPill(title: "待确认", count: viewModel.ambiguousCount, icon: "exclamationmark.circle.fill", color: MediaFetchTheme.warning)
-                    MatchCountPill(title: "未匹配", count: viewModel.unmatchedCount, icon: "minus.circle.fill", color: MediaFetchTheme.secondaryText)
+                    MatchCountPill(title: String(localized: "已匹配"), count: viewModel.readyCount, icon: "checkmark.circle.fill", color: MediaFetchTheme.success)
+                    MatchCountPill(title: String(localized: "待确认"), count: viewModel.ambiguousCount, icon: "exclamationmark.circle.fill", color: MediaFetchTheme.warning)
+                    MatchCountPill(title: String(localized: "未匹配"), count: viewModel.unmatchedCount, icon: "minus.circle.fill", color: MediaFetchTheme.secondaryText)
                     Spacer()
                 }
             }
@@ -578,7 +578,7 @@ struct MusicBridgeView: View {
 
     private var directLinkTrackTitle: String {
         guard let id = directLinkItemID else { return "" }
-        return viewModel.items.first(where: { $0.id == id })?.track.title ?? "这首音乐"
+        return viewModel.items.first(where: { $0.id == id })?.track.title ?? String(localized: "这首音乐")
     }
 }
 
@@ -659,7 +659,7 @@ private struct MusicTrackRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         case .authorizedDirectURL(let url):
-            Label(url.host ?? "授权直链", systemImage: "link")
+            Label(url.host ?? String(localized: "授权直链"), systemImage: "link")
                 .lineLimit(1)
         case nil:
             if item.matches.count > 1 {
@@ -769,7 +769,7 @@ private struct AuthorizedDirectURLSheet: View {
     private func confirm() {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let url = URL(string: trimmed) else {
-            error = "请输入完整的 HTTPS 音频地址。"
+            error = String(localized: "请输入完整的 HTTPS 音频地址。")
             return
         }
         do {
@@ -784,9 +784,9 @@ private struct AuthorizedDirectURLSheet: View {
 extension SpotifyResourceKind {
     var displayName: String {
         switch self {
-        case .track: return "单曲"
-        case .album: return "专辑"
-        case .playlist: return "歌单"
+        case .track: return String(localized: "单曲")
+        case .album: return String(localized: "专辑")
+        case .playlist: return String(localized: "歌单")
         }
     }
 }
@@ -796,7 +796,7 @@ extension SpotifyCollection {
         let totalSeconds = tracks.reduce(0) { $0 + $1.durationMS / 1_000 }
         let hours = totalSeconds / 3_600
         let minutes = (totalSeconds % 3_600) / 60
-        return hours > 0 ? "\(hours) 小时 \(minutes) 分钟" : "\(minutes) 分钟"
+        return hours > 0 ? String(localized: "\(hours) 小时 \(minutes) 分钟") : String(localized: "\(minutes) 分钟")
     }
 }
 
@@ -810,12 +810,12 @@ extension SpotifyTrackReference {
 extension SpotifyBridgeItemStatus {
     var displayName: String {
         switch self {
-        case .unmatched: return "未匹配"
-        case .ambiguous: return "待确认"
-        case .ready: return "已匹配"
-        case .copying: return "正在保存"
-        case .completed: return "已完成"
-        case .failed: return "失败"
+        case .unmatched: return String(localized: "未匹配")
+        case .ambiguous: return String(localized: "待确认")
+        case .ready: return String(localized: "已匹配")
+        case .copying: return String(localized: "正在保存")
+        case .completed: return String(localized: "已完成")
+        case .failed: return String(localized: "失败")
         }
     }
 
@@ -842,7 +842,7 @@ extension SpotifyBridgeItemStatus {
 }
 
 #if DEBUG
-#Preview("音乐 · 未登录") {
+#Preview(String(localized: "音乐 · 未登录")) {
     MusicBridgeView(
         viewModel: SpotifyBridgeViewModel.preview(.disconnected),
         onBack: {},
@@ -853,7 +853,7 @@ extension SpotifyBridgeItemStatus {
     .allowsHitTesting(false)
 }
 
-#Preview("音乐 · 已载入") {
+#Preview(String(localized: "音乐 · 已载入")) {
     MusicBridgeView(
         viewModel: SpotifyBridgeViewModel.preview(.loaded),
         onBack: {},
@@ -864,7 +864,7 @@ extension SpotifyBridgeItemStatus {
     .allowsHitTesting(false)
 }
 
-#Preview("音乐 · 匹配审核") {
+#Preview(String(localized: "音乐 · 匹配审核")) {
     MusicBridgeView(
         viewModel: SpotifyBridgeViewModel.preview(.review),
         onBack: {},
@@ -875,7 +875,7 @@ extension SpotifyBridgeItemStatus {
     .allowsHitTesting(false)
 }
 
-#Preview("音乐 · 保存中") {
+#Preview(String(localized: "音乐 · 保存中")) {
     MusicBridgeView(
         viewModel: SpotifyBridgeViewModel.preview(.saving),
         onBack: {},
@@ -886,7 +886,7 @@ extension SpotifyBridgeItemStatus {
     .allowsHitTesting(false)
 }
 
-#Preview("音乐 · 完成") {
+#Preview(String(localized: "音乐 · 完成")) {
     MusicBridgeView(
         viewModel: SpotifyBridgeViewModel.preview(.completed),
         onBack: {},

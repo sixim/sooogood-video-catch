@@ -230,13 +230,13 @@ struct MusicBrowserView: View {
 
     static func kindName(_ kind: MusicLink.Kind) -> String {
         switch kind {
-        case .song: return "单曲"
-        case .album: return "专辑"
-        case .playlist: return "歌单"
-        case .artist: return "歌手"
-        case .toplist: return "排行榜"
-        case .radio: return "电台"
-        case .program: return "节目"
+        case .song: return String(localized: "单曲")
+        case .album: return String(localized: "专辑")
+        case .playlist: return String(localized: "歌单")
+        case .artist: return String(localized: "歌手")
+        case .toplist: return String(localized: "排行榜")
+        case .radio: return String(localized: "电台")
+        case .program: return String(localized: "节目")
         case .mv: return "MV"
         }
     }

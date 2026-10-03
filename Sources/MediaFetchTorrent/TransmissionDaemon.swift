@@ -108,7 +108,7 @@ public final class TransmissionDaemon: @unchecked Sendable {
             try await Task.sleep(nanoseconds: 100_000_000)
         }
         stop()
-        throw TorrentError.engineFailedToStart("RPC 在 10 秒内没有响应")
+        throw TorrentError.engineFailedToStart(String(localized: "RPC 在 10 秒内没有响应"))
     }
 
     /// Quits the daemon unless the user chose to keep seeding after quit.
@@ -208,7 +208,7 @@ public final class TransmissionDaemon: @unchecked Sendable {
 
     static func freeLoopbackPort() throws -> Int {
         let fd = socket(AF_INET, SOCK_STREAM, 0)
-        guard fd >= 0 else { throw TorrentError.engineFailedToStart("无法分配端口") }
+        guard fd >= 0 else { throw TorrentError.engineFailedToStart(String(localized: "无法分配端口")) }
         defer { close(fd) }
         var address = sockaddr_in()
         address.sin_family = sa_family_t(AF_INET)
@@ -220,7 +220,7 @@ public final class TransmissionDaemon: @unchecked Sendable {
                 bind(fd, $0, length) == 0 && getsockname(fd, $0, &length) == 0
             }
         }
-        guard bound else { throw TorrentError.engineFailedToStart("无法分配端口") }
+        guard bound else { throw TorrentError.engineFailedToStart(String(localized: "无法分配端口")) }
         return Int(UInt16(bigEndian: address.sin_port))
     }
 
@@ -232,7 +232,7 @@ public final class TransmissionDaemon: @unchecked Sendable {
     }
 
     private static func tail(of url: URL) -> String {
-        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return "进程已退出" }
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return String(localized: "进程已退出") }
         return text.split(separator: "\n").suffix(3).joined(separator: " ")
     }
 }

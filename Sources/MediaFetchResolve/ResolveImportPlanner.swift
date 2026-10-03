@@ -7,7 +7,7 @@ import MediaFetchCore
 /// file headers and an optional manifest, so it is unit-testable offline.
 public enum ResolveImportPlanner {
     public static let rootBin = "Sooogood"
-    public static let musicBin = "音乐"
+    public static let musicBin = String(localized: "音乐")
     static let mediaSignatures: Set<MediaSignature> = [.isoBMFF, .matroska, .mpegTS, .mpegAudio, .flac, .ogg, .wave]
     static let subtitleExtensions: Set<String> = ["srt"]
     /// Audio containers/codecs DaVinci Resolve cannot read (verified on Resolve 21:
@@ -145,7 +145,8 @@ public enum ResolveImportPlanner {
             ($0.preset == "wavForEdit" || $0.preset == "prores422" || $0.preset == "proresLT")
         }
         if !codecs.isDisjoint(with: unsupportedAudioCodecs) && !hasEditAudio {
-            warnings.append("音轨是 \(codecs.intersection(unsupportedAudioCodecs).sorted().joined(separator: "/"))，达芬奇无法读取，片段会没有声音。可在工具箱用「WAV 24-bit / 48 kHz」或「达芬奇友好 · ProRes 422」生成可用版本后再发送。")
+            let names = codecs.intersection(unsupportedAudioCodecs).sorted().joined(separator: "/")
+            warnings.append(String(localized: "音轨是 \(names)，达芬奇无法读取，片段会没有声音。可在工具箱用「WAV 24-bit / 48 kHz」或「达芬奇友好 · ProRes 422」生成可用版本后再发送。"))
         }
         return warnings
     }

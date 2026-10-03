@@ -108,7 +108,7 @@ public actor TransmissionRPCClient {
         guard let torrent = result["torrent_added"] ?? result["torrent_duplicate"],
               let id = torrent["id"]?.intValue,
               let hash = torrent["hash_string"]?.stringValue else {
-            throw TorrentError.rpc(code: -1, message: "torrent_add 没有返回种子信息")
+            throw TorrentError.rpc(code: -1, message: String(localized: "torrent_add 没有返回种子信息"))
         }
         return AddResult(engineID: id, hash: hash.lowercased(),
                          name: torrent["name"]?.stringValue ?? hash, duplicate: duplicate)

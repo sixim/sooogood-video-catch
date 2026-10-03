@@ -21,6 +21,8 @@ public enum ToolPreset: String, CaseIterable, Codable, Identifiable, Sendable {
         case edit = "剪辑"
         case audio = "音频与字幕"
         case share = "分享"
+
+        public var displayName: String { L10n.string(rawValue) }
     }
 
     public var group: Group {
@@ -33,31 +35,31 @@ public enum ToolPreset: String, CaseIterable, Codable, Identifiable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .transcribe: return "转录字幕（SRT / VTT / TXT）"
-        case .proresProxy: return "剪辑代理 · ProRes Proxy"
+        case .transcribe: return String(localized: "转录字幕（SRT / VTT / TXT）")
+        case .proresProxy: return String(localized: "剪辑代理 · ProRes Proxy")
         case .proresLT: return "ProRes LT"
-        case .prores422: return "达芬奇友好 · ProRes 422"
-        case .dnxhrLB: return "剪辑代理 · DNxHR LB"
-        case .h264Proxy: return "剪辑代理 · H.264（硬件编码）"
-        case .hevcCompress: return "压缩 · HEVC（硬件编码）"
-        case .extractAudio: return "提取原始音轨（不转码）"
+        case .prores422: return String(localized: "达芬奇友好 · ProRes 422")
+        case .dnxhrLB: return String(localized: "剪辑代理 · DNxHR LB")
+        case .h264Proxy: return String(localized: "剪辑代理 · H.264（硬件编码）")
+        case .hevcCompress: return String(localized: "压缩 · HEVC（硬件编码）")
+        case .extractAudio: return String(localized: "提取原始音轨（不转码）")
         case .wavForEdit: return "WAV 24-bit / 48 kHz"
-        case .gifPreview: return "GIF 预览"
+        case .gifPreview: return String(localized: "GIF 预览")
         }
     }
 
     public var detail: String {
         switch self {
-        case .transcribe: return "本机 whisper.cpp，Metal 加速；不上传任何音频"
-        case .proresProxy: return "半分辨率（超过 1080p 时），VideoToolbox 硬件 ProRes；发送到达芬奇时自动关联为代理"
-        case .proresLT: return "全分辨率，体积小于 422，适合调色前的中间素材"
-        case .prores422: return "把 VP9 / AV1 等达芬奇不擅长的编码转成 ProRes 422，保留原分辨率与帧率"
-        case .dnxhrLB: return "半分辨率 DNxHR LB，跨平台代理"
-        case .h264Proxy: return "半分辨率 H.264 8 Mbps，体积最小的代理"
-        case .hevcCompress: return "VideoToolbox HEVC 质量模式，适合分享与归档"
-        case .extractAudio: return "直接复制平台提供的音频流，零损失"
-        case .wavForEdit: return "PCM 24-bit 48 kHz，Logic / Fairlight 直接可用"
-        case .gifPreview: return "12 fps、640 宽，调色板优化"
+        case .transcribe: return String(localized: "本机 whisper.cpp，Metal 加速；不上传任何音频")
+        case .proresProxy: return String(localized: "半分辨率（超过 1080p 时），VideoToolbox 硬件 ProRes；发送到达芬奇时自动关联为代理")
+        case .proresLT: return String(localized: "全分辨率，体积小于 422，适合调色前的中间素材")
+        case .prores422: return String(localized: "把 VP9 / AV1 等达芬奇不擅长的编码转成 ProRes 422，保留原分辨率与帧率")
+        case .dnxhrLB: return String(localized: "半分辨率 DNxHR LB，跨平台代理")
+        case .h264Proxy: return String(localized: "半分辨率 H.264 8 Mbps，体积最小的代理")
+        case .hevcCompress: return String(localized: "VideoToolbox HEVC 质量模式，适合分享与归档")
+        case .extractAudio: return String(localized: "直接复制平台提供的音频流，零损失")
+        case .wavForEdit: return String(localized: "PCM 24-bit 48 kHz，Logic / Fairlight 直接可用")
+        case .gifPreview: return String(localized: "12 fps、640 宽，调色板优化")
         }
     }
 

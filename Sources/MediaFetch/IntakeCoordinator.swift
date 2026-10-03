@@ -35,7 +35,7 @@ final class IntakeCoordinator: ObservableObject {
             return nil
         }
         if !unsupported.isEmpty {
-            notice = "无法识别：" + unsupported.prefix(3).joined(separator: "、") + (unsupported.count > 3 ? " 等" : "")
+            notice = String(localized: "无法识别：") + unsupported.prefix(3).joined(separator: "、") + (unsupported.count > 3 ? String(localized: " 等") : "")
         }
         switch InputClassifier.primaryDestination(of: items) {
         case .video: return .video

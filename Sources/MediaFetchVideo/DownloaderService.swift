@@ -10,7 +10,7 @@ public final class DownloaderService: ObservableObject {
         didSet { updateSleepAssertion() }
     }
     @Published public var progress = DownloadProgress()
-    @Published public var status = "等待链接"
+    @Published public var status = String(localized: "等待链接")
     @Published public var recentMessages: [String] = []
     @Published public var errorMessage: String?
     @Published public var safariPermissionRequired = false
@@ -117,12 +117,12 @@ public final class DownloaderService: ObservableObject {
                   let url = LinkInputParser.URLs(from: input).first,
                   ensurePlatformAllowed(url) else { return }
             guard let provider = inAppCookieProvider else {
-                errorMessage = "应用内登录尚未就绪，请重新打开登录窗口。"
+                errorMessage = String(localized: "应用内登录尚未就绪，请重新打开登录窗口。")
                 return
             }
             resetForNewOperation()
             isAnalyzing = true
-            status = "正在读取应用内会话…"
+            status = String(localized: "正在读取应用内会话…")
             Task {
                 do {
                     let file = try TemporaryCookieFile(data: await provider(url))
@@ -130,7 +130,7 @@ public final class DownloaderService: ObservableObject {
                     performAnalysis(input, cookieSource: nil, cookieFile: file)
                 } catch {
                     isAnalyzing = false
-                    status = "需要应用内登录"
+                    status = String(localized: "需要应用内登录")
                     errorMessage = error.localizedDescription
                 }
             }
@@ -142,16 +142,16 @@ public final class DownloaderService: ObservableObject {
 
     private func performAnalysis(_ input: String, cookieSource: BrowserCookieSource?, cookieFile: TemporaryCookieFile? = nil) {
 #if MEDIAFETCH_STORE_PROFILE
-        errorMessage = "Mac App Store 版本不提供第三方站点视频下载；请使用本地完整版处理你有权保存的媒体。"
+        errorMessage = String(localized: "Mac App Store 版本不提供第三方站点视频下载；请使用本地完整版处理你有权保存的媒体。")
         return
 #else
         guard !isAnalyzing && !isDownloading else { return }
         guard let url = LinkInputParser.URLs(from: input).first else {
-            errorMessage = "请输入至少一条完整的 http:// 或 https:// 链接。"
+            errorMessage = String(localized: "请输入至少一条完整的 http:// 或 https:// 链接。")
             return
         }
         guard let ytDLPPath else {
-            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            errorMessage = String(localized: "未找到 yt-dlp。请先执行：brew install yt-dlp")
             return
         }
         guard ensurePlatformAllowed(url) else { return }
@@ -159,7 +159,7 @@ public final class DownloaderService: ObservableObject {
 
         resetForNewOperation()
         isAnalyzing = true
-        status = "正在解析媒体信息…"
+        status = String(localized: "正在解析媒体信息…")
 
         let task = Process()
         let output = Pipe()
@@ -194,14 +194,14 @@ public final class DownloaderService: ObservableObject {
                             return
                         }
                         if EngineErrorClassifier.isDRMError(stderr) {
-                            self.status = "检测到 DRM 保护"
-                            self.errorMessage = "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。"
+                            self.status = String(localized: "检测到 DRM 保护")
+                            self.errorMessage = String(localized: "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。")
                             return
                         }
                         if EngineErrorClassifier.isAuthenticationRequiredError(stderr) {
-                            self.status = "需要登录"
+                            self.status = String(localized: "需要登录")
                             self.errorMessage = cookieFile != nil
-                                ? "应用内会话未通过验证。请在网站登录窗口重新登录，并确认账号可以观看这个视频。"
+                                ? String(localized: "应用内会话未通过验证。请在网站登录窗口重新登录，并确认账号可以观看这个视频。")
                                 : self.authenticationRequiredMessage(for: cookieSource)
                             return
                         }
@@ -210,23 +210,23 @@ public final class DownloaderService: ObservableObject {
                             self.status = diagnosis.title
                             self.errorMessage = "\(diagnosis.guidance)\n\n\(Self.lastErrorLine(in: trimmed))"
                         } else {
-                            self.status = "解析失败"
+                            self.status = String(localized: "解析失败")
                             self.errorMessage = trimmed
                         }
                         return
                     }
                     do {
                         self.metadata = try JSONDecoder().decode(MediaMetadata.self, from: data)
-                        self.status = "解析完成，可以加入队列"
+                        self.status = String(localized: "解析完成，可以加入队列")
                     } catch {
-                        self.status = "解析失败"
-                        self.errorMessage = "媒体信息无法读取：\(error.localizedDescription)"
+                        self.status = String(localized: "解析失败")
+                        self.errorMessage = String(localized: "媒体信息无法读取：\(error.localizedDescription)")
                     }
                 }
             } catch {
                 DispatchQueue.main.async {
                     self?.isAnalyzing = false
-                    self?.status = "无法启动下载引擎"
+                    self?.status = String(localized: "无法启动下载引擎")
                     self?.errorMessage = error.localizedDescription
                 }
             }
@@ -246,26 +246,26 @@ public final class DownloaderService: ObservableObject {
         inAppLoginURLs: Set<String> = []
     ) -> Int {
 #if MEDIAFETCH_STORE_PROFILE
-        errorMessage = "Mac App Store 版本不提供第三方站点视频下载；请使用本地完整版处理你有权保存的媒体。"
+        errorMessage = String(localized: "Mac App Store 版本不提供第三方站点视频下载；请使用本地完整版处理你有权保存的媒体。")
         return 0
 #else
         let urls = LinkInputParser.URLs(from: input)
         guard !urls.isEmpty else {
-            errorMessage = "没有找到有效媒体链接。每条链接请用空格或换行分隔。"
+            errorMessage = String(localized: "没有找到有效媒体链接。每条链接请用空格或换行分隔。")
             return 0
         }
         guard ytDLPPath != nil else {
-            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            errorMessage = String(localized: "未找到 yt-dlp。请先执行：brew install yt-dlp")
             return 0
         }
         if let blockedURL = urls.first(where: { !StreamingPlatform.detect($0).downloadAllowed }) {
             let platform = StreamingPlatform.detect(blockedURL)
-            status = "\(platform.displayName) 使用受保护媒体流"
+            status = String(localized: "\(platform.displayName) 使用受保护媒体流")
             errorMessage = platform.restrictionMessage
             return 0
         }
         guard ffmpegPath != nil || !profile.requiresFFmpeg else {
-            errorMessage = "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg"
+            errorMessage = String(localized: "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg")
             return 0
         }
         for url in urls {
@@ -286,7 +286,7 @@ public final class DownloaderService: ObservableObject {
             ))
         }
         persistJobs()
-        status = "已加入 \(urls.count) 个任务"
+        status = String(localized: "已加入 \(urls.count) 个任务")
         startNextIfNeeded()
         return urls.count
 #endif
@@ -294,7 +294,7 @@ public final class DownloaderService: ObservableObject {
 
     public func resumeQueue() {
 #if MEDIAFETCH_STORE_PROFILE
-        errorMessage = "Mac App Store 版本不提供第三方站点视频下载。"
+        errorMessage = String(localized: "Mac App Store 版本不提供第三方站点视频下载。")
         return
 #else
         for index in jobs.indices where jobs[index].status == .paused {
@@ -314,7 +314,7 @@ public final class DownloaderService: ObservableObject {
             preparingJobID = nil
             updateJob(id) { $0.status = .cancelled; $0.updatedAt = Date() }
             isDownloading = false
-            status = "下载已取消"
+            status = String(localized: "下载已取消")
             persistJobs()
             startNextIfNeeded()
             return
@@ -325,7 +325,7 @@ public final class DownloaderService: ObservableObject {
             attemptStates[id] = nil
             updateJob(id) { $0.status = .cancelled; $0.updatedAt = Date(); $0.retryNote = nil }
             isDownloading = false
-            status = "下载已取消"
+            status = String(localized: "下载已取消")
             finishCurrentJobAndContinue()
             return
         }
@@ -334,7 +334,7 @@ public final class DownloaderService: ObservableObject {
         cancellationRequested = true
         if isSuspended { process.resume() }
         process.interrupt()
-        status = "正在取消…"
+        status = String(localized: "正在取消…")
     }
 
     /// True while the engine process is stopped in place (SIGSTOP).
@@ -349,7 +349,7 @@ public final class DownloaderService: ObservableObject {
         guard let process, process.isRunning, let id = currentJobID, !isSuspended else { return }
         guard process.suspend() else { return }
         updateJob(id) { $0.status = .suspended; $0.updatedAt = Date() }
-        status = "下载已暂停"
+        status = String(localized: "下载已暂停")
         updateSleepAssertion()
         persistJobs()
     }
@@ -358,7 +358,7 @@ public final class DownloaderService: ObservableObject {
         guard let process, process.isRunning, let id = currentJobID, isSuspended else { return }
         guard process.resume() else { return }
         updateJob(id) { $0.status = .downloading; $0.updatedAt = Date() }
-        status = "正在下载…"
+        status = String(localized: "正在下载…")
         updateSleepAssertion()
         persistJobs()
     }
@@ -369,7 +369,7 @@ public final class DownloaderService: ObservableObject {
         if shouldHold, sleepActivity == nil {
             sleepActivity = ProcessInfo.processInfo.beginActivity(
                 options: [.userInitiated, .idleSystemSleepDisabled],
-                reason: "Sooogood Video Catch 正在下载"
+                reason: String(localized: "Sooogood Video Catch 正在下载")
             )
         } else if !shouldHold, let activity = sleepActivity {
             ProcessInfo.processInfo.endActivity(activity)
@@ -407,9 +407,9 @@ public final class DownloaderService: ObservableObject {
         _ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool,
         arguments makeArguments: ([String]) -> [String]
     ) async throws -> (status: Int32, stdout: Data, stderr: Data) {
-        guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError("未找到 yt-dlp，请执行 brew install yt-dlp") }
+        guard let ytDLP = toolchain.ytDLPURL else { throw EngineCallError(String(localized: "未找到 yt-dlp，请执行 brew install yt-dlp")) }
         let platform = StreamingPlatform.detect(url)
-        guard platform.downloadAllowed else { throw EngineCallError(platform.restrictionMessage ?? "受保护平台") }
+        guard platform.downloadAllowed else { throw EngineCallError(platform.restrictionMessage ?? String(localized: "受保护平台")) }
         var cookieFile: TemporaryCookieFile?
         var cookieArguments = cookieSource?.ytDLPArguments ?? []
         if usesInAppLogin, let provider = inAppCookieProvider {
@@ -442,12 +442,13 @@ public final class DownloaderService: ObservableObject {
         let text = String(decoding: stderr, as: UTF8.self)
         let platform = StreamingPlatform.detect(url)
         if text.contains("expected string or bytes-like object") {
-            return EngineCallError("平台网页暂时没有响应（已自动重试 3 次），请稍后再试。"
+            return EngineCallError(String(localized: "平台网页暂时没有响应（已自动重试 3 次），请稍后再试。")
                 + (platform == .qqmusic ? "\n" + EngineDiagnostics.qqMusicLoginHint : ""))
         }
         let diagnosis = EngineDiagnostics.diagnose(text)
-        if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: platform, output: text) { return EngineCallError(hint) }
-        return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："))
+        let needsLogin = diagnosis?.cause == .needsLogin
+        if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: platform, output: text) { return EngineCallError(hint, needsLogin: needsLogin) }
+        return EngineCallError([diagnosis?.title, EngineDiagnostics.lastErrorLine(in: text)].compactMap { $0 }.joined(separator: "："), needsLogin: needsLogin)
     }
 
     public func inspect(_ url: URL, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool) async throws -> MediaMetadata {
@@ -465,7 +466,7 @@ public final class DownloaderService: ObservableObject {
         }
         guard status == 0 else { throw Self.engineError(errors, url: url) }
         guard let json = try? JSONDecoder().decode(JSONValue.self, from: output), let track = MusicTrackInfo.parse(json) else {
-            throw EngineCallError("无法读取歌曲信息")
+            throw EngineCallError(String(localized: "无法读取歌曲信息"))
         }
         return track
     }
@@ -478,11 +479,11 @@ public final class DownloaderService: ObservableObject {
         cookieSource: BrowserCookieSource?, usesInAppLogin: Bool, nameTemplate: String? = nil
     ) -> Int {
         guard ytDLPPath != nil else {
-            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            errorMessage = String(localized: "未找到 yt-dlp。请先执行：brew install yt-dlp")
             return 0
         }
         guard ffmpegPath != nil else {
-            errorMessage = "写入封面和标签需要 FFmpeg。请先执行：brew install ffmpeg"
+            errorMessage = String(localized: "写入封面和标签需要 FFmpeg。请先执行：brew install ffmpeg")
             return 0
         }
         guard ensureCookieAccess(usesInAppLogin ? nil : cookieSource) else { return 0 }
@@ -500,7 +501,7 @@ public final class DownloaderService: ObservableObject {
             jobs.append(job)
         }
         persistJobs()
-        status = "已加入 \(items.count) 首歌曲"
+        status = String(localized: "已加入 \(items.count) 首歌曲")
         startNextIfNeeded()
         return items.count
     }
@@ -525,10 +526,11 @@ public final class DownloaderService: ObservableObject {
         }
         let text = String(decoding: errors, as: UTF8.self)
         if status != 0, let diagnosis = EngineDiagnostics.diagnose(text) {
-            if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(url), output: text) { throw EngineCallError(hint) }
-            throw EngineCallError([diagnosis.title, diagnosis.guidance, EngineDiagnostics.lastErrorLine(in: text)].joined(separator: "\n"))
+            let needsLogin = diagnosis.cause == .needsLogin
+            if let hint = EngineDiagnostics.platformHint(for: diagnosis, platform: StreamingPlatform.detect(url), output: text) { throw EngineCallError(hint, needsLogin: needsLogin) }
+            throw EngineCallError([diagnosis.title, diagnosis.guidance, EngineDiagnostics.lastErrorLine(in: text)].joined(separator: "\n"), needsLogin: needsLogin)
         }
-        throw EngineCallError("这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）")
+        throw EngineCallError(String(localized: "这个链接不是播放列表或课程，或者列表为空（可能需要登录才能看到课时）"), needsLogin: true)
     }
 
     /// Queues selected entries of a course/playlist; each keeps its place in
@@ -539,11 +541,11 @@ public final class DownloaderService: ObservableObject {
         includeSidecars: Bool, includeSubtitles: Bool, cookieSource: BrowserCookieSource?, usesInAppLogin: Bool
     ) -> Int {
         guard ytDLPPath != nil else {
-            errorMessage = "未找到 yt-dlp。请先执行：brew install yt-dlp"
+            errorMessage = String(localized: "未找到 yt-dlp。请先执行：brew install yt-dlp")
             return 0
         }
         guard ffmpegPath != nil || !profile.requiresFFmpeg else {
-            errorMessage = "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg"
+            errorMessage = String(localized: "该保存方式需要 FFmpeg 做无损封装。请先执行：brew install ffmpeg")
             return 0
         }
         guard ensureCookieAccess(usesInAppLogin ? nil : cookieSource) else { return 0 }
@@ -558,7 +560,7 @@ public final class DownloaderService: ObservableObject {
             jobs.append(job)
         }
         persistJobs()
-        status = "已加入「\(outline.title)」的 \(entries.count) 个条目"
+        status = String(localized: "已加入「\(outline.title)」的 \(entries.count) 个条目")
         startNextIfNeeded()
         return entries.count
     }
@@ -697,13 +699,13 @@ public final class DownloaderService: ObservableObject {
         guard job.usesInAppLogin == true else { launchJob(at: index); return }
         isDownloading = true
         preparingJobID = job.id
-        status = "正在读取应用内会话…"
+        status = String(localized: "正在读取应用内会话…")
         preparationTask = Task {
             do {
                 guard let url = URL(string: job.sourceURL),
                       let provider = inAppCookieProvider else {
                     throw NSError(domain: "MediaFetch.Session", code: 1, userInfo: [
-                        NSLocalizedDescriptionKey: "应用内登录尚未就绪，请重新打开登录窗口。"
+                        NSLocalizedDescriptionKey: String(localized: "应用内登录尚未就绪，请重新打开登录窗口。")
                     ])
                 }
                 let data = try await provider(url)
@@ -733,7 +735,7 @@ public final class DownloaderService: ObservableObject {
         let job = jobs[index]
         guard let ytDLPPath else {
             currentJobID = job.id
-            failCurrentJob("未找到 yt-dlp，请检查下载引擎设置。")
+            failCurrentJob(String(localized: "未找到 yt-dlp，请检查下载引擎设置。"))
             return
         }
         if let url = URL(string: job.sourceURL), !StreamingPlatform.detect(url).downloadAllowed {
@@ -765,7 +767,7 @@ public final class DownloaderService: ObservableObject {
         engineLog = []
         lineBuffer = ""
         isDownloading = true
-        status = "正在准备下载…"
+        status = String(localized: "正在准备下载…")
         updateJob(job.id) {
             $0.status = .downloading
             $0.updatedAt = Date()
@@ -816,7 +818,7 @@ public final class DownloaderService: ObservableObject {
         }
         do {
             try task.run()
-            status = "正在下载…"
+            status = String(localized: "正在下载…")
         } catch {
             output.fileHandleForReading.readabilityHandler = nil
             failCurrentJob(error.localizedDescription)
@@ -831,7 +833,7 @@ public final class DownloaderService: ObservableObject {
               let jobIndex = jobs.firstIndex(where: { $0.id == jobID }) else { return }
         if cancellationRequested || finished.terminationReason == .uncaughtSignal {
             isDownloading = false
-            status = "下载已取消"
+            status = String(localized: "下载已取消")
             jobs[jobIndex].status = .cancelled
             jobs[jobIndex].updatedAt = Date()
             finishCurrentJobAndContinue()
@@ -852,7 +854,7 @@ public final class DownloaderService: ObservableObject {
             let diagnosis = EngineDiagnostics.diagnose(engineOutput)
             jobs[jobIndex].diagnosis = diagnosis
             if EngineErrorClassifier.isDRMError(engineOutput) {
-                failCurrentJob("该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。")
+                failCurrentJob(String(localized: "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。"))
                 return
             }
             if let sourceURL = URL(string: jobs[jobIndex].sourceURL),
@@ -862,19 +864,19 @@ public final class DownloaderService: ObservableObject {
             }
             if EngineErrorClassifier.isAuthenticationRequiredError(engineOutput) {
                 failCurrentJob(jobs[jobIndex].usesInAppLogin == true
-                    ? "应用内会话未通过验证，请在网站登录窗口重新登录并确认视频访问权限。"
+                    ? String(localized: "应用内会话未通过验证，请在网站登录窗口重新登录并确认视频访问权限。")
                     : authenticationRequiredMessage(for: jobs[jobIndex].browserCookieSource))
                 return
             }
             if let preference = jobs[jobIndex].musicQuality,
                engineOutput.lowercased().contains("requested format is not available") {
                 // A missing quality tier will not appear on retry: say so instead.
-                failCurrentJob("该曲目当前账号没有「\(preference.displayName)」可用（平台只提供更低音质，或需要会员）。可改用「最高可用音质」。")
+                failCurrentJob(String(localized: "该曲目当前账号没有「\(preference.displayName)」可用（平台只提供更低音质，或需要会员）。可改用「最高可用音质」。"))
                 return
             }
             if scheduleRetryIfUseful(jobIndex: jobIndex, output: engineOutput) { return }
             let lastLine = Self.lastErrorLine(in: engineOutput)
-            let fallback = lastLine.isEmpty ? "下载引擎返回错误 \(finished.terminationStatus)" : lastLine
+            let fallback = lastLine.isEmpty ? String(localized: "下载引擎返回错误 \(finished.terminationStatus)") : lastLine
             failCurrentJob(diagnosis.map { "\($0.title)：\($0.guidance)\n\(fallback)" } ?? fallback)
             return
         }
@@ -889,7 +891,7 @@ public final class DownloaderService: ObservableObject {
         jobs[jobIndex].etaText = nil
         jobs[jobIndex].updatedAt = Date()
         jobs[jobIndex].completedFiles = completedFiles
-        status = "正在计算 SHA-256 并生成清单…"
+        status = String(localized: "正在计算 SHA-256 并生成清单…")
         persistJobs()
 
         var job = jobs[jobIndex]
@@ -899,7 +901,7 @@ public final class DownloaderService: ObservableObject {
         let platform = activePlatform
         let ffmpeg = ffmpegPath
         guard let packageDirectory else {
-            failCurrentJob("下载完成，但没有收到最终文件路径，无法生成 manifest.json")
+            failCurrentJob(String(localized: "下载完成，但没有收到最终文件路径，无法生成 manifest.json"))
             return
         }
 
@@ -942,7 +944,7 @@ public final class DownloaderService: ObservableObject {
                     to: URL(fileURLWithPath: job.destinationPath, isDirectory: true)
                 )
                 guard let exportedDirectory else {
-                    throw VideoPackageExportError.copyFailed("导出器不可用")
+                    throw VideoPackageExportError.copyFailed(String(localized: "导出器不可用"))
                 }
                 let finalManifest = exportedDirectory.appendingPathComponent("manifest.json")
                 let finalFiles = try self?.packageExporter.regularFiles(in: exportedDirectory) ?? []
@@ -977,12 +979,12 @@ public final class DownloaderService: ObservableObject {
                         $0.completedFiles = finalFiles.map(\.path)
                     }
                     self.isDownloading = false
-                    self.status = "下载与素材清单已完成"
+                    self.status = String(localized: "下载与素材清单已完成")
                     self.finishCurrentJobAndContinue()
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.failCurrentJob("媒体已下载，但生成清单失败：\(error.localizedDescription)")
+                    self?.failCurrentJob(String(localized: "媒体已下载，但生成清单失败：\(error.localizedDescription)"))
                 }
             }
         }
@@ -1038,9 +1040,9 @@ public final class DownloaderService: ObservableObject {
         if decision.countsAsRateLimit { sessionRateLimitCount += 1 }
         attemptStates[job.id] = decision.nextState
         jobs[jobIndex].status = .retrying
-        jobs[jobIndex].retryNote = "第 \(decision.nextState.attempt)/\(RetryPolicy.maxAttempts) 次尝试：\(decision.reason)"
+        jobs[jobIndex].retryNote = String(localized: "第 \(decision.nextState.attempt)/\(RetryPolicy.maxAttempts) 次尝试：\(decision.reason)")
         jobs[jobIndex].updatedAt = Date()
-        status = jobs[jobIndex].retryNote ?? "等待自动重试"
+        status = jobs[jobIndex].retryNote ?? String(localized: "等待自动重试")
         persistJobs()
         let jobID = job.id
         let waitNanoseconds = UInt64(decision.delaySeconds) * retryNanosecondsPerSecond
@@ -1078,7 +1080,7 @@ public final class DownloaderService: ObservableObject {
         activeCookieFile = nil
         isDownloading = false
         process = nil
-        status = "任务失败"
+        status = String(localized: "任务失败")
         errorMessage = message
         if let currentJobID {
             updateJob(currentJobID) {
@@ -1111,7 +1113,7 @@ public final class DownloaderService: ObservableObject {
     private func consumeLine(_ line: String) {
         if let parsed = ProgressParser.parse(line) {
             progress = parsed
-            status = "正在下载…"
+            status = String(localized: "正在下载…")
             if let currentJobID {
                 updateJob(currentJobID) {
                     $0.progressFraction = parsed.fraction
@@ -1124,7 +1126,7 @@ public final class DownloaderService: ObservableObject {
             return
         }
         if line.hasPrefix("MF_POSTPROCESS|") {
-            status = "下载完成，正在无损封装…"
+            status = String(localized: "下载完成，正在无损封装…")
             if let currentJobID { updateJob(currentJobID) { $0.stage = .merging; $0.etaText = nil } }
             return
         }
@@ -1181,20 +1183,20 @@ public final class DownloaderService: ObservableObject {
 
     private func persistJobs() {
         do { try historyWriter(jobs) }
-        catch { errorMessage = "任务历史无法保存：\(error.localizedDescription)" }
+        catch { errorMessage = String(localized: "任务历史无法保存：\(error.localizedDescription)") }
     }
 
 #if !MEDIAFETCH_STORE_PROFILE
     private func ensureCookieAccess(_ source: BrowserCookieSource?) -> Bool {
         guard source == .safari else {
             if source != nil && !toolchain.allowsBrowserCookies {
-                errorMessage = "App Store 版本不读取浏览器 Cookie；请使用公开媒体链接或应用支持的授权方式。"
+                errorMessage = String(localized: "App Store 版本不读取浏览器 Cookie；请使用公开媒体链接或应用支持的授权方式。")
                 return false
             }
             return true
         }
         guard toolchain.allowsBrowserCookies else {
-            errorMessage = "App Store 版本不支持浏览器 Cookie 登录状态。"
+            errorMessage = String(localized: "App Store 版本不支持浏览器 Cookie 登录状态。")
             return false
         }
         guard SafariCookieAccess.canReadCookieStore() else {
@@ -1215,7 +1217,7 @@ public final class DownloaderService: ObservableObject {
     private func ensurePlatformAllowed(_ url: URL) -> Bool {
         let platform = StreamingPlatform.detect(url)
         guard platform.downloadAllowed else {
-            status = "\(platform.displayName) 使用受保护媒体流"
+            status = String(localized: "\(platform.displayName) 使用受保护媒体流")
             errorMessage = platform.restrictionMessage
             return false
         }
@@ -1224,18 +1226,18 @@ public final class DownloaderService: ObservableObject {
 
     private func presentSafariPermissionHelp() {
         errorMessage = nil
-        status = "Safari Cookie 读取权限未开启"
+        status = String(localized: "Safari Cookie 读取权限未开启")
         safariPermissionRequired = true
     }
 
     private func authenticationRequiredMessage(for source: BrowserCookieSource?) -> String {
         if source == nil {
-            return "该媒体内容要求登录。请勾选“使用浏览器登录状态”，选择已经登录该平台的 Chrome 或 Firefox 后重试；如果内容本来就是公开的，也可以换用公开链接。"
+            return String(localized: "该媒体内容要求登录。请勾选“使用浏览器登录状态”，选择已经登录该平台的 Chrome 或 Firefox 后重试；如果内容本来就是公开的，也可以换用公开链接。")
         }
         if source == .safari {
-            return "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Video Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。"
+            return String(localized: "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Video Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。")
         }
-        return "该媒体内容要求登录，但所选浏览器的登录状态未通过验证。请确认浏览器中已登录 Vimeo，重新选择浏览器后再试。"
+        return String(localized: "该媒体内容要求登录，但所选浏览器的登录状态未通过验证。请确认浏览器中已登录 Vimeo，重新选择浏览器后再试。")
     }
 
     private func resetForNewOperation() {
@@ -1251,6 +1253,11 @@ public final class DownloaderService: ObservableObject {
 /// Error surfaced to agents and automation callers.
 public struct EngineCallError: LocalizedError, Sendable {
     public let message: String
-    public init(_ message: String) { self.message = message }
+    /// The UI offers "sign in" for these; decided from the diagnosis, never from the (translated) text.
+    public let needsLogin: Bool
+    public init(_ message: String, needsLogin: Bool = false) {
+        self.message = message
+        self.needsLogin = needsLogin
+    }
     public var errorDescription: String? { message }
 }

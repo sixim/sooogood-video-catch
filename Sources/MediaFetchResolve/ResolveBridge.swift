@@ -68,13 +68,13 @@ public struct ResolveBridge: Sendable {
 
     public func status() async throws -> ResolveStatus {
         let reply = try await run(["op": "status"])
-        guard let status = reply["status"] else { throw ResolveBridgeError.bridgeFailed("缺少状态信息") }
+        guard let status = reply["status"] else { throw ResolveBridgeError.bridgeFailed(String(localized: "缺少状态信息")) }
         return try status.decoded(as: ResolveStatus.self)
     }
 
     public func importMedia(_ request: ResolveImportRequest) async throws -> ResolveImportResult {
         let reply = try await run(try JSONValue.encoded(request))
-        guard let result = reply["result"] else { throw ResolveBridgeError.bridgeFailed("缺少导入结果") }
+        guard let result = reply["result"] else { throw ResolveBridgeError.bridgeFailed(String(localized: "缺少导入结果")) }
         return try result.decoded(as: ResolveImportResult.self)
     }
 
@@ -104,7 +104,7 @@ public struct ResolveBridge: Sendable {
         do { reply = try JSONDecoder().decode(JSONValue.self, from: data) }
         catch {
             let text = String(decoding: data.prefix(300), as: UTF8.self)
-            throw ResolveBridgeError.bridgeFailed(text.isEmpty ? "达芬奇脚本没有返回结果" : text)
+            throw ResolveBridgeError.bridgeFailed(text.isEmpty ? String(localized: "达芬奇脚本没有返回结果") : text)
         }
         guard reply["ok"]?.boolValue == true else { throw Self.mapError(reply) }
         return reply
@@ -118,7 +118,7 @@ public struct ResolveBridge: Sendable {
         case "not_ready": return .notReady
         case "module": return .scriptModuleMissing(detail)
         case "bin_failed": return .binFailed(detail)
-        default: return .bridgeFailed(detail.isEmpty ? (reply["error"]?.stringValue ?? "未知错误") : detail)
+        default: return .bridgeFailed(detail.isEmpty ? (reply["error"]?.stringValue ?? String(localized: "未知错误")) : detail)
         }
     }
 
@@ -156,7 +156,7 @@ public struct ResolveBridge: Sendable {
         let data = collected.finish()
         if data.isEmpty {
             let stderr = String(decoding: errors.fileHandleForReading.readDataToEndOfFile().suffix(400), as: UTF8.self)
-            throw ResolveBridgeError.bridgeFailed(stderr.isEmpty ? "Python 退出码 \(process.terminationStatus)" : stderr)
+            throw ResolveBridgeError.bridgeFailed(stderr.isEmpty ? String(localized: "Python 退出码 \(process.terminationStatus)") : stderr)
         }
         return data
     }

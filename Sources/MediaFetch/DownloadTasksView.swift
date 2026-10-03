@@ -7,6 +7,8 @@ enum TaskSection: String, CaseIterable {
     case video = "视频"
     case torrent = "Torrent"
     case tools = "处理"
+
+    var displayName: String { L10n.string(rawValue) }
 }
 
 struct DownloadTasksView: View {
@@ -27,7 +29,7 @@ struct DownloadTasksView: View {
                 header
 #if !MEDIAFETCH_STORE_PROFILE
                 Picker("任务类型", selection: $section) {
-                    ForEach(TaskSection.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    ForEach(TaskSection.allCases, id: \.self) { Text($0.displayName).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -79,7 +81,7 @@ struct DownloadTasksView: View {
                 Button {
                     downloader.isSuspended ? downloader.resumeCurrent() : downloader.suspendCurrent()
                 } label: {
-                    Label(downloader.isSuspended ? "继续" : "暂停",
+                    Label(downloader.isSuspended ? String(localized: "继续") : String(localized: "暂停"),
                           systemImage: downloader.isSuspended ? "play.fill" : "pause.fill")
                 }
                 .buttonStyle(.bordered)
@@ -201,7 +203,7 @@ struct DownloadTasksView: View {
                 }
 
                 HStack(spacing: 7) {
-                    Text(job.musicQuality.map { "音乐 · \($0.displayName)" } ?? job.profile.rawValue)
+                    Text(job.musicQuality.map { String(localized: "音乐 · \($0.displayName)") } ?? job.profile.displayName)
                     if let audio = job.audioQuality {
                         Text("· 实测 \(audio.summary)")
                             .foregroundStyle(audio.meetsExpectation ? MediaFetchTheme.secondaryText : MediaFetchTheme.warning)
@@ -251,33 +253,33 @@ struct DownloadTasksView: View {
 
     private var pageTitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "素材记录"
+        return String(localized: "素材记录")
 #else
-        return "下载任务"
+        return String(localized: "下载任务")
 #endif
     }
 
     private var pageSubtitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "本地素材包与清单历史"
+        return String(localized: "本地素材包与清单历史")
 #else
-        return "队列、进度与本机历史"
+        return String(localized: "队列、进度与本机历史")
 #endif
     }
 
     private var emptyTitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "还没有素材记录"
+        return String(localized: "还没有素材记录")
 #else
-        return "还没有下载任务"
+        return String(localized: "还没有下载任务")
 #endif
     }
 
     private var emptyMessage: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "在“音乐”页面完成本地音频匹配并保存后，素材包记录会显示在这里。记录只保存在本机。"
+        return String(localized: "在“音乐”页面完成本地音频匹配并保存后，素材包记录会显示在这里。记录只保存在本机。")
 #else
-        return "从首页进入“视频”，粘贴媒体链接后即可加入队列。任务历史只保存在本机。"
+        return String(localized: "从首页进入“视频”，粘贴媒体链接后即可加入队列。任务历史只保存在本机。")
 #endif
     }
 

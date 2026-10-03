@@ -53,7 +53,7 @@ final class InAppSiteSession: NSObject, ObservableObject, WKNavigationDelegate, 
         guard !isClearing else { return }
         if platform == .youtube {
             providerBlocked = true
-            message = "YouTube 使用 Google 登录。Google 不允许在应用内嵌网页中完成账号登录；请使用下方兼容登录。"
+            message = String(localized: "YouTube 使用 Google 登录。Google 不允许在应用内嵌网页中完成账号登录；请使用下方兼容登录。")
             return
         }
         if webView.url == nil || webView.url?.absoluteString == "about:blank" { reloadLogin() }
@@ -94,7 +94,7 @@ final class InAppSiteSession: NSObject, ObservableObject, WKNavigationDelegate, 
         hasCookies = false
         isLoading = false
         isClearing = false
-        message = "此网站在 \(MediaFetchRelease.displayName) 中的会话已清除。"
+        message = String(localized: "此网站在 \(MediaFetchRelease.displayName) 中的会话已清除。")
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction,
@@ -103,19 +103,19 @@ final class InAppSiteSession: NSObject, ObservableObject, WKNavigationDelegate, 
         if url.absoluteString == "about:blank" { decisionHandler(.allow); return }
         let host = url.host?.lowercased() ?? ""
         guard url.scheme == "https" else {
-            message = "此登录窗口只打开 HTTPS 网页。"
+            message = String(localized: "此登录窗口只打开 HTTPS 网页。")
             decisionHandler(.cancel); return
         }
         if host == "accounts.google.com" || host.hasSuffix(".accounts.google.com") {
             providerBlocked = true
-            message = "Google 限制应用内嵌登录。可返回使用该网站的邮箱登录，或选择兼容登录。"
+            message = String(localized: "Google 限制应用内嵌登录。可返回使用该网站的邮箱登录，或选择兼容登录。")
             isLoading = false
             decisionHandler(.cancel); return
         }
         if navigationAction.targetFrame?.isMainFrame != false {
             let allowed = SiteSessionCookies.domains(for: platform) + (platform == .youku ? ["taobao.com", "alipay.com", "aliyun.com"] : [])
             guard allowed.contains(where: { host == $0 || host.hasSuffix("." + $0) }) else {
-                message = "该网站要求转到另一登录服务（" + host + "）。可选择兼容登录继续。"
+                message = String(localized: "该网站要求转到另一登录服务（") + host + String(localized: "）。可选择兼容登录继续。")
                 decisionHandler(.cancel); return
             }
             self.host = host
@@ -143,20 +143,20 @@ final class InAppSiteSession: NSObject, ObservableObject, WKNavigationDelegate, 
     private func showLoadError(_ error: Error) {
         isLoading = false
         if (error as NSError).code != NSURLErrorCancelled {
-            message = "登录页加载失败，请检查网络后重试，或选择兼容登录。"
+            message = String(localized: "登录页加载失败，请检查网络后重试，或选择兼容登录。")
         }
     }
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         isLoading = false
-        message = "登录网页已停止，请点击重新载入。"
+        message = String(localized: "登录网页已停止，请点击重新载入。")
     }
 
     enum SessionError: LocalizedError {
         case empty, clearing
         var errorDescription: String? {
             switch self {
-            case .empty: return "尚无可用的应用内会话。请在网站登录窗口完成登录，再解析视频。"
-            case .clearing: return "应用内登录会话正在清除，请重新登录后再试。"
+            case .empty: return String(localized: "尚无可用的应用内会话。请在网站登录窗口完成登录，再解析视频。")
+            case .clearing: return String(localized: "应用内登录会话正在清除，请重新登录后再试。")
             }
         }
     }
@@ -179,8 +179,8 @@ struct InAppSiteLoginView: View {
                 Image(systemName: "person.crop.circle.fill")
                     .font(.title).foregroundStyle(MediaFetchTheme.videoAccent)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("登录 " + session.platform.displayName).font(.title3.bold())
-                    Label(session.host.isEmpty ? "应用内独立会话" : session.host, systemImage: "lock")
+                    Text(String(localized: "登录 ") + session.platform.displayName).font(.title3.bold())
+                    Label(session.host.isEmpty ? String(localized: "应用内独立会话") : session.host, systemImage: "lock")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -210,7 +210,7 @@ struct InAppSiteLoginView: View {
             Divider()
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(session.platform == .youtube ? "请使用兼容登录连接 Google 账号" : (session.hasCookies ? "检测到网站会话 · 登录有效性以视频解析结果为准" : "请在上方官网完成登录"))
+                    Text(session.platform == .youtube ? String(localized: "请使用兼容登录连接 Google 账号") : (session.hasCookies ? String(localized: "检测到网站会话 · 登录有效性以视频解析结果为准") : String(localized: "请在上方官网完成登录")))
                         .font(.caption)
                     Text("登录会话保存在本机，可随时清除。").font(.caption2).foregroundStyle(.secondary)
                 }
@@ -221,7 +221,7 @@ struct InAppSiteLoginView: View {
                         store.setEnabled(true, for: session.platform)
                         dismiss()
                     } else {
-                        session.message = "没有找到所选浏览器，请关闭此窗口，在兼容登录设置中选择已安装的浏览器。"
+                        session.message = String(localized: "没有找到所选浏览器，请关闭此窗口，在兼容登录设置中选择已安装的浏览器。")
                     }
                 }
                 if session.platform != .youtube {

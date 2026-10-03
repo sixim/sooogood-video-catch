@@ -98,20 +98,20 @@ struct DependencyStatusPanel: View {
             }
         }()
         result.append(.init(
-            id: "yt-dlp", name: "yt-dlp", purpose: "视频解析与下载", level: ytLevel,
+            id: "yt-dlp", name: "yt-dlp", purpose: String(localized: "视频解析与下载"), level: ytLevel,
             detail: health.ytDLP.summary,
             command: health.ytDLP == .missing ? "brew install yt-dlp" : "brew upgrade yt-dlp"
         ))
         result.append(.init(
-            id: "ffmpeg", name: "FFmpeg", purpose: "无损封装与转码",
+            id: "ffmpeg", name: "FFmpeg", purpose: String(localized: "无损封装与转码"),
             level: health.ffmpegInstalled ? .ready : .missing,
-            detail: toolchain.ffmpegURL?.path ?? "未找到",
+            detail: toolchain.ffmpegURL?.path ?? String(localized: "未找到"),
             command: "brew install ffmpeg"
         ))
         result.append(.init(
-            id: "deno", name: "deno", purpose: "YouTube 签名解析所需的 JS 运行时",
+            id: "deno", name: "deno", purpose: String(localized: "YouTube 签名解析所需的 JS 运行时"),
             level: health.jsRuntimePath == nil ? .attention : .ready,
-            detail: health.jsRuntimePath ?? "未找到，YouTube 可能缺少高画质格式",
+            detail: health.jsRuntimePath ?? String(localized: "未找到，YouTube 可能缺少高画质格式"),
             command: "brew install deno"
         ))
         items = result + DependencyRegistry.additionalItems()

@@ -79,7 +79,7 @@ struct HomeView: View {
     private var primaryActions: some View {
         HStack(spacing: 22) {
             FeatureCard(
-                title: "视频",
+                title: String(localized: "视频"),
                 subtitle: videoCardSubtitle,
                 detail: videoCardDetail,
                 systemImage: "play.rectangle.fill",
@@ -88,8 +88,8 @@ struct HomeView: View {
             )
 
             FeatureCard(
-                title: "音乐",
-                subtitle: "用 Spotify 曲序整理你拥有的本地音频",
+                title: String(localized: "音乐"),
+                subtitle: String(localized: "用 Spotify 曲序整理你拥有的本地音频"),
                 detail: spotify.homeSummary,
                 systemImage: "music.note.list",
                 accentColors: [MediaFetchTheme.musicPurple, MediaFetchTheme.musicGreen],
@@ -102,7 +102,7 @@ struct HomeView: View {
         HStack(spacing: 16) {
             CompactNavigationCard(
                 title: tasksCardTitle,
-                subtitle: downloader.jobs.isEmpty ? tasksCardEmptySubtitle : "\(downloader.jobs.count) 个本机记录",
+                subtitle: downloader.jobs.isEmpty ? tasksCardEmptySubtitle : String(localized: "\(downloader.jobs.count) 个本机记录"),
                 systemImage: "list.bullet.rectangle.portrait",
                 badge: activeJobs == 0 ? nil : "\(activeJobs)",
                 action: { navigate(.tasks) }
@@ -110,16 +110,16 @@ struct HomeView: View {
 
 #if !MEDIAFETCH_STORE_PROFILE
             CompactNavigationCard(
-                title: "音乐下载",
-                subtitle: "网易云 · QQ 音乐",
+                title: String(localized: "音乐下载"),
+                subtitle: String(localized: "网易云 · QQ 音乐"),
                 systemImage: "music.note",
                 badge: nil,
                 action: { navigate(.musicDownload) }
             )
 
             CompactNavigationCard(
-                title: "工具箱",
-                subtitle: "代理 · 转码 · 转录",
+                title: String(localized: "工具箱"),
+                subtitle: String(localized: "代理 · 转码 · 转录"),
                 systemImage: "wand.and.stars",
                 badge: nil,
                 action: { navigate(.tools) }
@@ -127,7 +127,7 @@ struct HomeView: View {
 
             CompactNavigationCard(
                 title: "Torrent",
-                subtitle: "磁力链接与 .torrent 文件",
+                subtitle: String(localized: "磁力链接与 .torrent 文件"),
                 systemImage: "point.3.connected.trianglepath.dotted",
                 badge: nil,
                 action: { navigate(.torrent) }
@@ -135,13 +135,14 @@ struct HomeView: View {
 #endif
 
             CompactNavigationCard(
-                title: "设置",
+                title: String(localized: "设置"),
                 subtitle: settingsCardSubtitle,
                 systemImage: "gearshape.fill",
                 badge: nil,
                 action: { navigate(.settings) }
             )
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var provenanceNote: some View {
@@ -158,17 +159,17 @@ struct HomeView: View {
 
     private var videoCardSubtitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "商店版暂不提供第三方站点音视频下载"
+        return String(localized: "商店版暂不提供第三方站点音视频下载")
 #else
-        return "下载 YouTube、Vimeo、哔哩哔哩、优酷与开放媒体流"
+        return String(localized: "下载 YouTube、Vimeo、哔哩哔哩、优酷与开放媒体流")
 #endif
     }
 
     private var engineStatusText: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return spotify.audioToolReady ? "本地音频工具就绪" : "等待商店音频工具"
+        return spotify.audioToolReady ? String(localized: "本地音频工具就绪") : String(localized: "等待商店音频工具")
 #else
-        return downloader.dependenciesReady ? "下载引擎就绪" : "需要安装下载引擎"
+        return downloader.dependenciesReady ? String(localized: "下载引擎就绪") : String(localized: "需要安装下载引擎")
 #endif
     }
 
@@ -190,49 +191,49 @@ struct HomeView: View {
 
     private var settingsCardSubtitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "Spotify 连接与本地音频整理"
+        return String(localized: "Spotify 连接与本地音频整理")
 #else
-        return "下载引擎与 Spotify 连接"
+        return String(localized: "下载引擎与 Spotify 连接")
 #endif
     }
 
     private var tasksCardTitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "素材记录"
+        return String(localized: "素材记录")
 #else
-        return "下载任务"
+        return String(localized: "下载任务")
 #endif
     }
 
     private var tasksCardEmptySubtitle: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "还没有本地素材包记录"
+        return String(localized: "还没有本地素材包记录")
 #else
-        return "还没有历史任务"
+        return String(localized: "还没有历史任务")
 #endif
     }
 
     private var homeDescription: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "整理属于你的音乐资料库，并生成可复核的本地素材包"
+        return String(localized: "整理属于你的音乐资料库，并生成可复核的本地素材包")
 #else
-        return "保存平台提供的媒体流，也整理属于你的音乐资料库"
+        return String(localized: "保存平台提供的媒体流，也整理属于你的音乐资料库")
 #endif
     }
 
     private var videoCardDetail: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "本地完整版保留完整下载工作流"
+        return String(localized: "本地完整版保留完整下载工作流")
 #else
-        return activeJobs == 0 ? "最高画质 · 原始流 · 可验证素材包" : "\(activeJobs) 个任务等待处理"
+        return activeJobs == 0 ? String(localized: "最高画质 · 原始流 · 可验证素材包") : String(localized: "\(activeJobs) 个任务等待处理")
 #endif
     }
 
     private var provenanceText: String {
 #if MEDIAFETCH_STORE_PROFILE
-        return "商店版聚焦 Spotify 元数据与本地音频整理；本地完整版可另行处理你有权保存的站点媒体。"
+        return String(localized: "商店版聚焦 Spotify 元数据与本地音频整理；本地完整版可另行处理你有权保存的站点媒体。")
 #else
-        return "视频页保存平台当前提供的媒体流；音乐页只复制你明确选择的本地或 DRM-free 音频，并记录来源与校验值。"
+        return String(localized: "视频页保存平台当前提供的媒体流；音乐页只复制你明确选择的本地或 DRM-free 音频，并记录来源与校验值。")
 #endif
     }
 }
@@ -340,39 +341,44 @@ private struct CompactNavigationCard: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 15) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(MediaFetchTheme.primaryText)
-                    .frame(width: 42, height: 42)
-                    .background(MediaFetchTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 12))
-
-                VStack(alignment: .leading, spacing: 4) {
+            // Icon row on top, text below: five tiles share one row, so the text
+            // gets the full tile width (English / German labels are long).
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(MediaFetchTheme.primaryText)
+                        .frame(width: 34, height: 34)
+                        .background(MediaFetchTheme.surfaceSecondary, in: RoundedRectangle(cornerRadius: 10))
+                    Spacer(minLength: 0)
+                    if let badge {
+                        Text(badge)
+                            .font(.caption.bold().monospacedDigit())
+                            .foregroundStyle(MediaFetchTheme.primaryText)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(MediaFetchTheme.videoAccent, in: Capsule())
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.caption.bold())
+                        .foregroundStyle(MediaFetchTheme.secondaryText)
+                }
+                VStack(alignment: .leading, spacing: 3) {
                     Text(title)
                         .font(.headline)
                         .foregroundStyle(MediaFetchTheme.primaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(MediaFetchTheme.secondaryText)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-
-                Spacer()
-
-                if let badge {
-                    Text(badge)
-                        .font(.caption.bold().monospacedDigit())
-                        .foregroundStyle(MediaFetchTheme.primaryText)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(MediaFetchTheme.videoAccent, in: Capsule())
-                }
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.bold())
-                    .foregroundStyle(MediaFetchTheme.secondaryText)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, minHeight: 76)
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 104, maxHeight: .infinity, alignment: .topLeading)
             .background(MediaFetchTheme.surface, in: RoundedRectangle(cornerRadius: 16))
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
@@ -390,7 +396,7 @@ private struct CompactNavigationCard: View {
 }
 
 #if DEBUG
-#Preview("首页 · 固定状态") {
+#Preview(String(localized: "首页 · 固定状态")) {
     HomeView(
         downloader: DownloaderService(previewJobs: [], dependenciesReady: true),
         spotify: SpotifyBridgeViewModel.preview(.review),

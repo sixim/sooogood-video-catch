@@ -79,7 +79,7 @@ public final class ResolveService: ObservableObject {
         do {
             let request = try makeRequest()
             guard !request.isEmpty else {
-                errorMessage = "没有可导入达芬奇的媒体文件"
+                errorMessage = String(localized: "没有可导入达芬奇的媒体文件")
                 return nil
             }
             let result = try await bridgeFactory().importMedia(request)
@@ -87,7 +87,7 @@ public final class ResolveService: ObservableObject {
             connection = .connected(ResolveStatus(product: result.product, version: result.version, project: result.project))
             if let logDirectory { try? ResolveImportLog.append(result, to: logDirectory) }
             if !result.failed.isEmpty {
-                errorMessage = "有 \(result.failed.count) 个文件达芬奇没有接受：" + result.failed.map { ($0 as NSString).lastPathComponent }.joined(separator: "、")
+                errorMessage = String(localized: "有 \(result.failed.count) 个文件达芬奇没有接受：") + result.failed.map { ($0 as NSString).lastPathComponent }.joined(separator: "、")
             }
             return result
         } catch {

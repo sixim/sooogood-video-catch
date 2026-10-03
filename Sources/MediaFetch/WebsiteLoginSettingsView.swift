@@ -33,7 +33,7 @@ struct WebsiteLoginSettingsView: View {
                     Spacer()
 
                     StatusPill(
-                        text: loginStore.enabledCount == 0 ? "尚未启用" : "已配置 \(loginStore.enabledCount) 个网站",
+                        text: loginStore.enabledCount == 0 ? String(localized: "尚未启用") : String(localized: "已配置 \(loginStore.enabledCount) 个网站"),
                         systemImage: loginStore.enabledCount == 0 ? "person.crop.circle.badge.questionmark" : "checkmark.shield.fill",
                         color: loginStore.enabledCount == 0 ? MediaFetchTheme.secondaryText : MediaFetchTheme.success
                     )
@@ -48,7 +48,7 @@ struct WebsiteLoginSettingsView: View {
                 }
 
                 Label(
-                    "会话只用于对应平台的解析与下载。Google 等第三方登录服务可能要求兼容登录。",
+                    String(localized: "会话只用于对应平台的解析与下载。Google 等第三方登录服务可能要求兼容登录。"),
                     systemImage: "lock.shield"
                 )
                 .font(.caption)
@@ -97,7 +97,7 @@ private struct WebsiteLoginCard: View {
                 Button {
                     loginStore.beginInAppLogin(for: platform)
                 } label: {
-                    Label(platform == .youtube ? "登录 YouTube" : "在 App 内登录", systemImage: "person.crop.rectangle")
+                    Label(platform == .youtube ? String(localized: "登录 YouTube") : String(localized: "在 App 内登录"), systemImage: "person.crop.rectangle")
                 }
                 .buttonStyle(.borderedProminent)
                 Spacer()
@@ -134,7 +134,7 @@ private struct WebsiteLoginCard: View {
 
             if loginStore.method(for: platform) == .browser && !loginStore.isBrowserInstalled(loginStore.browser(for: platform)) {
                 InlineMessage(
-                    text: "没有检测到所选浏览器，请先选择本机已安装并完成登录的浏览器。",
+                    text: String(localized: "没有检测到所选浏览器，请先选择本机已安装并完成登录的浏览器。"),
                     kind: .warning
                 )
             } else if loginStore.method(for: platform) == .browser && loginStore.browser(for: platform) == .safari {
@@ -168,9 +168,9 @@ private struct WebsiteLoginCard: View {
     }
 
     private var statusText: String {
-        guard loginStore.isEnabled(for: platform) else { return "未启用" }
-        if loginStore.method(for: platform) == .inApp { return "使用应用内会话 · 待解析验证" }
-        return "下载时使用 \(loginStore.browser(for: platform).displayName)"
+        guard loginStore.isEnabled(for: platform) else { return String(localized: "未启用") }
+        if loginStore.method(for: platform) == .inApp { return String(localized: "使用应用内会话 · 待解析验证") }
+        return String(localized: "下载时使用 \(loginStore.browser(for: platform).displayName)")
     }
 
     private var accent: Color {

@@ -36,44 +36,44 @@ public struct EngineDiagnosis: Codable, Equatable, Sendable {
 
     public var title: String {
         switch cause {
-        case .botCheck: return "YouTube 要求人机验证"
-        case .sabrOnly: return "YouTube 只提供受限的 SABR 流"
-        case .rateLimited: return "请求过于频繁（429）"
-        case .diskFull: return "磁盘空间不足"
-        case .needsLogin: return "需要登录才能访问"
-        case .tlsFingerprint: return "网站拒绝了非浏览器连接"
-        case .extractorOutdated: return "下载引擎的网站解析已过期"
-        case .drmProtected: return "媒体受 DRM 保护"
-        case .unavailable: return "媒体不存在、已删除或为私有"
-        case .unsupportedURL: return "不支持的链接"
-        case .networkTimeout: return "网络连接超时"
+        case .botCheck: return String(localized: "YouTube 要求人机验证")
+        case .sabrOnly: return String(localized: "YouTube 只提供受限的 SABR 流")
+        case .rateLimited: return String(localized: "请求过于频繁（429）")
+        case .diskFull: return String(localized: "磁盘空间不足")
+        case .needsLogin: return String(localized: "需要登录才能访问")
+        case .tlsFingerprint: return String(localized: "网站拒绝了非浏览器连接")
+        case .extractorOutdated: return String(localized: "下载引擎的网站解析已过期")
+        case .drmProtected: return String(localized: "媒体受 DRM 保护")
+        case .unavailable: return String(localized: "媒体不存在、已删除或为私有")
+        case .unsupportedURL: return String(localized: "不支持的链接")
+        case .networkTimeout: return String(localized: "网络连接超时")
         }
     }
 
     public var actionTitle: String? {
         switch remedy {
-        case .signIn: return "登录网站后重试"
-        case .updateEngine: return "更新 yt-dlp"
-        case .waitAndRetry: return "稍后重试"
-        case .freeDiskSpace: return "查看磁盘空间"
-        case .installJSRuntime: return "安装 deno"
+        case .signIn: return String(localized: "登录网站后重试")
+        case .updateEngine: return String(localized: "更新 yt-dlp")
+        case .waitAndRetry: return String(localized: "稍后重试")
+        case .freeDiskSpace: return String(localized: "查看磁盘空间")
+        case .installJSRuntime: return String(localized: "安装 deno")
         case .none: return nil
         }
     }
 
     public var guidance: String {
         switch cause {
-        case .botCheck: return "登录 YouTube 账号（应用内登录或浏览器登录状态）通常可以通过验证；也可以稍后再试。"
-        case .sabrOnly: return "已自动切换备用播放客户端重试；如果仍失败，请更新 yt-dlp。"
-        case .rateLimited: return "平台暂时限制了请求频率，等待几分钟后再试，或减少同时下载的数量。"
-        case .diskFull: return "目标磁盘剩余空间不足，请清理后重试，或改用其他保存位置。"
-        case .needsLogin: return "该内容仅对已登录账号可见，请在设置中启用对应网站的登录方式。"
-        case .tlsFingerprint: return "网站识别到非浏览器客户端。请确认 yt-dlp 为最新版本，或使用网站登录状态重试。"
-        case .extractorOutdated: return "网站结构已变化，请在终端执行 brew upgrade yt-dlp 后重试。"
-        case .drmProtected: return "Sooogood Video Catch 不会尝试绕过 DRM。"
-        case .unavailable: return "请确认链接仍然有效，且当前账号有观看权限。"
-        case .unsupportedURL: return "请检查链接是否完整，或该网站是否在 yt-dlp 支持列表内。"
-        case .networkTimeout: return "请检查网络或代理设置后重试。"
+        case .botCheck: return String(localized: "登录 YouTube 账号（应用内登录或浏览器登录状态）通常可以通过验证；也可以稍后再试。")
+        case .sabrOnly: return String(localized: "已自动切换备用播放客户端重试；如果仍失败，请更新 yt-dlp。")
+        case .rateLimited: return String(localized: "平台暂时限制了请求频率，等待几分钟后再试，或减少同时下载的数量。")
+        case .diskFull: return String(localized: "目标磁盘剩余空间不足，请清理后重试，或改用其他保存位置。")
+        case .needsLogin: return String(localized: "该内容仅对已登录账号可见，请在设置中启用对应网站的登录方式。")
+        case .tlsFingerprint: return String(localized: "网站识别到非浏览器客户端。请确认 yt-dlp 为最新版本，或使用网站登录状态重试。")
+        case .extractorOutdated: return String(localized: "网站结构已变化，请在终端执行 brew upgrade yt-dlp 后重试。")
+        case .drmProtected: return String(localized: "Sooogood Video Catch 不会尝试绕过 DRM。")
+        case .unavailable: return String(localized: "请确认链接仍然有效，且当前账号有观看权限。")
+        case .unsupportedURL: return String(localized: "请检查链接是否完整，或该网站是否在 yt-dlp 支持列表内。")
+        case .networkTimeout: return String(localized: "请检查网络或代理设置后重试。")
         }
     }
 }
@@ -86,7 +86,7 @@ public enum EngineDiagnostics {
     /// yt-dlp's QQ Music extractor only understands QQ-number sessions (`uin`);
     /// a WeChat login looks "logged out" to it. Users who are logged in with
     /// WeChat must be told that instead of a bare "needs login".
-    public static let qqMusicLoginHint = "QQ 音乐目前只支持 QQ 号登录，暂不支持微信登录（下载引擎的限制）。用微信登录的话，建议改用网易云音乐下载；有 QQ 号可以用手机 QQ 扫码登录后重试。"
+    public static let qqMusicLoginHint = String(localized: "QQ 音乐目前只支持 QQ 号登录，暂不支持微信登录（下载引擎的限制）。用微信登录的话，建议改用网易云音乐下载；有 QQ 号可以用手机 QQ 扫码登录后重试。")
 
     /// Platform-specific replacement for a diagnosis, when the generic text would mislead.
     public static func platformHint(for diagnosis: EngineDiagnosis?, platform: StreamingPlatform, output: String = "") -> String? {

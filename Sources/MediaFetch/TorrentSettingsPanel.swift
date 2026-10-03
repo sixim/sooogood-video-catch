@@ -36,7 +36,7 @@ struct TorrentSettingsPanel: View {
                         .background(MediaFetchTheme.torrentAccent, in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Torrent").font(.title3.bold()).foregroundStyle(MediaFetchTheme.primaryText)
-                        Text(service.engineInstalled ? "Transmission 引擎 · 只监听本机，凭据保存在钥匙串" : "未安装：brew install transmission-cli")
+                        Text(service.engineInstalled ? String(localized: "Transmission 引擎 · 只监听本机，凭据保存在钥匙串") : String(localized: "未安装：brew install transmission-cli"))
                             .font(.caption).foregroundStyle(MediaFetchTheme.secondaryText)
                     }
                 }
@@ -47,10 +47,10 @@ struct TorrentSettingsPanel: View {
                     Button("更改…", action: chooseDirectory).buttonStyle(.bordered)
                 }
                 HStack(spacing: 18) {
-                    field("监听端口", value: $peerPort, placeholder: "自动")
-                    field("下载限速 KB/s", value: $downLimit, placeholder: "不限")
-                    field("上传限速 KB/s", value: $upLimit, placeholder: "不限")
-                    Button(applied ? "已应用" : "应用") { apply() }.buttonStyle(.borderedProminent)
+                    field(String(localized: "监听端口"), value: $peerPort, placeholder: String(localized: "自动"))
+                    field(String(localized: "下载限速 KB/s"), value: $downLimit, placeholder: String(localized: "不限"))
+                    field(String(localized: "上传限速 KB/s"), value: $upLimit, placeholder: String(localized: "不限"))
+                    Button(applied ? String(localized: "已应用") : String(localized: "应用")) { apply() }.buttonStyle(.borderedProminent)
                         .tint(MediaFetchTheme.torrentAccent)
                 }
                 Toggle("退出应用后继续做种（下次启动时自动接管）", isOn: $keepSeeding)

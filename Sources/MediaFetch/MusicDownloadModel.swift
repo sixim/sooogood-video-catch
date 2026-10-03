@@ -33,6 +33,9 @@ final class MusicDownloadModel: ObservableObject {
     @Published var localMatches: [String: LocalMusicIndex.Match] = [:]
     @Published var singleLocalMatch: LocalMusicIndex.Match?
     @Published var indexSummary: String?
+    /// Failures that a sign-in would fix (from the error type, not its text).
+    @Published var phaseNeedsLogin = false
+    @Published var loginProbeFailures: Set<String> = []
     private var index: LocalMusicIndex?
     private var indexTask: Task<LocalMusicIndex, Never>?
 
@@ -53,8 +56,8 @@ final class MusicDownloadModel: ObservableObject {
 
     /// Login state for the page header.
     func loginSummary(for platform: StreamingPlatform) -> String {
-        guard logins.isEnabled(for: platform) else { return "未登录" }
-        return logins.method(for: platform) == .inApp ? "应用内登录" : "\(logins.browser(for: platform).displayName) 登录态"
+        guard logins.isEnabled(for: platform) else { return String(localized: "未登录") }
+        return logins.method(for: platform) == .inApp ? String(localized: "应用内登录") : String(localized: "\(logins.browser(for: platform).displayName) 登录态")
     }
 
     func isLoggedIn(_ platform: StreamingPlatform) -> Bool { logins.isEnabled(for: platform) }
@@ -64,6 +67,8 @@ final class MusicDownloadModel: ObservableObject {
     func resolve(_ text: String) {
         probeQueue = []
         probes = [:]
+        loginProbeFailures = []
+        phaseNeedsLogin = false
         selected = []
         localMatches = [:]
         singleLocalMatch = nil
@@ -72,7 +77,7 @@ final class MusicDownloadModel: ObservableObject {
         Task {
             let expanded = await MusicLinkResolver().resolveShortLinks(in: text)
             guard let url = LinkInputParser.URLs(from: expanded).first(where: { MusicLink.parse($0) != nil }) else {
-                phase = .failed("没有找到网易云音乐或 QQ 音乐的链接。支持单曲、专辑、歌单、歌手和排行榜，也可以直接粘贴 App 的分享文案。")
+                phase = .failed(String(localized: "没有找到网易云音乐或 QQ 音乐的链接。支持单曲、专辑、歌单、歌手和排行榜，也可以直接粘贴 App 的分享文案。"))
                 return
             }
             sourceURL = url
@@ -93,6 +98,7 @@ final class MusicDownloadModel: ObservableObject {
                                                     title: track.title, artists: track.artists, durationSeconds: track.duration)
                 }
             } catch {
+                phaseNeedsLogin = (error as? EngineCallError)?.needsLogin ?? false
                 phase = .failed(error.localizedDescription)
             }
         }
@@ -134,7 +140,7 @@ final class MusicDownloadModel: ObservableObject {
     }
 
     private func probeOne(_ entry: CollectionEntry) async {
-        guard let url = URL(string: entry.url) else { probes[entry.id] = .failed("链接无效"); return }
+        guard let url = URL(string: entry.url) else { probes[entry.id] = .failed(String(localized: "链接无效")); return }
         probes[entry.id] = .loading
         let session = session(for: url)
         do {
@@ -148,6 +154,7 @@ final class MusicDownloadModel: ObservableObject {
                 localMatches[entry.id] = match
             }
         } catch {
+            if (error as? EngineCallError)?.needsLogin == true { loginProbeFailures.insert(entry.id) }
             probes[entry.id] = .failed(error.localizedDescription)
         }
     }
@@ -177,7 +184,7 @@ final class MusicDownloadModel: ObservableObject {
         Task {
             let index = await indexTask?.value
             self.index = index
-            indexSummary = index.map { "本地音乐库：\($0.items.count) 条记录" }
+            indexSummary = index.map { String(localized: "本地音乐库：\($0.items.count) 条记录") }
         }
     }
 
@@ -194,7 +201,7 @@ final class MusicDownloadModel: ObservableObject {
         var order: [String] = []
         var groups: [String: [CollectionEntry]] = [:]
         for entry in outline.entries {
-            let album = probes[entry.id]?.track?.album ?? "未知专辑"
+            let album = probes[entry.id]?.track?.album ?? String(localized: "未知专辑")
             if groups[album] == nil { order.append(album) }
             groups[album, default: []].append(entry)
         }

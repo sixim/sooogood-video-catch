@@ -13,14 +13,14 @@ public struct WhisperModel: Identifiable, Equatable, Sendable {
     public var id: String { fileName }
 
     public static let catalog: [WhisperModel] = [
-        .init(fileName: "ggml-large-v3-turbo-q5_0.bin", displayName: "Large v3 Turbo（量化，推荐）",
-              approximateBytes: 574_000_000, note: "接近 Large 的准确度，速度快，中英文都好"),
+        .init(fileName: "ggml-large-v3-turbo-q5_0.bin", displayName: String(localized: "Large v3 Turbo（量化，推荐）"),
+              approximateBytes: 574_000_000, note: String(localized: "接近 Large 的准确度，速度快，中英文都好")),
         .init(fileName: "ggml-small.bin", displayName: "Small", approximateBytes: 488_000_000,
-              note: "速度更快，准确度中等"),
+              note: String(localized: "速度更快，准确度中等")),
         .init(fileName: "ggml-base.bin", displayName: "Base", approximateBytes: 148_000_000,
-              note: "最快最小，适合快速草稿"),
-        .init(fileName: "ggml-large-v3-turbo.bin", displayName: "Large v3 Turbo（完整）",
-              approximateBytes: 1_620_000_000, note: "最高准确度，体积大")
+              note: String(localized: "最快最小，适合快速草稿")),
+        .init(fileName: "ggml-large-v3-turbo.bin", displayName: String(localized: "Large v3 Turbo（完整）"),
+              approximateBytes: 1_620_000_000, note: String(localized: "最高准确度，体积大"))
     ]
 
     public enum Host: String, CaseIterable, Sendable {
@@ -61,7 +61,7 @@ public enum WhisperModelStore {
     /// Reuses a model that already exists elsewhere (e.g. bundled by another
     /// app) through a symlink, so nothing is copied or downloaded twice.
     public static func linkExistingModel(at source: URL, in directory: URL = directory) throws -> URL {
-        guard isValidModel(source) else { throw ToolError.failed("这个文件不是 whisper.cpp 模型（ggml-*.bin）") }
+        guard isValidModel(source) else { throw ToolError.failed(String(localized: "这个文件不是 whisper.cpp 模型（ggml-*.bin）")) }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         var name = source.lastPathComponent
         if !name.hasPrefix("ggml-") { name = "ggml-" + name }
@@ -80,11 +80,11 @@ public enum WhisperModelStore {
         let delegate = DownloadProgressDelegate(progress: progress, expected: model.approximateBytes)
         let (temporary, response) = try await URLSession.shared.download(from: model.downloadURL(host: host), delegate: delegate)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw ToolError.failed("模型下载失败（HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)）")
+            throw ToolError.failed(String(localized: "模型下载失败（HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)）"))
         }
         guard isValidModel(temporary) else {
             try? FileManager.default.removeItem(at: temporary)
-            throw ToolError.failed("下载到的文件不是 whisper 模型，请尝试切换下载源")
+            throw ToolError.failed(String(localized: "下载到的文件不是 whisper 模型，请尝试切换下载源"))
         }
         try? FileManager.default.removeItem(at: destination)
         try FileManager.default.moveItem(at: temporary, to: destination)

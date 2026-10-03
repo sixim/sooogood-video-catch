@@ -64,7 +64,7 @@ struct ToolsView: View {
             }
             Spacer()
             if service.toolchain.ffmpeg == nil {
-                StatusPill(text: "缺少 FFmpeg", systemImage: "exclamationmark.triangle.fill", color: MediaFetchTheme.warning)
+                StatusPill(text: String(localized: "缺少 FFmpeg"), systemImage: "exclamationmark.triangle.fill", color: MediaFetchTheme.warning)
             }
         }
     }
@@ -105,7 +105,7 @@ struct ToolsView: View {
         MediaFetchPanel {
             VStack(alignment: .leading, spacing: 12) {
                 ForEach(ToolPreset.Group.allCases, id: \.self) { group in
-                    Text(group.rawValue).font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
+                    Text(group.displayName).font(.headline).foregroundStyle(MediaFetchTheme.primaryText)
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 10)], spacing: 10) {
                         ForEach(ToolPreset.allCases.filter { $0.group == group }) { preset in
                             presetTile(preset)
@@ -147,9 +147,9 @@ struct ToolsView: View {
                     Spacer()
                     Picker("语言", selection: $language) {
                         Text("自动识别").tag("auto")
-                        Text("中文").tag("zh")
-                        Text("English").tag("en")
-                        Text("日本語").tag("ja")
+                        Text(verbatim: "中文").tag("zh")
+                        Text(verbatim: "English").tag("en")
+                        Text(verbatim: "日本語").tag("ja")
                     }
                     .frame(width: 180)
                 }
@@ -238,7 +238,7 @@ struct ToolsView: View {
     private func chooseExistingModel() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "bin") ?? .data]
-        panel.message = "选择 whisper.cpp 的 ggml-*.bin 模型文件（会以链接方式使用，不复制）"
+        panel.message = String(localized: "选择 whisper.cpp 的 ggml-*.bin 模型文件（会以链接方式使用，不复制）")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         service.useExistingModel(at: url)
     }
@@ -299,8 +299,8 @@ struct ToolJobRow: View {
 
     private var speedText: String {
         var parts: [String] = []
-        if let elapsed = job.elapsedSeconds { parts.append(String(format: "耗时 %.1f 秒", elapsed)) }
-        if let factor = job.speedFactor { parts.append(String(format: "%.1f× 实时", factor)) }
+        if let elapsed = job.elapsedSeconds { parts.append(String(format: String(localized: "耗时 %.1f 秒"), elapsed)) }
+        if let factor = job.speedFactor { parts.append(String(format: String(localized: "%.1f× 实时"), factor)) }
         return parts.isEmpty ? "" : " · " + parts.joined(separator: " · ")
     }
 

@@ -6,7 +6,7 @@ public enum PackageMoveError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .verificationFailed(let file): return "复制后校验不一致（\(file)），原文件已保留"
+        case .verificationFailed(let file): return String(localized: "复制后校验不一致（\(file)），原文件已保留")
         }
     }
 }

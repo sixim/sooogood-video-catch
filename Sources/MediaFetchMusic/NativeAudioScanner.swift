@@ -14,9 +14,9 @@ public struct NativeAudioScanner: Sendable {
         public var errorDescription: String? {
             switch self {
             case .sourceIsNotDirectory(let path):
-                return "音频来源不是可读取的资料夹：\(path)"
+                return String(localized: "音频来源不是可读取的资料夹：\(path)")
             case .enumerationFailed(let message):
-                return "无法扫描音频资料夹：\(message)"
+                return String(localized: "无法扫描音频资料夹：\(message)")
             }
         }
     }

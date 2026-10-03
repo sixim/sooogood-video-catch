@@ -274,7 +274,7 @@ public struct SpotifyBridgeItem: Codable, Hashable, Identifiable, Sendable {
             evidence = MatchEvidence(
                 score: 0,
                 matchedFields: [],
-                reasons: ["用户手动选择本地音频"],
+                reasons: [String(localized: "用户手动选择本地音频")],
                 userConfirmed: true
             )
         }
@@ -287,7 +287,7 @@ public struct SpotifyBridgeItem: Codable, Hashable, Identifiable, Sendable {
         evidence = MatchEvidence(
             score: 0,
             matchedFields: [],
-            reasons: ["用户手动授权音频来源"],
+            reasons: [String(localized: "用户手动授权音频来源")],
             userConfirmed: true
         )
         status = .ready

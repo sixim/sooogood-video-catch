@@ -8,11 +8,11 @@ public enum VideoPackageExportError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .destinationUnavailable(let path):
-            return "无法访问用户选择的导出目录：\(path)"
+            return String(localized: "无法访问用户选择的导出目录：\(path)")
         case .packageUnavailable(let path):
-            return "下载 staging 素材包不存在：\(path)"
+            return String(localized: "下载 staging 素材包不存在：\(path)")
         case .copyFailed(let message):
-            return "无法将素材包导出到用户目录：\(message)"
+            return String(localized: "无法将素材包导出到用户目录：\(message)")
         }
     }
 }

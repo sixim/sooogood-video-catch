@@ -76,11 +76,11 @@ public struct BatchPreflightRunner: Sendable {
             return .init(url: source, problem: .alreadyDownloaded)
         }
         guard let ytDLP = toolchain.ytDLPURL else {
-            return .init(url: source, problem: .engineError, detail: "未找到 yt-dlp")
+            return .init(url: source, problem: .engineError, detail: String(localized: "未找到 yt-dlp"))
         }
         // nil means "session is handled in-app": skip metadata instead of reporting a false login problem.
         guard let cookies = cookieArguments(url) else {
-            return .init(url: source, detail: "使用应用内登录，开始下载时再验证")
+            return .init(url: source, detail: String(localized: "使用应用内登录，开始下载时再验证"))
         }
         let arguments = YtDLPArgumentBuilder.analysisArguments(url: source, cookieArguments: cookies)
         let insertAt = max(0, arguments.count - 1)

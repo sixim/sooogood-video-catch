@@ -24,9 +24,9 @@ public enum SpotifyDemoFixture {
             id: "mediafetch-demo-track-02",
             uri: "spotify:track:mediafetch-demo-track-02",
             externalURL: nil,
-            title: "城市边缘",
-            artists: ["林屿", "Mira Chen"],
-            album: "夜航",
+            title: String(localized: "城市边缘"),
+            artists: [String(localized: "林屿"), "Mira Chen"],
+            album: String(localized: "夜航"),
             discNumber: 1,
             trackNumber: 2,
             durationMS: 247_000,
@@ -36,7 +36,7 @@ public enum SpotifyDemoFixture {
             id: "mediafetch-demo-track-03",
             uri: "spotify:track:mediafetch-demo-track-03",
             externalURL: nil,
-            title: "A Very Long Track Title for Multilingual Layout Verification — 未匹配版本",
+            title: String(localized: "A Very Long Track Title for Multilingual Layout Verification — 未匹配版本"),
             artists: ["The Reference Ensemble"],
             album: "Layout Stress Test",
             discNumber: 1,
@@ -63,8 +63,8 @@ public enum SpotifyDemoFixture {
         kind: .playlist,
         uri: "spotify:playlist:37i9dQZF1DX-mediafetch-demo",
         externalURL: nil,
-        title: "夜行剪辑室 · Night Drive Selects",
-        subtitle: "MediaFetch 演示资料 · 合成元数据，不连接 Spotify",
+        title: String(localized: "夜行剪辑室 · Night Drive Selects"),
+        subtitle: String(localized: "MediaFetch 演示资料 · 合成元数据，不连接 Spotify"),
         tracks: tracks
     )
 

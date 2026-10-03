@@ -11,11 +11,11 @@ public struct LocalAudioScanner: Sendable {
         public var errorDescription: String? {
             switch self {
             case .sourceIsNotDirectory(let path):
-                return "音频来源不是可读取的资料夹：\(path)"
+                return String(localized: "音频来源不是可读取的资料夹：\(path)")
             case .ffprobeUnavailable(let path):
-                return "找不到可执行的 ffprobe：\(path)"
+                return String(localized: "找不到可执行的 ffprobe：\(path)")
             case .enumerationFailed(let message):
-                return "无法扫描音频资料夹：\(message)"
+                return String(localized: "无法扫描音频资料夹：\(message)")
             }
         }
     }
@@ -168,7 +168,7 @@ public struct LocalAudioScanner: Sendable {
         guard process.terminationStatus == 0 else {
             let message = String(data: errorData, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            throw ProbeError.failed(message?.isEmpty == false ? message! : "ffprobe 退出码 \(process.terminationStatus)")
+            throw ProbeError.failed(message?.isEmpty == false ? message! : String(localized: "ffprobe 退出码 \(process.terminationStatus)"))
         }
 
         guard let root = try JSONSerialization.jsonObject(with: outputData) as? [String: Any] else {
@@ -280,7 +280,7 @@ private enum ProbeError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .failed(let message): return message
-        case .invalidOutput: return "ffprobe 没有返回有效 JSON"
+        case .invalidOutput: return String(localized: "ffprobe 没有返回有效 JSON")
         }
     }
 }

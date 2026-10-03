@@ -83,7 +83,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func analyze(_ args: Arguments) async throws -> JSONValue {
         let url = try args.url("url")
-        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        guard let downloader else { throw ControlError.failed(String(localized: "下载服务不可用")) }
         let login = loginRouting(for: url)
         let metadata = try await downloader.inspect(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
         return [
@@ -98,7 +98,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func preflight(_ args: Arguments) async throws -> JSONValue {
         let urls = try args.urls("urls")
-        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        guard let downloader else { throw ControlError.failed(String(localized: "下载服务不可用")) }
         let routing = urls.map { ($0, loginRouting(for: $0)) }
         let report = await downloader.preflight(
             urls: urls, profile: try args.profile(), destination: AgentPaths.defaultDestination,
@@ -124,7 +124,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func enqueue(_ args: Arguments) async throws -> JSONValue {
         let urls = try args.urls("urls")
-        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        guard let downloader else { throw ControlError.failed(String(localized: "下载服务不可用")) }
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? AgentPaths.defaultDestination
         let before = Set(downloader.jobs.map(\.id))
         var cookieByURL: [String: BrowserCookieSource] = [:]
@@ -139,14 +139,14 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             includeSidecars: args.bool("sidecars") ?? true, includeSubtitles: args.bool("subtitles") ?? true,
             cookieSourceByURL: cookieByURL, inAppLoginURLs: inApp
         )
-        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有任务被加入队列") }
+        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? String(localized: "没有任务被加入队列")) }
         let created = downloader.jobs.filter { !before.contains($0.id) }
         return ["enqueued": .number(Double(count)), "destination": .string(destination.path),
                 "tasks": .array(created.map(videoSummary))]
     }
 
     @MainActor private func outline(for url: URL) async throws -> CollectionOutline {
-        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        guard let downloader else { throw ControlError.failed(String(localized: "下载服务不可用")) }
         let login = loginRouting(for: url)
         return try await downloader.expandCollection(url, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
     }
@@ -165,17 +165,17 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func enqueueCollection(_ args: Arguments) async throws -> JSONValue {
         let url = try args.url("url")
-        guard let downloader else { throw ControlError.failed("下载服务不可用") }
+        guard let downloader else { throw ControlError.failed(String(localized: "下载服务不可用")) }
         let outline = try await outline(for: url)
         let wanted: Set<Int>? = args.raw["indices"]?.arrayValue.map { Set($0.compactMap(\.intValue)) }
         let entries = outline.entries.filter { wanted?.contains($0.index) ?? true }
-        guard !entries.isEmpty else { throw ControlError.invalidParams("没有匹配的条目") }
+        guard !entries.isEmpty else { throw ControlError.invalidParams(String(localized: "没有匹配的条目")) }
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? AgentPaths.defaultDestination
         let login = loginRouting(for: url)
         let count = downloader.enqueueCollection(
             outline, entries: entries, profile: try args.profile(), destination: destination,
             includeSidecars: true, includeSubtitles: true, cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
-        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有任务被加入队列") }
+        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? String(localized: "没有任务被加入队列")) }
         return ["enqueued": .number(Double(count)), "title": .string(outline.title),
                 "folder": .string(destination.appendingPathComponent(outline.rootFolderName).path)]
     }
@@ -194,7 +194,7 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func analyzeMusic(_ args: Arguments) async throws -> JSONValue {
         let url = try args.url("url")
-        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
+        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams(String(localized: "不是网易云音乐或 QQ 音乐链接")) }
         let login = loginRouting(for: url)
         let local = await Self.localIndex(under: MusicPreferences.destination, moved: downloader.relocatablePackages(musicOnly: true).map(\.package))
         if link.kind.isCollection {
@@ -224,13 +224,13 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func enqueueMusic(_ args: Arguments) async throws -> JSONValue {
         let url = try args.url("url")
-        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams("不是网易云音乐或 QQ 音乐链接") }
+        guard let link = MusicLink.parse(url), let downloader else { throw ControlError.invalidParams(String(localized: "不是网易云音乐或 QQ 音乐链接")) }
         let quality = try args.optionalString("quality").map { value -> MusicQualityPreference in
-            guard let preference = MusicQualityPreference(rawValue: value) else { throw ControlError.invalidParams("未知 quality：\(value)") }
+            guard let preference = MusicQualityPreference(rawValue: value) else { throw ControlError.invalidParams(String(localized: "未知 quality：\(value)")) }
             return preference
         } ?? .best
         let layout = try args.optionalString("layout").map { value -> MusicLayout in
-            guard let layout = MusicLayout(rawValue: value), layout != .custom else { throw ControlError.invalidParams("未知 layout：\(value)") }
+            guard let layout = MusicLayout(rawValue: value), layout != .custom else { throw ControlError.invalidParams(String(localized: "未知 layout：\(value)")) }
             return layout
         } ?? .artistAlbum
         let destination = try args.optionalString("destination").map { try AgentPaths.validatedFolder($0) } ?? MusicPreferences.destination
@@ -260,13 +260,13 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
         }
         if items.isEmpty, !existing.isEmpty {
             return ["enqueued": 0, "skipped_existing": .array(existing), "skipped_no_rights": .array(noRights.map(JSONValue.string)),
-                    "note": "都已在本地，没有重新下载；需要重下请传 skip_existing: false"]
+                    "note": .string(String(localized: "都已在本地，没有重新下载；需要重下请传 skip_existing: false"))]
         }
-        guard !items.isEmpty else { throw ControlError.invalidParams("没有匹配的曲目") }
+        guard !items.isEmpty else { throw ControlError.invalidParams(String(localized: "没有匹配的曲目")) }
         let before = Set(downloader.jobs.map(\.id))
         let count = downloader.enqueueMusic(items, quality: quality, layout: layout, destination: destination,
                                             cookieSource: login.cookieSource, usesInAppLogin: login.inApp)
-        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? "没有曲目被加入队列") }
+        guard count > 0 else { throw ControlError.failed(downloader.errorMessage ?? String(localized: "没有曲目被加入队列")) }
         return ["enqueued": .number(Double(count)), "quality": .string(quality.displayName), "destination": .string(destination.path),
                 "skipped_no_rights": .array(noRights.map(JSONValue.string)),
                 "skipped_existing": .array(existing),
@@ -311,14 +311,14 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             return .object(summary)
         }
         if let job = toolJob(id) { return toolSummary(job) }
-        throw ControlError.notFound("没有找到任务 \(id)")
+        throw ControlError.notFound(String(localized: "没有找到任务 \(id)"))
     }
 
     @MainActor private func control(_ id: String, action: Action) async throws -> JSONValue {
         if let job = videoJob(id), let downloader {
             switch action {
             case .pause:
-                guard job.status == .downloading else { throw ControlError.failed("只能暂停正在下载的视频任务") }
+                guard job.status == .downloading else { throw ControlError.failed(String(localized: "只能暂停正在下载的视频任务")) }
                 downloader.suspendCurrent()
             case .resume: downloader.resumeJob(job.id)
             case .cancel: downloader.cancelJob(job.id)
@@ -330,21 +330,21 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             switch action {
             case .pause: await torrents.pause(id.lowercased())
             case .resume: await torrents.resume(id.lowercased())
-            case .cancel, .retry: throw ControlError.failed("Torrent 只支持暂停和继续；移除请在应用内操作")
+            case .cancel, .retry: throw ControlError.failed(String(localized: "Torrent 只支持暂停和继续；移除请在应用内操作"))
             }
             return try await getTask(id)
         }
         if let job = toolJob(id), let tools {
-            guard action == .cancel else { throw ControlError.failed("工具箱任务只支持取消") }
+            guard action == .cancel else { throw ControlError.failed(String(localized: "工具箱任务只支持取消")) }
             tools.cancel(job.id)
             return toolSummary(job)
         }
-        throw ControlError.notFound("没有找到任务 \(id)")
+        throw ControlError.notFound(String(localized: "没有找到任务 \(id)"))
     }
 
     @MainActor private func readManifest(_ id: String) async throws -> JSONValue {
         let path: String? = videoJob(id)?.manifestPath ?? torrents?.record(for: id.lowercased())?.manifestPath
-        guard let path else { throw ControlError.notFound("这个任务还没有清单（未完成或不存在）") }
+        guard let path else { throw ControlError.notFound(String(localized: "这个任务还没有清单（未完成或不存在）")) }
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         return try JSONDecoder().decode(JSONValue.self, from: data)
     }
@@ -353,12 +353,12 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
 
     @MainActor private func addTorrent(_ args: Arguments) async throws -> JSONValue {
         guard UserDefaults.standard.bool(forKey: "MediaFetch.torrent.noticeAccepted") else {
-            throw ControlError.forbidden("用户尚未在应用的 Torrent 页确认使用说明；请让用户先在应用内确认")
+            throw ControlError.forbidden(String(localized: "用户尚未在应用的 Torrent 页确认使用说明；请让用户先在应用内确认"))
         }
         guard let source = TorrentSource.magnet(from: try args.string("magnet")) else {
             throw ControlError.invalidParams(TorrentError.invalidMagnet.localizedDescription)
         }
-        guard let torrents else { throw ControlError.failed("Torrent 服务不可用") }
+        guard let torrents else { throw ControlError.failed(String(localized: "Torrent 服务不可用")) }
         let policy: SeedPolicy
         switch try args.optionalString("seed_policy") {
         case "stop_when_done": policy = .stopWhenDone
@@ -373,10 +373,10 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
     }
 
     @MainActor private func runTool(_ args: Arguments) async throws -> JSONValue {
-        guard let tools else { throw ControlError.failed("工具箱不可用") }
+        guard let tools else { throw ControlError.failed(String(localized: "工具箱不可用")) }
         let paths = try args.strings("paths").map { try AgentPaths.validatedFile($0) }
         let presets = try args.strings("presets").map { name -> ToolPreset in
-            guard let preset = ToolPreset(rawValue: name) else { throw ControlError.invalidParams("未知预设：\(name)") }
+            guard let preset = ToolPreset(rawValue: name) else { throw ControlError.invalidParams(String(localized: "未知预设：\(name)")) }
             return preset
         }
         if presets.contains(.transcribe) && tools.selectedModel == nil {
@@ -396,28 +396,28 @@ final class AgentControlBridge: ControlHandler, @unchecked Sendable {
             let folder = (try? FileManager.default.contentsOfDirectory(at: url.deletingLastPathComponent(), includingPropertiesForKeys: nil)) ?? []
             candidates = folder.filter { $0.pathExtension == "txt" && $0.lastPathComponent.hasPrefix(base.lastPathComponent + ".") }
         }
-        guard let transcript = candidates.first else { throw ControlError.notFound("没有找到转录文本；可先用 run_tool 的 transcribe 预设生成") }
+        guard let transcript = candidates.first else { throw ControlError.notFound(String(localized: "没有找到转录文本；可先用 run_tool 的 transcribe 预设生成")) }
         let data = try Data(contentsOf: transcript)
-        guard data.count <= 2_000_000 else { throw ControlError.failed("转录文本超过 2 MB") }
+        guard data.count <= 2_000_000 else { throw ControlError.failed(String(localized: "转录文本超过 2 MB")) }
         return ["path": .string(transcript.path), "text": .string(String(decoding: data, as: UTF8.self))]
     }
 
     @MainActor private func sendToResolve(_ args: Arguments) async throws -> JSONValue {
-        guard let resolve else { throw ControlError.failed("达芬奇对接不可用") }
+        guard let resolve else { throw ControlError.failed(String(localized: "达芬奇对接不可用")) }
         let package: URL
         if let id = try args.optionalString("id") {
             if let manifest = videoJob(id)?.manifestPath ?? torrents?.record(for: id.lowercased())?.manifestPath {
                 package = URL(fileURLWithPath: manifest).deletingLastPathComponent()
             } else {
-                throw ControlError.notFound("任务 \(id) 还没有完成的素材包")
+                throw ControlError.notFound(String(localized: "任务 \(id) 还没有完成的素材包"))
             }
         } else if let path = try args.optionalString("path") {
             package = try AgentPaths.validatedFolder(path)
         } else {
-            throw ControlError.invalidParams("需要 id 或 path")
+            throw ControlError.invalidParams(String(localized: "需要 id 或 path"))
         }
         guard let result = await resolve.send(packageDirectory: package) else {
-            throw ControlError.failed(resolve.errorMessage ?? "发送到达芬奇失败")
+            throw ControlError.failed(resolve.errorMessage ?? String(localized: "发送到达芬奇失败"))
         }
         return ["project": .string(result.project), "bin": .array(result.bin.map(JSONValue.string)),
                 "clips": .array(result.clips.map { .string($0.name) }), "failed": .array(result.failed.map(JSONValue.string)),
@@ -494,19 +494,19 @@ struct Arguments {
     init(_ raw: [String: JSONValue]) { self.raw = raw }
 
     func string(_ key: String) throws -> String {
-        guard let value = raw[key]?.stringValue, !value.isEmpty else { throw ControlError.invalidParams("缺少参数 \(key)") }
+        guard let value = raw[key]?.stringValue, !value.isEmpty else { throw ControlError.invalidParams(String(localized: "缺少参数 \(key)")) }
         return value
     }
 
     func optionalString(_ key: String) throws -> String? {
         guard let value = raw[key], value != .null else { return nil }
-        guard let text = value.stringValue else { throw ControlError.invalidParams("\(key) 必须是字符串") }
+        guard let text = value.stringValue else { throw ControlError.invalidParams(String(localized: "\(key) 必须是字符串")) }
         return text
     }
 
     func strings(_ key: String) throws -> [String] {
         guard let values = raw[key]?.arrayValue?.compactMap(\.stringValue), !values.isEmpty else {
-            throw ControlError.invalidParams("\(key) 必须是非空字符串数组")
+            throw ControlError.invalidParams(String(localized: "\(key) 必须是非空字符串数组"))
         }
         return values
     }
@@ -515,13 +515,13 @@ struct Arguments {
     func int(_ key: String) -> Int? { raw[key]?.intValue }
 
     func url(_ key: String) throws -> URL {
-        guard let url = LinkInputParser.URLs(from: try string(key)).first else { throw ControlError.invalidParams("\(key) 不是有效的 http(s) 链接") }
+        guard let url = LinkInputParser.URLs(from: try string(key)).first else { throw ControlError.invalidParams(String(localized: "\(key) 不是有效的 http(s) 链接")) }
         return url
     }
 
     func urls(_ key: String) throws -> [URL] {
         let urls = LinkInputParser.URLs(from: try strings(key).joined(separator: "\n"))
-        guard !urls.isEmpty else { throw ControlError.invalidParams("\(key) 中没有有效链接") }
+        guard !urls.isEmpty else { throw ControlError.invalidParams(String(localized: "\(key) 中没有有效链接")) }
         return urls
     }
 
@@ -531,7 +531,7 @@ struct Arguments {
         case "source": return .sourceStreams
         case "mp4": return .compatibleMP4
         case "audio": return .audioOnly
-        case let other: throw ControlError.invalidParams("未知 profile：\(other)")
+        case let other: throw ControlError.invalidParams(String(localized: "未知 profile：\(other)"))
         }
     }
 }
@@ -564,18 +564,18 @@ enum AgentPaths {
 
     static func validatedFolder(_ path: String) throws -> URL {
         let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath, isDirectory: true)
-        guard isAllowed(url) else { throw ControlError.forbidden("路径不在允许范围内（下载、影片或应用中选择的文件夹）：\(path)") }
+        guard isAllowed(url) else { throw ControlError.forbidden(String(localized: "路径不在允许范围内（下载、影片或应用中选择的文件夹）：\(path)")) }
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory), isDirectory.boolValue else {
-            throw ControlError.notFound("文件夹不存在：\(path)")
+            throw ControlError.notFound(String(localized: "文件夹不存在：\(path)"))
         }
         return url
     }
 
     static func validatedFile(_ path: String) throws -> URL {
         let url = URL(fileURLWithPath: (path as NSString).expandingTildeInPath)
-        guard isAllowed(url) else { throw ControlError.forbidden("路径不在允许范围内（下载、影片或应用中选择的文件夹）：\(path)") }
-        guard FileManager.default.fileExists(atPath: url.path) else { throw ControlError.notFound("文件不存在：\(path)") }
+        guard isAllowed(url) else { throw ControlError.forbidden(String(localized: "路径不在允许范围内（下载、影片或应用中选择的文件夹）：\(path)")) }
+        guard FileManager.default.fileExists(atPath: url.path) else { throw ControlError.notFound(String(localized: "文件不存在：\(path)")) }
         return url
     }
 }

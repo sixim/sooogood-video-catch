@@ -1,4 +1,4 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
 **English** · [Français](docs/README.fr.md) · [Deutsch](docs/README.de.md) · [日本語](docs/README.ja.md) · [한국어](docs/README.ko.md) · [中文](docs/README.zh-Hans.md)
 
@@ -11,13 +11,13 @@ A local-first macOS app for creators: save the best media streams a platform act
 Paste into Terminal (or hand it to an AI agent):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 ```
 
 It downloads the latest release (universal: Apple silicon + Intel), verifies its SHA-256 and code signature, installs to /Applications and installs yt-dlp, FFmpeg and deno with [Homebrew](https://brew.sh). No sudo, no prompts. For agents — also registers the MCP server with Claude Code:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash -s -- --with-mcp
 ```
 
 Other options: `--no-deps`, `--dir <folder>`, `--version vX.Y.Z`, `--open`. The app is ad-hoc signed (not notarized); if you download the zip from the Releases page in a browser instead, open it the first time with right-click → Open.
@@ -71,18 +71,18 @@ brew install transmission-cli whisper-cpp
 ## Build and run
 
 ```bash
-git clone https://github.com/sixim/sooogood-video-catch.git
-cd sooogood-video-catch
+git clone https://github.com/sixim/sooogood-media-catch.git
+cd sooogood-media-catch
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
-For development: `swift run MediaFetch`. Tests: `swift test`.
+For development: `swift run SooogoodMediaCatch`. Tests: `swift test`.
 
 Connect an AI agent (the exact path is also shown in *Settings › AI Agent*):
 
 ```bash
-claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/path/to/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 ## Sign-in and privacy
@@ -109,7 +109,7 @@ GPL-3.0 — see [LICENSE](LICENSE). The external engines (yt-dlp, FFmpeg, deno, 
 - [Architecture](ARCHITECTURE.md) — modules and dependency rules
 - [Developer guide (Chinese)](docs/DEVELOPMENT.zh-Hans.md) — profiles, packaging, release checks, platform details
 - [Changelog](CHANGELOG.md)
-- [Brochure](docs/brochure/) — two-page PDF in six languages ([EN](docs/brochure/Sooogood-Video-Catch-en.pdf) · [FR](docs/brochure/Sooogood-Video-Catch-fr.pdf) · [DE](docs/brochure/Sooogood-Video-Catch-de.pdf) · [JA](docs/brochure/Sooogood-Video-Catch-ja.pdf) · [KO](docs/brochure/Sooogood-Video-Catch-ko.pdf) · [中文](docs/brochure/Sooogood-Video-Catch-zh-Hans.pdf)); rebuild with `python3 Scripts/build_brochure.py`
+- [Brochure](docs/brochure/) — two-page PDF in six languages ([EN](docs/brochure/Sooogood-Media-Catch-en.pdf) · [FR](docs/brochure/Sooogood-Media-Catch-fr.pdf) · [DE](docs/brochure/Sooogood-Media-Catch-de.pdf) · [JA](docs/brochure/Sooogood-Media-Catch-ja.pdf) · [KO](docs/brochure/Sooogood-Media-Catch-ko.pdf) · [中文](docs/brochure/Sooogood-Media-Catch-zh-Hans.pdf)); rebuild with `python3 Scripts/build_brochure.py`
 
 ---
 

@@ -15,7 +15,7 @@
 - Store/Local 封面已由 `Scripts/render_store_cover.swift` 重新生成并视觉检查；两份均为 1440×900、无 alpha 的 RGB PNG，Store 预检会阻止尺寸或透明通道漂移
 - Store profile 使用独立的 `Resources/Info-Store.plist`（`public.app-category.music`），Local profile 保留视频工具分类；两者共用 bundle ID、版本号和图标
 - 中英文商店文案和 1440×900 品牌封面：`StoreAssets/AppStoreListing.md`
-- VI 主标志、品牌规范和 AppIcon 源稿：`Resources/Brand/MediaFetchLogo.svg`、`Resources/Brand/BrandGuidelines.md`；Store preflight 会检查源稿与 1440×900 封面尺寸，避免改版时漏进商店材料
+- VI 主标志、品牌规范和 AppIcon 源稿：`Resources/Brand/SooogoodMediaCatchLogo.svg`、`Resources/Brand/BrandGuidelines.md`；Store preflight 会检查源稿与 1440×900 封面尺寸，避免改版时漏进商店材料
 - 品牌资产独立审计：`Scripts/validate_brand_assets.sh` 会逐一检查 Logo 源稿、10 个 AppIcon 尺寸、Store/Local 封面、生成脚本和中英文封面说明，并已接入 Store 总预检
 - Store 真实截图采集清单：`StoreAssets/ScreenshotCaptureChecklist.md`
 - Store 截图目录与固定文件名说明：`StoreAssets/Screenshots/README.md`；目录目前只保留说明文件，五张真实截图必须从最终签名 Store bundle 采集
@@ -26,7 +26,7 @@
 - 可重复执行的发布检查：`Scripts/validate_store_submission.sh`
 - 升级总门槛：`Scripts/verify_release.sh`（两种 profile 测试、Shell/VI/元数据审计和 Store 预检；设置 `REQUIRE_RELEASE_ARTIFACTS=1` 才会强制真实截图、公网页面和已验签 `.pkg`）
 - 商店文案限制检查：`Scripts/validate_store_metadata.sh`（中英文名称/副标题/推广文案/描述与关键词 UTF-8 字节数）
-- `Scripts/package_app.sh` 使用 staging bundle 完成构建、签名和验证后再替换 `dist/MediaFetch.app`；Store 证书/profile 失败不会留下半成品
+- `Scripts/package_app.sh` 使用 staging bundle 完成构建、签名和验证后再替换 `dist/Sooogood Media Catch.app`；Store 证书/profile 失败不会留下半成品
 - `Scripts/build_store_pkg.sh` 先验证 Mac Installer Distribution identity，再运行强制截图/公网页面预检，之后使用独立 staging 目录生成并通过 `pkgutil --check-signature` 后才替换目标 `.pkg`；目标文件名必须以 `.pkg` 结尾且不含空格
 - Store 原生 AVFoundation 扫描说明（未来如引入 helper 的隔离门槛）：`StoreHelpers/README.md`
 - Store 审核演示入口：音乐页未连接时可点击“查看演示”，只载入合成元数据，不需要 Spotify 凭据或网络。
@@ -46,7 +46,7 @@
    PROVISIONING_PROFILE="/path/to/MediaFetch.provisionprofile" \
    BUILD_PROFILE=store ./Scripts/package_app.sh
    REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1 \
-   ./Scripts/validate_store_submission.sh dist/MediaFetch.app
+   ./Scripts/validate_store_submission.sh "dist/Sooogood Media Catch.app"
    ```
 
 7. 生成经过签名的安装包，上传到 App Store Connect，填写隐私问卷、支持网址、隐私政策网址、出口加密问卷和审核备注。

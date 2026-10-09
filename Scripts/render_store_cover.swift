@@ -6,10 +6,10 @@ import UniformTypeIdentifiers
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let isLocalVariant = CommandLine.arguments.contains("--local")
 let outputName = isLocalVariant
-    ? "MediaFetch-local-cover-1440x900.png"
-    : "MediaFetch-store-cover-1440x900.png"
+    ? "Sooogood-Media-Catch-local-cover-1440x900.png"
+    : "Sooogood-Media-Catch-store-cover-1440x900.png"
 let outputURL = root.appendingPathComponent("StoreAssets/\(outputName)")
-let logoURL = root.appendingPathComponent("Resources/Brand/MediaFetchLogo.svg")
+let logoURL = root.appendingPathComponent("Resources/Brand/SooogoodMediaCatchLogo.svg")
 let canvasSize = NSSize(width: 1440, height: 900)
 // Render directly into an opaque RGB bitmap. Keeping the cover free of an
 // alpha channel makes it safe to reuse in storefront/marketing workflows and
@@ -60,7 +60,7 @@ let bodyAttributes: [NSAttributedString.Key: Any] = [
     .foregroundColor: NSColor(calibratedWhite: 0.72, alpha: 1)
 ]
 let title = isLocalVariant ? "把可保存的媒体，带回本地。" : "把属于你的音频，整理在本地。"
-let subtitle = isLocalVariant ? "Sooogood Video Catch · 视频下载与个人音乐整理" : "Sooogood Video Catch · 音乐桥接与可追溯素材"
+let subtitle = isLocalVariant ? "Sooogood Media Catch · 视频下载与个人音乐整理" : "Sooogood Media Catch · 音乐桥接与可追溯素材"
 let body = isLocalVariant ? "本地优先 · 非 DRM · 可追溯素材包" : "本地优先 · 权限清晰 · 可追溯素材包"
 title.draw(at: NSPoint(x: 96, y: 505), withAttributes: titleAttributes)
 subtitle.draw(at: NSPoint(x: 100, y: 456), withAttributes: subtitleAttributes)
@@ -103,9 +103,9 @@ guard let renderedImage,
         1,
         nil
       ) else {
-    throw NSError(domain: "MediaFetchStoreCover", code: 1)
+    throw NSError(domain: "SooogoodMediaCatchStoreCover", code: 1)
 }
 CGImageDestinationAddImage(destination, renderedImage, nil)
 guard CGImageDestinationFinalize(destination) else {
-    throw NSError(domain: "MediaFetchStoreCover", code: 4)
+    throw NSError(domain: "SooogoodMediaCatchStoreCover", code: 4)
 }

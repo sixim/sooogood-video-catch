@@ -2,7 +2,7 @@
 set -euo pipefail
 
 project_dir="${0:A:h:h}"
-app_dir="${1:-$project_dir/dist/Sooogood Video Catch.app}"
+app_dir="${1:-$project_dir/dist/Sooogood Media Catch.app}"
 screenshot_dir="${STORE_SCREENSHOTS_DIR:-$project_dir/StoreAssets/Screenshots}"
 require_screenshots="${REQUIRE_STORE_SCREENSHOTS:-0}"
 require_public_web="${REQUIRE_PUBLIC_WEB:-0}"
@@ -21,11 +21,11 @@ required_sources=(
     "$project_dir/Resources/Info-Store.plist"
     "$project_dir/Resources/PrivacyInfo.xcprivacy"
     "$project_dir/Resources/MediaFetch-Store.entitlements"
-    "$project_dir/Resources/Brand/MediaFetchLogo.svg"
+    "$project_dir/Resources/Brand/SooogoodMediaCatchLogo.svg"
     "$project_dir/Resources/Brand/BrandGuidelines.md"
     "$project_dir/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
     "$project_dir/StoreAssets/AppStoreListing.md"
-    "$project_dir/StoreAssets/MediaFetch-store-cover-1440x900.png"
+    "$project_dir/StoreAssets/Sooogood-Media-Catch-store-cover-1440x900.png"
     "$project_dir/StoreAssets/ScreenshotCaptureChecklist.md"
     "$project_dir/StoreAssets/Screenshots/README.md"
     "$project_dir/StoreAssets/AppStoreConnectChecklist.md"
@@ -46,11 +46,11 @@ done
 
 "$project_dir/Scripts/validate_brand_assets.sh"
 
-rg -n '<svg[^>]+width="1024"[^>]+height="1024"[^>]+viewBox="0 0 1024 1024"' "$project_dir/Resources/Brand/MediaFetchLogo.svg" >/dev/null || {
-    print -u2 "MediaFetchLogo.svg 必须保留 1024×1024 viewBox 源稿"
+rg -n '<svg[^>]+width="1024"[^>]+height="1024"[^>]+viewBox="0 0 1024 1024"' "$project_dir/Resources/Brand/SooogoodMediaCatchLogo.svg" >/dev/null || {
+    print -u2 "SooogoodMediaCatchLogo.svg 必须保留 1024×1024 viewBox 源稿"
     exit 2
 }
-rg -n '## 封面说明|1440×900|MediaFetch-store-cover-1440x900\.png' "$project_dir/StoreAssets/AppStoreListing.md" >/dev/null || {
+rg -n '## 封面说明|1440×900|Sooogood-Media-Catch-store-cover-1440x900\.png' "$project_dir/StoreAssets/AppStoreListing.md" >/dev/null || {
     print -u2 "商店文案缺少封面说明或 1440×900 封面引用"
     exit 2
 }
@@ -83,13 +83,13 @@ if [[ "$require_screenshots" == "1" ]]; then
 else
     print "Store screenshot check deferred; set REQUIRE_STORE_SCREENSHOTS=1 before upload."
 fi
-cover_width="$(sips -g pixelWidth "$project_dir/StoreAssets/MediaFetch-store-cover-1440x900.png" 2>/dev/null | awk '/pixelWidth:/ {print $2}')"
-cover_height="$(sips -g pixelHeight "$project_dir/StoreAssets/MediaFetch-store-cover-1440x900.png" 2>/dev/null | awk '/pixelHeight:/ {print $2}')"
+cover_width="$(sips -g pixelWidth "$project_dir/StoreAssets/Sooogood-Media-Catch-store-cover-1440x900.png" 2>/dev/null | awk '/pixelWidth:/ {print $2}')"
+cover_height="$(sips -g pixelHeight "$project_dir/StoreAssets/Sooogood-Media-Catch-store-cover-1440x900.png" 2>/dev/null | awk '/pixelHeight:/ {print $2}')"
 [[ "$cover_width" == "1440" && "$cover_height" == "900" ]] || {
     print -u2 "商店封面必须是 1440×900 PNG，当前为 ${cover_width:-unknown}×${cover_height:-unknown}"
     exit 2
 }
-cover_alpha="$(sips -g hasAlpha "$project_dir/StoreAssets/MediaFetch-store-cover-1440x900.png" 2>/dev/null | awk '/hasAlpha:/ {print $2}')"
+cover_alpha="$(sips -g hasAlpha "$project_dir/StoreAssets/Sooogood-Media-Catch-store-cover-1440x900.png" 2>/dev/null | awk '/hasAlpha:/ {print $2}')"
 [[ "$cover_alpha" == "no" ]] || {
     print -u2 "商店封面必须是无 alpha 的实心 PNG，当前为 ${cover_alpha:-unknown}"
     exit 2
@@ -184,7 +184,7 @@ if [[ ! -d "$app_dir" ]]; then
     exit 0
 fi
 
-[[ -x "$app_dir/Contents/MacOS/MediaFetch" ]] || { print -u2 "应用主程序不存在或不可执行"; exit 2; }
+[[ -x "$app_dir/Contents/MacOS/SooogoodMediaCatch" ]] || { print -u2 "应用主程序不存在或不可执行"; exit 2; }
 bundle_executable="$(plutil -extract CFBundleExecutable raw -o - "$app_dir/Contents/Info.plist")"
 [[ -x "$app_dir/Contents/MacOS/$bundle_executable" ]] || { print -u2 "CFBundleExecutable=$bundle_executable 在 Contents/MacOS 中不存在，应用无法启动"; exit 2; }
 [[ -f "$app_dir/Contents/Resources/AppIcon.icns" ]] || { print -u2 "应用图标未编译为 AppIcon.icns"; exit 2; }
@@ -210,12 +210,12 @@ bundle_category="$(plutil -extract LSApplicationCategoryType raw -o - "$app_dir/
 [[ "$bundle_category" == "public.app-category.music" ]] || { print -u2 "Store bundle 必须使用音乐分类，当前为：$bundle_category"; exit 2; }
 [[ "$bundle_non_exempt_encryption" == "false" ]] || { print -u2 "Store bundle 必须明确声明仅使用豁免加密：ITSAppUsesNonExemptEncryption=false"; exit 2; }
 [[ -f "$app_dir/Contents/embedded.provisionprofile" ]] || { print -u2 "Store bundle 缺少 embedded.provisionprofile"; exit 2; }
-if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n -i 'transmission|magnet:|torrent_add|sooogood-mcp|whisper-cli|control\.sock|DaVinciResolveScript|fusionscript' >/dev/null; then
+if strings "$app_dir/Contents/MacOS/SooogoodMediaCatch" | rg -n -i 'transmission|magnet:|torrent_add|sooogood-mcp|whisper-cli|control\.sock|DaVinciResolveScript|fusionscript' >/dev/null; then
     print -u2 "Store bundle 包含 Torrent / MCP / 工具箱等 Local 专属实现"
     exit 2
 fi
 [[ ! -e "$app_dir/Contents/MacOS/sooogood-mcp" ]] || { print -u2 "Store bundle 不得包含 sooogood-mcp"; exit 2; }
-if strings "$app_dir/Contents/MacOS/MediaFetch" | rg -n '/opt/homebrew|/usr/local/bin|/usr/bin/ffprobe|Cookies\.binarycookies|cookies-from-browser|ffprobeURL|ffprobe helper unavailable|ffmpegURL|ytDLPURL|Contents/Helpers' >/dev/null; then
+if strings "$app_dir/Contents/MacOS/SooogoodMediaCatch" | rg -n '/opt/homebrew|/usr/local/bin|/usr/bin/ffprobe|Cookies\.binarycookies|cookies-from-browser|ffprobeURL|ffprobe helper unavailable|ffmpegURL|ytDLPURL|Contents/Helpers' >/dev/null; then
     print -u2 "Store bundle 包含外部工具、Cookie 或 Local toolchain 实现标记；确认使用 NativeAudioScanner() 并排除 LocalAudioScanner/VideoToolchain"
     exit 2
 fi

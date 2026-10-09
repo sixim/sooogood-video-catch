@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_dir="${0:A:h:h}"
 dist_dir="$project_dir/dist"
-brand_app_name="Sooogood Video Catch"
+brand_app_name="Sooogood Media Catch"
 app_dir="$dist_dir/$brand_app_name.app"
 legacy_app_dir="$dist_dir/MediaFetch.app"
 build_profile="${BUILD_PROFILE:-local}"
@@ -41,7 +41,7 @@ if [[ "$build_profile" == "store" ]]; then
 fi
 
 mkdir -p "$dist_dir"
-staging_root="$(mktemp -d "$dist_dir/.SooogoodVideoCatch-$build_profile.XXXXXX")"
+staging_root="$(mktemp -d "$dist_dir/.SooogoodMediaCatch-$build_profile.XXXXXX")"
 staging_app="$staging_root/$brand_app_name.app"
 contents_dir="$staging_app/Contents"
 cleanup_staging() {
@@ -62,7 +62,7 @@ fi
 swift build "${build_arguments[@]}"
 
 mkdir -p "$contents_dir/MacOS" "$contents_dir/Resources"
-rsync -a --delete "$product_dir/MediaFetch" "$contents_dir/MacOS/MediaFetch"
+rsync -a --delete "$product_dir/SooogoodMediaCatch" "$contents_dir/MacOS/SooogoodMediaCatch"
 if [[ "$build_profile" == "local" ]]; then
     # MCP helper for AI agents (Local only; the Store validator rejects it).
     rsync -a "$product_dir/sooogood-mcp" "$contents_dir/MacOS/sooogood-mcp"
@@ -111,12 +111,12 @@ codesign --verify --deep --strict "$staging_app"
 # failed codesign or resource copy therefore cannot replace a known-good app.
 previous_app=""
 if [[ -e "$app_dir" ]]; then
-    previous_app="$dist_dir/.SooogoodVideoCatch-previous-$$.app"
+    previous_app="$dist_dir/.SooogoodMediaCatch-previous-$$.app"
     mv "$app_dir" "$previous_app"
 elif [[ -e "$legacy_app_dir" ]]; then
     # Replace the former public bundle name on the next local package build;
     # source targets and CFBundleIdentifier remain unchanged for compatibility.
-    previous_app="$dist_dir/.SooogoodVideoCatch-previous-$$.app"
+    previous_app="$dist_dir/.SooogoodMediaCatch-previous-$$.app"
     mv "$legacy_app_dir" "$previous_app"
 fi
 if ! mv "$staging_app" "$app_dir"; then

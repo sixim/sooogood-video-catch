@@ -1,9 +1,9 @@
-# Sooogood Video Catch 模块化与升级维护说明
+# Sooogood Media Catch 模块化与升级维护说明
 
 ## 依赖方向
 
 ```text
-Sooogood Video Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetch）
+Sooogood Media Catch（SwiftUI App 组合层；内部 target 保留为 MediaFetch）
 ├── MediaFetchVideo（视频队列与下载引擎适配）
 │   └── MediaFetchCore（领域模型、平台策略、manifest、历史）
 ├── MediaFetchMusic（Spotify OAuth/API、扫描、匹配、素材桥接）
@@ -50,7 +50,7 @@ sooogood-mcp（可执行文件，stdio MCP → 应用控制端口）
 2. 修改持久化模型时保留旧 decoder，增加显式迁移测试；视频历史和 Spotify 历史永远分离。
 3. 平台 API 变更只更新适配器和契约测试；UI 使用稳定的领域模型，不依赖 Spotify 原始 DTO。
 4. 新增需要浏览器登录的平台时，只在 `StreamingPlatform.browserLoginPlatforms` 注册官方 HTTPS 入口和用途说明；视频页通过 URL 到 Cookie source 的映射消费配置，不增加平台特例或复制登录状态。
-5. 每次发布必须执行 `swift test`、`./Scripts/validate_store_submission.sh`、`./Scripts/validate_store_metadata.sh`、`./Scripts/package_app.sh`、`codesign --verify --deep --strict`，并保存 Xcode/SDK 版本、构建 hash 和版本信息；真正上传前还要设置 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1`，强制启用真实截图和公开网页检查。Local/Store 打包使用独立 SwiftPM scratch path，避免条件编译产物串 profile。应用 bundle 先在 staging 目录完成资源复制、签名和验证，再原子替换 `dist/Sooogood Video Catch.app`，签名失败不会破坏现有包。
+5. 每次发布必须执行 `swift test`、`./Scripts/validate_store_submission.sh`、`./Scripts/validate_store_metadata.sh`、`./Scripts/package_app.sh`、`codesign --verify --deep --strict`，并保存 Xcode/SDK 版本、构建 hash 和版本信息；真正上传前还要设置 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1`，强制启用真实截图和公开网页检查。Local/Store 打包使用独立 SwiftPM scratch path，避免条件编译产物串 profile。应用 bundle 先在 staging 目录完成资源复制、签名和验证，再原子替换 `dist/Sooogood Media Catch.app`，签名失败不会破坏现有包。
 6. 日常升级优先运行 `Scripts/verify_release.sh`，它集中执行两种 profile 测试、Shell/VI/商店文案审计和 Store 预检；设置 `REQUIRE_RELEASE_ARTIFACTS=1` 后再强制要求真实截图、公网页面和已验签 `.pkg`，避免只通过源码检查就误报可发布。
 
 ## App Store 适配边界
@@ -62,6 +62,6 @@ Mac App Store 版本使用 `Resources/MediaFetch-Store.entitlements` 的 App San
 - Local profile：本机工具发现，适合内测和专业工作流。
 - Store profile：使用系统 AVFoundation 读取本地音频 metadata，不嵌入第三方可执行文件；第三方站点视频下载在商店版编译为明确的说明页。本地完整版保留独立下载工作流，两个 profile 共用 Core 和 UI 状态边界。
 
-发布脚本在写入 `dist/Sooogood Video Catch.app` 之前校验 profile、签名身份和 provisioning profile；Store 使用 `Info-Store.plist` 的音乐分类，Local 使用视频分类。Store 默认不包含嵌套 helper，这样签名缺失时不会留下一个看似可发布的半成品 bundle。
+发布脚本在写入 `dist/Sooogood Media Catch.app` 之前校验 profile、签名身份和 provisioning profile；Store 使用 `Info-Store.plist` 的音乐分类，Local 使用视频分类。Store 默认不包含嵌套 helper，这样签名缺失时不会留下一个看似可发布的半成品 bundle。
 
 在没有完成真实签名、沙盒下的用户选择目录、原生 AVFoundation 扫描和回归测试前，不把 Store profile 宣称为“可提交”。由于 Apple 5.2.3 的第三方媒体下载限制，完整视频下载能力只作为 Local profile，不应误带进 Store profile。

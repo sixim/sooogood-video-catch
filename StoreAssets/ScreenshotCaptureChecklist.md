@@ -28,4 +28,4 @@
 - 检查截图没有第三方平台 Logo、绕过 DRM/破解文案、真实账号、Cookie、个人路径或音频字节。
 - 采集完成后运行 `Scripts/validate_store_screenshots.sh StoreAssets/Screenshots`；脚本会检查五张 PNG、允许的 Mac 16:10 尺寸并输出 SHA-256。再将构建版本、Store bundle hash 和采集日期写入交付记录。
 
-Store 封面与品牌说明见 [AppStoreListing.md](AppStoreListing.md)；封面本身为无 alpha 的 1440×900 RGB PNG，但仍不得把封面当作 App Store 截图；本地完整版的 `MediaFetch-local-cover-1440x900.png` 不得混入 Store 截图。
+Store 封面与品牌说明见 [AppStoreListing.md](AppStoreListing.md)；封面本身为无 alpha 的 1440×900 RGB PNG，但仍不得把封面当作 App Store 截图；本地完整版的 `Sooogood-Media-Catch-local-cover-1440x900.png` 不得混入 Store 截图。

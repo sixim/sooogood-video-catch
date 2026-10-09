@@ -2,10 +2,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "MediaFetch",
+    name: "SooogoodMediaCatch",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "MediaFetch", targets: ["MediaFetch"]),
+        .executable(name: "SooogoodMediaCatch", targets: ["MediaFetch"]),
         .executable(name: "sooogood-mcp", targets: ["SooogoodMCP"]),
         .library(name: "MediaFetchCore", targets: ["MediaFetchCore"]),
         .library(name: "MediaFetchVideo", targets: ["MediaFetchVideo"]),

@@ -1,6 +1,6 @@
 # App Store Connect 提交清单
 
-这份清单是 Sooogood Video Catch 每个 Store release 的提交入口。它区分“仓库已准备”和“必须由发布主体填写或提供”的事项，不把本地 preflight 误当作 Apple 审核通过。
+这份清单是 Sooogood Media Catch 每个 Store release 的提交入口。它区分“仓库已准备”和“必须由发布主体填写或提供”的事项，不把本地 preflight 误当作 Apple 审核通过。
 
 ## 已由仓库准备
 
@@ -38,7 +38,7 @@
 - [ ] 在真实签名 Store bundle 上验证 AVFoundation 对用户选择目录的 metadata 读取；如果未来增加 helper，再增加相应许可证、NOTICE、架构和签名审计。
 - [ ] 在解锁 macOS 上从最终签名 Store bundle 采集真实截图，并记录截图目录 SHA-256。
 - [ ] 运行 `Scripts/validate_store_screenshots.sh StoreAssets/Screenshots`，确认五张截图均为允许的 Mac storefront 尺寸。
-- [ ] 上传前运行 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1 ./Scripts/validate_store_submission.sh "dist/Sooogood Video Catch.app"`，将真实截图和公开网页占位符检查设为硬门槛。
+- [ ] 上传前运行 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1 ./Scripts/validate_store_submission.sh "dist/Sooogood Media Catch.app"`，将真实截图和公开网页占位符检查设为硬门槛。
 - [ ] 修改商店文案后重新运行 `Scripts/validate_store_metadata.sh`，并由发布人确认商标、关键词和地区化表达。
 
 Apple 当前提交入口、App 信息字段、Mac 截图尺寸和审核规则会随 Xcode/App Store Connect 更新；每次 release 由发布人复核官方页面：[Submitting apps](https://developer.apple.com/app-store/submitting/)、[App information](https://developer.apple.com/help/app-store-connect/reference/app-information/app-information)、[Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)、[App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) 和 [Upload builds](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds)。
@@ -55,7 +55,7 @@ Apple 当前提交入口、App 信息字段、Mac 截图尺寸和审核规则会
 提交时把以下内容复制到 App Review Notes，并替换尖括号字段：
 
 ```text
-Sooogood Video Catch Mac App Store edition is a local-first music bridge.
+Sooogood Media Catch Mac App Store edition is a local-first music bridge.
 
 1. Open Settings and enter the Spotify Client ID for our review app:
    <REVIEW_CLIENT_ID>
@@ -86,10 +86,10 @@ using the optional review account.
 
 ```bash
 BUILD_PROFILE=store ./Scripts/package_app.sh
-./Scripts/validate_store_submission.sh "dist/Sooogood Video Catch.app"
-codesign --verify --deep --strict "dist/Sooogood Video Catch.app"
+./Scripts/validate_store_submission.sh "dist/Sooogood Media Catch.app"
+codesign --verify --deep --strict "dist/Sooogood Media Catch.app"
 ./Scripts/build_store_pkg.sh
-pkgutil --check-signature dist/SooogoodVideoCatch.pkg
+pkgutil --check-signature dist/SooogoodMediaCatch.pkg
 ```
 
 以上命令只在签名身份、provisioning profile 和公网材料均真实可用时执行。`BUILD_PROFILE=store` 的打包脚本会在前置条件不满足时提前退出，不覆盖已有 Local 包。

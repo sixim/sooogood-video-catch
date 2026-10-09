@@ -2,11 +2,11 @@ import AppKit
 import Foundation
 
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-let svgURL = root.appendingPathComponent("Resources/Brand/MediaFetchLogo.svg")
+let svgURL = root.appendingPathComponent("Resources/Brand/SooogoodMediaCatchLogo.svg")
 let iconDirectory = root.appendingPathComponent("Resources/Assets.xcassets/AppIcon.appiconset", isDirectory: true)
 let svgData = try Data(contentsOf: svgURL)
 guard let image = NSImage(data: svgData) else {
-    throw NSError(domain: "MediaFetchBrand", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unable to render logo SVG"])
+    throw NSError(domain: "SooogoodMediaCatchBrand", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unable to render logo SVG"])
 }
 
 let outputs: [(String, Int)] = [
@@ -25,7 +25,7 @@ for (fileName, size) in outputs {
     guard let tiff = canvas.tiffRepresentation,
           let bitmap = NSBitmapImageRep(data: tiff),
           let png = bitmap.representation(using: .png, properties: [:]) else {
-        throw NSError(domain: "MediaFetchBrand", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unable to encode icon \(size)"])
+        throw NSError(domain: "SooogoodMediaCatchBrand", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unable to encode icon \(size)"])
     }
     try png.write(to: iconDirectory.appendingPathComponent(fileName), options: .atomic)
 }

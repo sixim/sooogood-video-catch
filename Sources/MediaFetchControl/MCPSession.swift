@@ -7,7 +7,7 @@ import MediaFetchCore
 /// tools/call. Tool calls are forwarded to the running app.
 public final class MCPSession: @unchecked Sendable {
     public static let supportedVersions = ["2025-06-18", "2025-03-26", "2024-11-05"]
-    public static let serverName = "sooogood-video-catch"
+    public static let serverName = "sooogood-media-catch"
 
     private let forward: (String, [String: JSONValue]) throws -> JSONValue
     private let version: String
@@ -36,7 +36,7 @@ public final class MCPSession: @unchecked Sendable {
             return reply(id, [
                 "protocolVersion": .string(negotiated),
                 "capabilities": ["tools": ["listChanged": false]],
-                "serverInfo": ["name": .string(Self.serverName), "title": "Sooogood Video Catch", "version": .string(version)],
+                "serverInfo": ["name": .string(Self.serverName), "title": "Sooogood Media Catch", "version": .string(version)],
                 "instructions": "Downloads media into auditable packages (manifest.json + SHA-256), manages torrents, runs creator tools (proxies, transcripts) and sends packages to DaVinci Resolve. There are no delete tools; ask the user before downloading anything they may not have rights to."
             ])
         case "ping":
@@ -105,7 +105,7 @@ public enum AppConnector {
             if let client = try? ControlClient(socketURL: socketURL) { return client }
             Thread.sleep(forTimeInterval: 0.3)
         }
-        throw ControlError.failed(String(localized: "无法连接 Sooogood Video Catch：请确认应用已安装并能正常启动"))
+        throw ControlError.failed(String(localized: "无法连接 Sooogood Media Catch：请确认应用已安装并能正常启动"))
     }
 }
 #endif

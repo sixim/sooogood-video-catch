@@ -26,7 +26,7 @@ public struct ControlTool: Sendable, Equatable {
 
     public static let all: [ControlTool] = [
         .init(name: "app_status",
-              description: "Sooogood Video Catch version, which engines are installed, and task counts.",
+              description: "Sooogood Media Catch version, which engines are installed, and task counts.",
               inputSchema: schema([:])),
         .init(name: "analyze_url",
               description: "Resolve one media URL with yt-dlp without downloading: title, uploader, duration, best resolution, format count.",

@@ -3,8 +3,8 @@ set -euo pipefail
 
 project_dir="${0:A:h:h}"
 dist_dir="$project_dir/dist"
-app_dir="$dist_dir/Sooogood Video Catch.app"
-pkg_path="${STORE_PKG_PATH:-$dist_dir/SooogoodVideoCatch.pkg}"
+app_dir="$dist_dir/Sooogood Media Catch.app"
+pkg_path="${STORE_PKG_PATH:-$dist_dir/SooogoodMediaCatch.pkg}"
 require_release_artifacts="${REQUIRE_RELEASE_ARTIFACTS:-0}"
 
 [[ "$require_release_artifacts" == "0" || "$require_release_artifacts" == "1" ]] || {
@@ -33,8 +33,8 @@ print "== Store metadata =="
 print "== Store source and bundle preflight =="
 "$project_dir/Scripts/validate_store_submission.sh" "$app_dir"
 
-if [[ -d "$dist_dir" ]] && find "$dist_dir" -maxdepth 1 -name '.SooogoodVideoCatch-*' -print -quit | rg -q .; then
-    print -u2 "dist 中存在未清理的 Sooogood Video Catch staging 目录；请先检查上一次打包失败原因。"
+if [[ -d "$dist_dir" ]] && find "$dist_dir" -maxdepth 1 -name '.SooogoodMediaCatch-*' -print -quit | rg -q .; then
+    print -u2 "dist 中存在未清理的 Sooogood Media Catch staging 目录；请先检查上一次打包失败原因。"
     exit 2
 fi
 

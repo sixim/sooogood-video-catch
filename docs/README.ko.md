@@ -1,4 +1,4 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
 [English](../README.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · **한국어** · [中文](README.zh-Hans.md)
 
@@ -11,13 +11,13 @@
 터미널에 붙여 넣거나 AI 에이전트에게 맡기세요:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 ```
 
 최신 릴리스(유니버설: Apple 실리콘 + Intel)를 다운로드해 SHA-256과 코드 서명을 검증하고 /Applications에 설치하며, [Homebrew](https://brew.sh)로 yt-dlp, FFmpeg, deno를 설치합니다. sudo도 질문도 없습니다. 에이전트용 — Claude Code에 MCP 서버까지 등록:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash -s -- --with-mcp
 ```
 
 기타 옵션: `--no-deps`, `--dir <폴더>`, `--version vX.Y.Z`, `--open`. 앱은 애드혹 서명(공증 없음)입니다. Releases 페이지에서 브라우저로 zip을 받았다면 처음 한 번은 오른쪽 클릭 → 열기로 실행하세요.
@@ -73,18 +73,18 @@ brew install transmission-cli whisper-cpp
 ## 빌드와 실행
 
 ```bash
-git clone https://github.com/sixim/sooogood-video-catch.git
-cd sooogood-video-catch
+git clone https://github.com/sixim/sooogood-media-catch.git
+cd sooogood-media-catch
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
-개발: `swift run MediaFetch`. 테스트: `swift test`.
+개발: `swift run SooogoodMediaCatch`. 테스트: `swift test`.
 
 AI 에이전트 연결(정확한 경로는 *설정 › AI Agent*에도 표시됩니다):
 
 ```bash
-claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/path/to/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 ## 로그인과 개인정보
@@ -108,7 +108,7 @@ GPL-3.0 — [LICENSE](../LICENSE) 참조. 외부 엔진(yt-dlp, FFmpeg, deno, Tr
 
 ## 문서
 
-- [아키텍처](../ARCHITECTURE.md) · [개발자 가이드(중국어)](DEVELOPMENT.zh-Hans.md) · [변경 기록](../CHANGELOG.md) · [브로슈어](brochure/Sooogood-Video-Catch-ko.pdf)
+- [아키텍처](../ARCHITECTURE.md) · [개발자 가이드(중국어)](DEVELOPMENT.zh-Hans.md) · [변경 기록](../CHANGELOG.md) · [브로슈어](brochure/Sooogood-Media-Catch-ko.pdf)
 
 ---
 

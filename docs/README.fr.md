@@ -1,4 +1,4 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
 [English](../README.md) · **Français** · [Deutsch](README.de.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [中文](README.zh-Hans.md)
 
@@ -11,13 +11,13 @@ Une app macOS locale avant tout, pensée pour les créateurs : enregistrez les m
 À coller dans le Terminal (ou à confier à un agent IA) :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 ```
 
 Le script télécharge la dernière version (universelle : Apple silicon + Intel), vérifie son SHA-256 et sa signature, l’installe dans /Applications et installe yt-dlp, FFmpeg et deno avec [Homebrew](https://brew.sh). Sans sudo ni question. Pour un agent — enregistre aussi le serveur MCP dans Claude Code :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash -s -- --with-mcp
 ```
 
 Autres options : `--no-deps`, `--dir <dossier>`, `--version vX.Y.Z`, `--open`. L’app est signée ad hoc (non notariée) ; si vous téléchargez le zip depuis la page Releases avec un navigateur, ouvrez-la la première fois par clic droit → Ouvrir.
@@ -73,18 +73,18 @@ brew install transmission-cli whisper-cpp
 ## Compiler et lancer
 
 ```bash
-git clone https://github.com/sixim/sooogood-video-catch.git
-cd sooogood-video-catch
+git clone https://github.com/sixim/sooogood-media-catch.git
+cd sooogood-media-catch
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
-Développement : `swift run MediaFetch`. Tests : `swift test`.
+Développement : `swift run SooogoodMediaCatch`. Tests : `swift test`.
 
 Connecter un agent IA (le chemin exact figure aussi dans *Réglages › AI Agent*) :
 
 ```bash
-claude mcp add sooogood -- "/chemin/vers/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/chemin/vers/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 ## Connexion et confidentialité
@@ -108,7 +108,7 @@ GPL-3.0 — voir [LICENSE](../LICENSE). Les moteurs externes (yt-dlp, FFmpeg, de
 
 ## Documentation
 
-- [Architecture](../ARCHITECTURE.md) · [Guide développeur (chinois)](DEVELOPMENT.zh-Hans.md) · [Journal des modifications](../CHANGELOG.md) · [Brochure](brochure/Sooogood-Video-Catch-fr.pdf)
+- [Architecture](../ARCHITECTURE.md) · [Guide développeur (chinois)](DEVELOPMENT.zh-Hans.md) · [Journal des modifications](../CHANGELOG.md) · [Brochure](brochure/Sooogood-Media-Catch-fr.pdf)
 
 ---
 

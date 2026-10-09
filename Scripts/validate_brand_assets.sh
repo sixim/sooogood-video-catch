@@ -7,7 +7,7 @@ icon_dir="$project_dir/Resources/Assets.xcassets/AppIcon.appiconset"
 listing="$project_dir/StoreAssets/AppStoreListing.md"
 
 for required_path in \
-    "$brand_dir/MediaFetchLogo.svg" \
+    "$brand_dir/SooogoodMediaCatchLogo.svg" \
     "$brand_dir/BrandGuidelines.md" \
     "$project_dir/Scripts/render_brand_assets.swift" \
     "$project_dir/Scripts/render_store_cover.swift" \
@@ -20,8 +20,8 @@ for required_path in \
 done
 
 rg -n '<svg[^>]+width="1024"[^>]+height="1024"[^>]+viewBox="0 0 1024 1024"' \
-    "$brand_dir/MediaFetchLogo.svg" >/dev/null || {
-    print -u2 "MediaFetchLogo.svg 必须保留 1024×1024 viewBox 源稿"
+    "$brand_dir/SooogoodMediaCatchLogo.svg" >/dev/null || {
+    print -u2 "SooogoodMediaCatchLogo.svg 必须保留 1024×1024 viewBox 源稿"
     exit 2
 }
 
@@ -64,8 +64,8 @@ for spec in "${icon_specs[@]}"; do
 done
 
 for cover_name in \
-    "MediaFetch-store-cover-1440x900.png" \
-    "MediaFetch-local-cover-1440x900.png"; do
+    "Sooogood-Media-Catch-store-cover-1440x900.png" \
+    "Sooogood-Media-Catch-local-cover-1440x900.png"; do
     cover_path="$project_dir/StoreAssets/$cover_name"
     [[ -f "$cover_path" ]] || {
         print -u2 "缺少品牌封面：$cover_path"
@@ -84,12 +84,12 @@ for cover_name in \
     }
 done
 
-rg -n 'MediaFetchLogo\.svg|render_brand_assets\.swift|render_store_cover\.swift' \
+rg -n 'SooogoodMediaCatchLogo\.svg|render_brand_assets\.swift|render_store_cover\.swift' \
     "$brand_dir/BrandGuidelines.md" >/dev/null || {
     print -u2 "BrandGuidelines.md 缺少源稿/生成流程说明"
     exit 2
 }
-rg -n '## 封面说明|## Cover notes|MediaFetch-store-cover-1440x900\.png' \
+rg -n '## 封面说明|## Cover notes|Sooogood-Media-Catch-store-cover-1440x900\.png' \
     "$listing" >/dev/null || {
     print -u2 "商店文案缺少中文/英文封面说明或封面引用"
     exit 2

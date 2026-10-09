@@ -1,4 +1,4 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
 [English](../README.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · **中文**
 
@@ -11,13 +11,13 @@
 粘贴到终端，或直接交给 AI agent：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 ```
 
 脚本会下载最新版本（通用版：Apple 芯片 + Intel），校验 SHA-256 和代码签名，装进「应用程序」，并用 [Homebrew](https://brew.sh) 安装 yt-dlp、FFmpeg、deno。不需要 sudo，全程无交互。给 agent 用的版本，会顺便把 MCP 服务注册到 Claude Code：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash -s -- --with-mcp
 ```
 
 其他参数：`--no-deps`、`--dir <文件夹>`、`--version vX.Y.Z`、`--open`。应用是临时签名（未经苹果公证）；如果改用浏览器从 Releases 页面下载 zip，第一次请右键 → 打开。
@@ -73,18 +73,18 @@ brew install transmission-cli whisper-cpp
 ## 编译与运行
 
 ```bash
-git clone https://github.com/sixim/sooogood-video-catch.git
-cd sooogood-video-catch
+git clone https://github.com/sixim/sooogood-media-catch.git
+cd sooogood-media-catch
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
-开发运行：`swift run MediaFetch`。测试：`swift test`。
+开发运行：`swift run SooogoodMediaCatch`。测试：`swift test`。
 
 接入 AI agent（准确路径也显示在「设置 › AI Agent」）：
 
 ```bash
-claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/path/to/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 ## 登录与隐私
@@ -108,7 +108,7 @@ GPL-3.0，见 [LICENSE](../LICENSE)。外部引擎（yt-dlp、FFmpeg、deno、Tr
 
 ## 文档
 
-- [架构说明](../ARCHITECTURE.md) · [开发者指南](DEVELOPMENT.zh-Hans.md) · [更新记录](../CHANGELOG.md) · [宣传册](brochure/Sooogood-Video-Catch-zh-Hans.pdf)
+- [架构说明](../ARCHITECTURE.md) · [开发者指南](DEVELOPMENT.zh-Hans.md) · [更新记录](../CHANGELOG.md) · [宣传册](brochure/Sooogood-Media-Catch-zh-Hans.pdf)
 
 ---
 

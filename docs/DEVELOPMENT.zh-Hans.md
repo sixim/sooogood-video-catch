@@ -1,6 +1,6 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
-Sooogood Video Catch 是一个面向 macOS 的本地媒体工具。视频页用 `yt-dlp` 解析平台实际提供的媒体流，用 `FFmpeg` 做必要的无损封装；音乐页用 Spotify 曲目身份和顺序整理用户自己拥有的本地或 DRM-free 音频。
+Sooogood Media Catch 是一个面向 macOS 的本地媒体工具。视频页用 `yt-dlp` 解析平台实际提供的媒体流，用 `FFmpeg` 做必要的无损封装；音乐页用 Spotify 曲目身份和顺序整理用户自己拥有的本地或 DRM-free 音频。
 
 当前本机 yt-dlp 版本提供约 1,752 个提取器，并保留通用网页、HLS 与 DASH 解析能力。网站会持续变化，列入提取器不等于永久可用，最终以应用对具体链接的实时解析结果为准。
 
@@ -52,20 +52,20 @@ brew install transmission-cli whisper-cpp
 接入 Claude Code（打包后在「设置 › AI Agent」里可一键复制路径）：
 
 ```bash
-claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/path/to/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 开发运行：
 
 ```bash
-swift run MediaFetch
+swift run SooogoodMediaCatch
 ```
 
-打包成标准 macOS 应用（输出到 `dist/Sooogood Video Catch.app`）：
+打包成标准 macOS 应用（输出到 `dist/Sooogood Media Catch.app`）：
 
 ```bash
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
 测试：
@@ -103,14 +103,14 @@ Store profile 会启用 App Sandbox、网络和用户选择目录权限，使用
 
 完整的商店待办、签名前置条件和升级门槛见 [STORE_SUBMISSION.md](../STORE_SUBMISSION.md)。
 具备证书、provisioning profile、真实 Store 截图和已部署的 HTTPS 页面后，使用 `Scripts/build_store_pkg.sh` 生成并校验签名 `.pkg`。
-该脚本会先强制运行截图/公网页面预检，再在独立 staging 目录生成并验签，最后原子替换 `dist/SooogoodVideoCatch.pkg`；输出文件名必须以 `.pkg` 结尾且不含空格。
-解锁 macOS 并从最终签名 Store bundle 采集五张截图后，运行 `Scripts/validate_store_screenshots.sh StoreAssets/Screenshots` 验证 PNG 尺寸、无 alpha 通道和 SHA-256；封面图不能替代真实应用截图。修改商店文案后运行 `Scripts/validate_store_metadata.sh`，自动检查名称、副标题、推广文案、描述和关键词的 App Store Connect 限制。真正上传前运行 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1 ./Scripts/validate_store_submission.sh "dist/Sooogood Video Catch.app"`，把截图和网页占位符检查升级为硬门槛。
+该脚本会先强制运行截图/公网页面预检，再在独立 staging 目录生成并验签，最后原子替换 `dist/SooogoodMediaCatch.pkg`；输出文件名必须以 `.pkg` 结尾且不含空格。
+解锁 macOS 并从最终签名 Store bundle 采集五张截图后，运行 `Scripts/validate_store_screenshots.sh StoreAssets/Screenshots` 验证 PNG 尺寸、无 alpha 通道和 SHA-256；封面图不能替代真实应用截图。修改商店文案后运行 `Scripts/validate_store_metadata.sh`，自动检查名称、副标题、推广文案、描述和关键词的 App Store Connect 限制。真正上传前运行 `REQUIRE_STORE_SCREENSHOTS=1 REQUIRE_PUBLIC_WEB=1 ./Scripts/validate_store_submission.sh "dist/Sooogood Media Catch.app"`，把截图和网页占位符检查升级为硬门槛。
 修改 Logo、AppIcon 或封面后运行 `Scripts/validate_brand_assets.sh`，逐项检查源稿、10 个图标尺寸、Store/Local 封面和双语封面说明。
 隐私政策和支持页的可部署 HTML 模板位于 `StoreAssets/Web/`；发布前必须替换占位符并部署到自己的 HTTPS 域名。
 
 ## “原始文件”的准确含义
 
-流媒体网站通常不会公开上传者最初上传的母版文件。Sooogood Video Catch 能保存的是平台当前向该账户/地区/设备提供的最高质量编码流：
+流媒体网站通常不会公开上传者最初上传的母版文件。Sooogood Media Catch 能保存的是平台当前向该账户/地区/设备提供的最高质量编码流：
 
 - “保留平台原始音视频流”不会转码，但视频和音频通常是两个文件。
 - “最高画质”同样不转码，只用 FFmpeg 把最佳视频和音频重新封装到一个 MKV 容器。
@@ -118,7 +118,7 @@ Store profile 会启用 App Sandbox、网络和用户选择目录权限，使用
 
 ## 素材包与审计清单
 
-每条媒体保存到一个独立目录。`manifest.json` 记录来源 URL、平台、媒体 ID、下载配置、实际格式、是否调用浏览器登录状态、Sooogood Video Catch/yt-dlp/FFmpeg 版本，以及素材包内每个文件的字节数和 SHA-256。它不会记录 Cookie 内容。
+每条媒体保存到一个独立目录。`manifest.json` 记录来源 URL、平台、媒体 ID、下载配置、实际格式、是否调用浏览器登录状态、Sooogood Media Catch/yt-dlp/FFmpeg 版本，以及素材包内每个文件的字节数和 SHA-256。它不会记录 Cookie 内容。
 
 任务历史保存在：
 
@@ -140,20 +140,20 @@ Spotify 音乐素材包历史单独保存在：
 
 本地版在“设置 → 流媒体网站登录”与视频页提供应用内登录入口。Vimeo、哔哩哔哩和优酷的官方 HTTPS 页面在独立 WebKit 窗口中打开；完成登录后点击“保存会话并返回”。各平台使用独立、持久化的网站数据存储，重启后可继续使用，可通过“清除会话”退出。检测到 Cookie 不代表账号已验证，最终以视频解析结果为准。
 
-Sooogood Video Catch 不注入脚本或读取官网表单密码。应用内网站会话由 WebKit 保存在本机；只有用户明确启用后，才导出当前平台域名下的 Cookie 到临时私有目录（0700）内的文件（0600），供本机 yt-dlp 使用，操作结束或取消完成后删除。异常断电/强制终止可能留下系统临时目录中的文件。偏好、任务历史及 manifest 只记录会话方式，绝不记录 Cookie 字节。
+Sooogood Media Catch 不注入脚本或读取官网表单密码。应用内网站会话由 WebKit 保存在本机；只有用户明确启用后，才导出当前平台域名下的 Cookie 到临时私有目录（0700）内的文件（0600），供本机 yt-dlp 使用，操作结束或取消完成后删除。异常断电/强制终止可能留下系统临时目录中的文件。偏好、任务历史及 manifest 只记录会话方式，绝不记录 Cookie 字节。
 
 YouTube 使用的 Google 登录不支持应用内嵌网页；应用明确显示该限制，不伪装浏览器。用户可主动选择“兼容登录”，在 Safari、Chrome 或 Firefox 完成登录后使用对应浏览器会话。Vimeo 的 Google 等第三方登录也可能需要该方式。兼容模式下引擎会读取所选浏览器的 Cookie 库，不会静默切换浏览器；旧版偏好保留原先的浏览器方式。规则参考：[Google OAuth policies](https://developers.google.com/identity/protocols/oauth2/policies)。
 
 Vimeo 的网页客户端目前可能要求登录，即使链接本身可以在已登录浏览器中观看。浏览器中的账号还必须实际拥有该视频的访问权限；Cookie 不会绕过私有、付费或 DRM 访问控制。
 
-macOS 会额外保护 Safari Cookie 数据。Sooogood Video Catch 会在解析前检查访问权限，并提供“打开完整磁盘访问”入口；不希望授予该权限时，推荐使用已经登录 Vimeo 的 Google Chrome。应用不会尝试绕过系统权限。
+macOS 会额外保护 Safari Cookie 数据。Sooogood Media Catch 会在解析前检查访问权限，并提供“打开完整磁盘访问”入口；不希望授予该权限时，推荐使用已经登录 Vimeo 的 Google Chrome。应用不会尝试绕过系统权限。
 
 ## Spotify 个人媒体桥接设置
 
 1. 在 [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) 创建你自己的 App。
 2. 为该 App 注册回调地址：`http://127.0.0.1/oauth/spotify/callback`。这里故意不写端口；Spotify 允许回环 IP 在授权请求中使用临时动态端口。
-3. 在 Sooogood Video Catch 的“设置”页粘贴 Client ID。应用不需要、也不会保存 Client Secret。
-4. 点击“连接 Spotify”，在浏览器中完成授权。Sooogood Video Catch 只申请 `playlist-read-private` 与 `playlist-read-collaborative`。
+3. 在 Sooogood Media Catch 的“设置”页粘贴 Client ID。应用不需要、也不会保存 Client Secret。
+4. 点击“连接 Spotify”，在浏览器中完成授权。Sooogood Media Catch 只申请 `playlist-read-private` 与 `playlist-read-collaborative`。
 5. 回到“音乐”页载入 Spotify 单曲、专辑或歌单链接，选择本地音乐资料夹，审核匹配结果后保存素材包。
 
 回调监听只绑定 `127.0.0.1`，登录令牌只写入 macOS 钥匙串。动态端口规则与 PKCE 流程可分别参阅 [Spotify Redirect URI](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri) 和 [Authorization Code with PKCE](https://developer.spotify.com/documentation/web-api/tutorials/code-pkce-flow) 官方说明。

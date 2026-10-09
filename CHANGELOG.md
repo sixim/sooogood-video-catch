@@ -1,8 +1,14 @@
 # Changelog
 
+## 0.22.1 (build 35) · 品牌更新
+
+- 对外产品名称更新为 **Sooogood Media Catch**：应用显示名、应用包、安装器、Release 资产、MCP 信息、品牌素材、商店文案与六种语言的界面文字已统一。
+- 开源仓库迁移为 `sixim/sooogood-media-catch`，公开安装地址随之更新；旧 GitHub 链接由 GitHub 自动重定向。
+- 保留 `com.simon.mediafetch`、历史与偏好目录以及 Swift 内部模块名，确保现有安装与后续升级继续读取用户的数据。
+
 ## 0.22.0 · 一行安装（发布说明补充）
 
-- 新增 `install.sh`：`curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash` 下载最新 Release，校验 SHA-256 与代码签名后安装到「应用程序」（不可写时用 ~/Applications），用 Homebrew 补装 yt-dlp / FFmpeg / deno；无 sudo、无交互，适合交给 agent。`--with-mcp` 同时注册 Claude Code MCP，另有 `--no-deps`、`--dir`、`--version`、`--open`。
+- 新增 `install.sh`：`curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash` 下载最新 Release，校验 SHA-256 与代码签名后安装到「应用程序」（不可写时用 ~/Applications），用 Homebrew 补装 yt-dlp / FFmpeg / deno；无 sudo、无交互，适合交给 agent。`--with-mcp` 同时注册 Claude Code MCP，另有 `--no-deps`、`--dir`、`--version`、`--open`。
 - `Scripts/build_release.sh` 生成 Release 资产：通用二进制（arm64 + x86_64）的 zip 及 `.sha256`；`package_app.sh` 新增 `UNIVERSAL=1`。
 
 ## 0.22.0 (build 34) · 多语言
@@ -262,5 +268,5 @@
 - 增加 `Scripts/verify_release.sh`，集中运行两种 profile 测试、Shell/VI/元数据审计和 Store 预检；`REQUIRE_RELEASE_ARTIFACTS=1` 可在上传前强制校验真实截图、公网页面和签名 `.pkg`。
 ## 0.5.2 (build 8)
 
-- 对外产品名称更新为 **Sooogood Video Catch**；应用显示名称、主界面、隐私说明、安装包、商店文案和品牌封面保持一致。
+- 对外产品名称更新为 **Sooogood Media Catch**；应用显示名称、主界面、隐私说明、安装包、商店文案和品牌封面保持一致。
 - 保留既有 `com.simon.mediafetch` Bundle ID、Swift 模块、历史记录和本地设置键，避免品牌改名造成数据或升级迁移断裂。

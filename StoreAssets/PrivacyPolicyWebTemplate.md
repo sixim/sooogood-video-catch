@@ -1,8 +1,8 @@
-# MediaFetch 隐私政策网页稿
+# Sooogood Media Catch 隐私政策网页稿
 
 > 发布前请由产品负责人或法律主体审核，并把尖括号字段替换为真实信息。此文件是可托管的网页稿，不是法律意见；App Store Connect 中的隐私政策 URL 必须指向公开可访问的正式页面。
 
-## MediaFetch 隐私政策
+## Sooogood Media Catch 隐私政策
 
 生效日期：`<EFFECTIVE_DATE>`  
 运营主体：`<LEGAL_ENTITY>`  
@@ -10,13 +10,13 @@
 
 ### 我们处理的信息
 
-MediaFetch 是本地优先的 macOS 工具。除非用户主动连接 Spotify 或加载网络媒体页面，应用不会向 MediaFetch 自有服务器上传文件、Cookie、播放输出或素材内容。应用不包含广告、跨 App 跟踪或遥测服务。
+Sooogood Media Catch 是本地优先的 macOS 工具。除非用户主动连接 Spotify 或加载网络媒体页面，应用不会向 Sooogood Media Catch 自有服务器上传文件、Cookie、播放输出或素材内容。应用不包含广告、跨 App 跟踪或遥测服务。
 
 ### Spotify 连接
 
 Spotify OAuth 使用 PKCE。Client ID 保存在本机设置；access token 和 refresh token 只保存在 macOS 钥匙串。应用读取曲目身份、专辑、歌单顺序以及必要的封面和外部链接元数据。Spotify 元数据缓存最多保留 24 小时；用户在设置中断开账号后，令牌和缓存会被删除。
 
-MediaFetch 不请求 Spotify 音频、不读取 Spotify Cookie、不抓取 Spotify 客户端缓存，也不录制播放输出。音频素材只来自用户明确选择的本地文件或用户明确授权的 DRM-free HTTPS 直链。
+Sooogood Media Catch 不请求 Spotify 音频、不读取 Spotify Cookie、不抓取 Spotify 客户端缓存，也不录制播放输出。音频素材只来自用户明确选择的本地文件或用户明确授权的 DRM-free HTTPS 直链。
 
 ### 本地文件与素材包
 
@@ -24,7 +24,7 @@ MediaFetch 不请求 Spotify 音频、不读取 Spotify Cookie、不抓取 Spoti
 
 ### 视频与浏览器登录状态
 
-Local profile 只有在用户明确启用时才会把浏览器登录状态交给本机下载引擎使用，MediaFetch 不保存 Cookie 文件。Mac App Store profile 不读取浏览器 Cookie，也不提供第三方站点音视频下载。
+Local profile 只有在用户明确启用时才会把浏览器登录状态交给本机下载引擎使用，Sooogood Media Catch 不保存 Cookie 文件。Mac App Store profile 不读取浏览器 Cookie，也不提供第三方站点音视频下载。
 
 ### 删除与联系
 

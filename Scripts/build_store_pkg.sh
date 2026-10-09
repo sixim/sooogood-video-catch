@@ -2,8 +2,8 @@
 set -euo pipefail
 
 project_dir="${0:A:h:h}"
-app_dir="$project_dir/dist/Sooogood Video Catch.app"
-pkg_path="${STORE_PKG_PATH:-$project_dir/dist/SooogoodVideoCatch.pkg}"
+app_dir="$project_dir/dist/Sooogood Media Catch.app"
+pkg_path="${STORE_PKG_PATH:-$project_dir/dist/SooogoodMediaCatch.pkg}"
 installer_identity="${INSTALLER_IDENTITY:-}"
 
 pkg_filename="${pkg_path:t}"
@@ -38,8 +38,8 @@ REQUIRE_STORE_SCREENSHOTS=1 \
 REQUIRE_PUBLIC_WEB=1 \
     "$project_dir/Scripts/validate_store_submission.sh" "$app_dir"
 mkdir -p "${pkg_path:h}"
-staging_root="$(mktemp -d "${pkg_path:h}/.SooogoodVideoCatch-pkg.XXXXXX")"
-staging_pkg="$staging_root/SooogoodVideoCatch.pkg"
+staging_root="$(mktemp -d "${pkg_path:h}/.SooogoodMediaCatch-pkg.XXXXXX")"
+staging_pkg="$staging_root/SooogoodMediaCatch.pkg"
 cleanup_staging() {
     rm -rf "$staging_root"
 }

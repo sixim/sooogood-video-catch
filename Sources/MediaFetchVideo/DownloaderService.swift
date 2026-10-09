@@ -195,7 +195,7 @@ public final class DownloaderService: ObservableObject {
                         }
                         if EngineErrorClassifier.isDRMError(stderr) {
                             self.status = String(localized: "检测到 DRM 保护")
-                            self.errorMessage = String(localized: "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。")
+                            self.errorMessage = String(localized: "该媒体流受 DRM 保护，Sooogood Media Catch 不会尝试绕过。")
                             return
                         }
                         if EngineErrorClassifier.isAuthenticationRequiredError(stderr) {
@@ -369,7 +369,7 @@ public final class DownloaderService: ObservableObject {
         if shouldHold, sleepActivity == nil {
             sleepActivity = ProcessInfo.processInfo.beginActivity(
                 options: [.userInitiated, .idleSystemSleepDisabled],
-                reason: String(localized: "Sooogood Video Catch 正在下载")
+                reason: String(localized: "Sooogood Media Catch 正在下载")
             )
         } else if !shouldHold, let activity = sleepActivity {
             ProcessInfo.processInfo.endActivity(activity)
@@ -854,7 +854,7 @@ public final class DownloaderService: ObservableObject {
             let diagnosis = EngineDiagnostics.diagnose(engineOutput)
             jobs[jobIndex].diagnosis = diagnosis
             if EngineErrorClassifier.isDRMError(engineOutput) {
-                failCurrentJob(String(localized: "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。"))
+                failCurrentJob(String(localized: "该媒体流受 DRM 保护，Sooogood Media Catch 不会尝试绕过。"))
                 return
             }
             if let sourceURL = URL(string: jobs[jobIndex].sourceURL),
@@ -1235,7 +1235,7 @@ public final class DownloaderService: ObservableObject {
             return String(localized: "该媒体内容要求登录。请勾选“使用浏览器登录状态”，选择已经登录该平台的 Chrome 或 Firefox 后重试；如果内容本来就是公开的，也可以换用公开链接。")
         }
         if source == .safari {
-            return String(localized: "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Video Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。")
+            return String(localized: "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Media Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。")
         }
         return String(localized: "该媒体内容要求登录，但所选浏览器的登录状态未通过验证。请确认浏览器中已登录 Vimeo，重新选择浏览器后再试。")
     }

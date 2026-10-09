@@ -1,7 +1,7 @@
 #!/bin/bash
-# Sooogood Video Catch installer — one line, no prompts, safe to hand to an agent.
+# Sooogood Media Catch installer — one line, no prompts, safe to hand to an agent.
 #
-#   curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 #
 # Options (append after `| bash -s --`):
 #   --with-mcp        also register the MCP server with Claude Code (`claude mcp add`)
@@ -16,9 +16,9 @@
 # remote scripts.
 set -euo pipefail
 
-REPO="sixim/sooogood-video-catch"
-ASSET="Sooogood-Video-Catch-macOS.zip"
-APP_NAME="Sooogood Video Catch.app"
+REPO="sixim/sooogood-media-catch"
+ASSET="Sooogood-Media-Catch-macOS.zip"
+APP_NAME="Sooogood Media Catch.app"
 BUNDLE_ID="com.simon.mediafetch"
 
 with_mcp=0; with_deps=1; open_app=0; version=""; target_dir="${SOOOGOOD_DIR:-}"
@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
     --no-deps) with_deps=0 ;;
     --open) open_app=1 ;;
     --dir) shift; target_dir="${1:?--dir needs a path}" ;;
-    --version) shift; version="${1:?--version needs a tag, e.g. v0.22.0}" ;;
+    --version) shift; version="${1:?--version needs a tag, e.g. v0.22.1}" ;;
     -h|--help) sed -n '2,16p' "$0" 2>/dev/null || true; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
@@ -40,7 +40,7 @@ warn() { printf 'warning: %s\n' "$*" >&2; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 # 1. Platform
-[ "$(uname -s)" = "Darwin" ] || die "Sooogood Video Catch runs on macOS only."
+[ "$(uname -s)" = "Darwin" ] || die "Sooogood Media Catch runs on macOS only."
 macos="$(sw_vers -productVersion)"
 [ "${macos%%.*}" -ge 14 ] || die "macOS 14 or later is required (this Mac has $macos)."
 
@@ -77,7 +77,7 @@ mkdir -p "$target_dir"
 dest="$target_dir/$APP_NAME"
 
 # Only a copy running from the folder being replaced needs to quit.
-running="$dest/Contents/MacOS/MediaFetch"
+running="$dest/Contents/MacOS/SooogoodMediaCatch"
 if pgrep -f "$running" >/dev/null 2>&1; then
   say "Quitting the running app"
   osascript -e "tell application id \"$BUNDLE_ID\" to quit" >/dev/null 2>&1 || true
@@ -92,7 +92,7 @@ if [ -d "$dest" ]; then
   mv "$dest" "$work/previous.app"
 fi
 if ditto "$new_app" "$dest"; then
-  say "Installed Sooogood Video Catch $new_version → $dest"
+  say "Installed Sooogood Media Catch $new_version → $dest"
 else
   [ -d "$work/previous.app" ] && mv "$work/previous.app" "$dest"
   die "could not copy the app into $target_dir"

@@ -1,4 +1,4 @@
-# Sooogood Video Catch
+# Sooogood Media Catch
 
 [English](../README.md) · [Français](README.fr.md) · [Deutsch](README.de.md) · **日本語** · [한국어](README.ko.md) · [中文](README.zh-Hans.md)
 
@@ -11,13 +11,13 @@
 ターミナルに貼り付けるか、AI エージェントに渡すだけ：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash
 ```
 
 最新リリース（ユニバーサル：Apple シリコン + Intel）をダウンロードし、SHA-256 とコード署名を検証して /Applications に入れ、[Homebrew](https://brew.sh) で yt-dlp・FFmpeg・deno を導入します。sudo も質問もありません。エージェント向け — Claude Code への MCP サーバー登録もまとめて行います：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-video-catch/main/install.sh | bash -s -- --with-mcp
+curl -fsSL https://raw.githubusercontent.com/sixim/sooogood-media-catch/main/install.sh | bash -s -- --with-mcp
 ```
 
 その他のオプション：`--no-deps`、`--dir <フォルダ>`、`--version vX.Y.Z`、`--open`。アプリはアドホック署名（公証なし）です。Releases ページからブラウザで zip をダウンロードした場合は、初回のみ右クリック → 開く で起動してください。
@@ -73,18 +73,18 @@ brew install transmission-cli whisper-cpp
 ## ビルドと起動
 
 ```bash
-git clone https://github.com/sixim/sooogood-video-catch.git
-cd sooogood-video-catch
+git clone https://github.com/sixim/sooogood-media-catch.git
+cd sooogood-media-catch
 ./Scripts/package_app.sh
-open "dist/Sooogood Video Catch.app"
+open "dist/Sooogood Media Catch.app"
 ```
 
-開発時：`swift run MediaFetch`。テスト：`swift test`。
+開発時：`swift run SooogoodMediaCatch`。テスト：`swift test`。
 
 AI エージェントの接続（正確なパスは *設定 › AI Agent* にも表示されます）：
 
 ```bash
-claude mcp add sooogood -- "/path/to/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+claude mcp add sooogood -- "/path/to/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 ```
 
 ## ログインとプライバシー
@@ -108,7 +108,7 @@ GPL-3.0 — [LICENSE](../LICENSE) を参照。外部エンジン（yt-dlp、FFmp
 
 ## ドキュメント
 
-- [アーキテクチャ](../ARCHITECTURE.md) · [開発者ガイド（中国語）](DEVELOPMENT.zh-Hans.md) · [変更履歴](../CHANGELOG.md) · [パンフレット](brochure/Sooogood-Video-Catch-ja.pdf)
+- [アーキテクチャ](../ARCHITECTURE.md) · [開発者ガイド（中国語）](DEVELOPMENT.zh-Hans.md) · [変更履歴](../CHANGELOG.md) · [パンフレット](brochure/Sooogood-Media-Catch-ja.pdf)
 
 ---
 

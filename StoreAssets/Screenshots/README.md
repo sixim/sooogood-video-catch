@@ -19,4 +19,4 @@
 ./Scripts/validate_store_screenshots.sh StoreAssets/Screenshots
 ```
 
-不要把 `MediaFetch-store-cover-1440x900.png` 或 `MediaFetch-local-cover-1440x900.png` 放进本目录；它们是品牌封面，不是应用截图。
+不要把 `Sooogood-Media-Catch-store-cover-1440x900.png` 或 `Sooogood-Media-Catch-local-cover-1440x900.png` 放进本目录；它们是品牌封面，不是应用截图。

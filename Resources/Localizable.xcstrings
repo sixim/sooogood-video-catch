@@ -2030,36 +2030,36 @@
         }
       }
     },
-    "Netflix 正片使用 DRM 保护。Sooogood Video Catch 不绕过 DRM，也不会把网页预告片误报成正片下载。": {
+    "Netflix 正片使用 DRM 保护。Sooogood Media Catch 不绕过 DRM，也不会把网页预告片误报成正片下载。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Netflix-Titel sind DRM-geschützt. Sooogood Video Catch umgeht kein DRM und gibt Web-Trailer nicht als vollständigen Titel aus."
+            "value": "Netflix-Titel sind DRM-geschützt. Sooogood Media Catch umgeht kein DRM und gibt Web-Trailer nicht als vollständigen Titel aus."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Netflix titles are protected by DRM. Sooogood Video Catch does not bypass DRM and will not pass off web trailers as the full title."
+            "value": "Netflix titles are protected by DRM. Sooogood Media Catch does not bypass DRM and will not pass off web trailers as the full title."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les titres Netflix sont protégés par DRM. Sooogood Video Catch ne contourne pas les DRM et ne fait pas passer les bandes-annonces web pour l’œuvre complète."
+            "value": "Les titres Netflix sont protégés par DRM. Sooogood Media Catch ne contourne pas les DRM et ne fait pas passer les bandes-annonces web pour l’œuvre complète."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Netflix の作品は DRM で保護されています。Sooogood Video Catch は DRM を回避せず、Web の予告編を本編として扱うこともありません。"
+            "value": "Netflix の作品は DRM で保護されています。Sooogood Media Catch は DRM を回避せず、Web の予告編を本編として扱うこともありません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Netflix 콘텐츠는 DRM으로 보호됩니다. Sooogood Video Catch는 DRM을 우회하지 않으며 웹 예고편을 본편으로 잘못 표시하지도 않습니다."
+            "value": "Netflix 콘텐츠는 DRM으로 보호됩니다. Sooogood Media Catch는 DRM을 우회하지 않으며 웹 예고편을 본편으로 잘못 표시하지도 않습니다."
           }
         }
       }
@@ -2438,138 +2438,138 @@
         }
       }
     },
-    "Sooogood Video Catch 不会尝试绕过 DRM。": {
+    "Sooogood Media Catch 不会尝试绕过 DRM。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch versucht nicht, DRM zu umgehen."
+            "value": "Sooogood Media Catch versucht nicht, DRM zu umgehen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch will not try to bypass DRM."
+            "value": "Sooogood Media Catch will not try to bypass DRM."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch ne tentera pas de contourner les DRM."
+            "value": "Sooogood Media Catch ne tentera pas de contourner les DRM."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch は DRM の回避を試みません。"
+            "value": "Sooogood Media Catch は DRM の回避を試みません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch는 DRM 우회를 시도하지 않습니다."
+            "value": "Sooogood Media Catch는 DRM 우회를 시도하지 않습니다."
           }
         }
       }
     },
-    "Sooogood Video Catch 是本地优先的 macOS 工具。除非你主动发起 Spotify 连接或加载网络媒体页面，应用不会向 Sooogood Video Catch 自有服务器上传文件、Cookie、播放输出或素材内容。应用不包含广告、跨 App 跟踪或遥测服务。": {
+    "Sooogood Media Catch 是本地优先的 macOS 工具。除非你主动发起 Spotify 连接或加载网络媒体页面，应用不会向 Sooogood Media Catch 自有服务器上传文件、Cookie、播放输出或素材内容。应用不包含广告、跨 App 跟踪或遥测服务。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch ist ein lokal ausgerichtetes macOS-Werkzeug. Sofern du nicht selbst eine Spotify-Verbindung startest oder eine Online-Medienseite lädst, lädt die App keine Dateien, Cookies, Wiedergabeausgaben oder Materialien auf eigene Server von Sooogood Video Catch hoch. Die App enthält keine Werbung, kein App-übergreifendes Tracking und keine Telemetrie."
+            "value": "Sooogood Media Catch ist ein lokal ausgerichtetes macOS-Werkzeug. Sofern du nicht selbst eine Spotify-Verbindung startest oder eine Online-Medienseite lädst, lädt die App keine Dateien, Cookies, Wiedergabeausgaben oder Materialien auf eigene Server von Sooogood Media Catch hoch. Die App enthält keine Werbung, kein App-übergreifendes Tracking und keine Telemetrie."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch is a local-first macOS tool. Unless you start a Spotify connection or load an online media page yourself, the app uploads no files, cookies, playback output or material to Sooogood Video Catch's own servers. The app contains no ads, cross-app tracking or telemetry."
+            "value": "Sooogood Media Catch is a local-first macOS tool. Unless you start a Spotify connection or load an online media page yourself, the app uploads no files, cookies, playback output or material to Sooogood Media Catch's own servers. The app contains no ads, cross-app tracking or telemetry."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch est un outil macOS local avant tout. Sauf si vous lancez vous-même une connexion Spotify ou chargez une page média en ligne, l’app n’envoie aucun fichier, cookie, flux de lecture ou contenu aux serveurs de Sooogood Video Catch. L’app ne contient ni publicité, ni suivi entre apps, ni télémétrie."
+            "value": "Sooogood Media Catch est un outil macOS local avant tout. Sauf si vous lancez vous-même une connexion Spotify ou chargez une page média en ligne, l’app n’envoie aucun fichier, cookie, flux de lecture ou contenu aux serveurs de Sooogood Media Catch. L’app ne contient ni publicité, ni suivi entre apps, ni télémétrie."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch はローカル優先の macOS ツールです。あなたが自分で Spotify に接続したりオンラインのメディアページを読み込んだりしない限り、ファイル、Cookie、再生出力、素材を Sooogood Video Catch のサーバーへ送信することはありません。広告、アプリ間トラッキング、テレメトリーは含まれていません。"
+            "value": "Sooogood Media Catch はローカル優先の macOS ツールです。あなたが自分で Spotify に接続したりオンラインのメディアページを読み込んだりしない限り、ファイル、Cookie、再生出力、素材を Sooogood Media Catch のサーバーへ送信することはありません。広告、アプリ間トラッキング、テレメトリーは含まれていません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch는 로컬 우선 macOS 도구입니다. 직접 Spotify에 연결하거나 온라인 미디어 페이지를 불러오지 않는 한, 파일, 쿠키, 재생 출력, 소재를 Sooogood Video Catch 자체 서버로 보내지 않습니다. 광고, 앱 간 추적, 원격 측정이 없습니다."
+            "value": "Sooogood Media Catch는 로컬 우선 macOS 도구입니다. 직접 Spotify에 연결하거나 온라인 미디어 페이지를 불러오지 않는 한, 파일, 쿠키, 재생 출력, 소재를 Sooogood Media Catch 자체 서버로 보내지 않습니다. 광고, 앱 간 추적, 원격 측정이 없습니다."
           }
         }
       }
     },
-    "Sooogood Video Catch 正在下载": {
+    "Sooogood Media Catch 正在下载": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch lädt"
+            "value": "Sooogood Media Catch lädt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch is downloading"
+            "value": "Sooogood Media Catch is downloading"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch télécharge"
+            "value": "Sooogood Media Catch télécharge"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch がダウンロード中"
+            "value": "Sooogood Media Catch がダウンロード中"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch 다운로드 중"
+            "value": "Sooogood Media Catch 다운로드 중"
           }
         }
       }
     },
-    "Sooogood Video Catch 没有运行": {
+    "Sooogood Media Catch 没有运行": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch läuft nicht"
+            "value": "Sooogood Media Catch läuft nicht"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch is not running"
+            "value": "Sooogood Media Catch is not running"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch n’est pas lancé"
+            "value": "Sooogood Media Catch n’est pas lancé"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch が起動していません"
+            "value": "Sooogood Media Catch が起動していません"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch가 실행 중이 아닙니다"
+            "value": "Sooogood Media Catch가 실행 중이 아닙니다"
           }
         }
       }
@@ -6891,36 +6891,36 @@
         }
       }
     },
-    "你可以在设置中断开 Spotify 并删除本地凭据，也可以删除应用支持目录中的历史和缓存文件。删除你选择的输出目录或本地音频原件不会由 Sooogood Video Catch 自动执行；应用不移动、重命名或删除原始媒体。": {
+    "你可以在设置中断开 Spotify 并删除本地凭据，也可以删除应用支持目录中的历史和缓存文件。删除你选择的输出目录或本地音频原件不会由 Sooogood Media Catch 自动执行；应用不移动、重命名或删除原始媒体。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "In den Einstellungen kannst du Spotify trennen und lokale Zugangsdaten löschen sowie Verlauf und Cache im Ordner „Application Support“ der App entfernen. Sooogood Video Catch löscht deine Ausgabeordner oder lokales Original-Audio nie von selbst; die App verschiebt, benennt oder löscht keine Originalmedien."
+            "value": "In den Einstellungen kannst du Spotify trennen und lokale Zugangsdaten löschen sowie Verlauf und Cache im Ordner „Application Support“ der App entfernen. Sooogood Media Catch löscht deine Ausgabeordner oder lokales Original-Audio nie von selbst; die App verschiebt, benennt oder löscht keine Originalmedien."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You can disconnect Spotify and delete local credentials in Settings, and delete history and cache files in the app's Application Support folder. Sooogood Video Catch never deletes your chosen output folders or original local audio on its own; the app does not move, rename or delete original media."
+            "value": "You can disconnect Spotify and delete local credentials in Settings, and delete history and cache files in the app's Application Support folder. Sooogood Media Catch never deletes your chosen output folders or original local audio on its own; the app does not move, rename or delete original media."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vous pouvez déconnecter Spotify et supprimer les identifiants locaux dans les Réglages, ainsi que l’historique et le cache dans le dossier Application Support de l’app. Sooogood Video Catch ne supprime jamais de lui-même vos dossiers de sortie ni l’audio local d’origine ; l’app ne déplace, ne renomme ni ne supprime les médias d’origine."
+            "value": "Vous pouvez déconnecter Spotify et supprimer les identifiants locaux dans les Réglages, ainsi que l’historique et le cache dans le dossier Application Support de l’app. Sooogood Media Catch ne supprime jamais de lui-même vos dossiers de sortie ni l’audio local d’origine ; l’app ne déplace, ne renomme ni ne supprime les médias d’origine."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "設定で Spotify の接続を解除してローカルの認証情報を削除できます。アプリの Application Support フォルダ内の履歴やキャッシュも削除できます。選んだ出力フォルダやローカルの元音声を Sooogood Video Catch が自動で削除することはなく、元のメディアを移動・名前変更・削除しません。"
+            "value": "設定で Spotify の接続を解除してローカルの認証情報を削除できます。アプリの Application Support フォルダ内の履歴やキャッシュも削除できます。選んだ出力フォルダやローカルの元音声を Sooogood Media Catch が自動で削除することはなく、元のメディアを移動・名前変更・削除しません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "설정에서 Spotify 연결을 해제하고 로컬 자격 증명을 삭제할 수 있으며, 앱의 Application Support 폴더에 있는 기록과 캐시도 삭제할 수 있습니다. 선택한 출력 폴더나 로컬 원본 오디오는 Sooogood Video Catch가 자동으로 삭제하지 않으며, 원본 미디어를 이동, 이름 변경, 삭제하지 않습니다."
+            "value": "설정에서 Spotify 연결을 해제하고 로컬 자격 증명을 삭제할 수 있으며, 앱의 Application Support 폴더에 있는 기록과 캐시도 삭제할 수 있습니다. 선택한 출력 폴더나 로컬 원본 오디오는 Sooogood Media Catch가 자동으로 삭제하지 않으며, 원본 미디어를 이동, 이름 변경, 삭제하지 않습니다."
           }
         }
       }
@@ -16567,36 +16567,36 @@
         }
       }
     },
-    "无法连接 Sooogood Video Catch：请确认应用已安装并能正常启动": {
+    "无法连接 Sooogood Media Catch：请确认应用已安装并能正常启动": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Verbindung zu Sooogood Video Catch. Prüfe, ob die App installiert ist und normal startet"
+            "value": "Keine Verbindung zu Sooogood Media Catch. Prüfe, ob die App installiert ist und normal startet"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not connect to Sooogood Video Catch. Make sure the app is installed and starts normally"
+            "value": "Could not connect to Sooogood Media Catch. Make sure the app is installed and starts normally"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connexion à Sooogood Video Catch impossible. Vérifiez que l’app est installée et démarre normalement"
+            "value": "Connexion à Sooogood Media Catch impossible. Vérifiez que l’app est installée et démarre normalement"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch に接続できません。アプリがインストールされ、正常に起動できるか確認してください"
+            "value": "Sooogood Media Catch に接続できません。アプリがインストールされ、正常に起動できるか確認してください"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sooogood Video Catch에 연결할 수 없습니다. 앱이 설치되어 있고 정상적으로 실행되는지 확인하세요"
+            "value": "Sooogood Media Catch에 연결할 수 없습니다. 앱이 설치되어 있고 정상적으로 실행되는지 확인하세요"
           }
         }
       }
@@ -25053,36 +25053,36 @@
         }
       }
     },
-    "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Video Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。": {
+    "该媒体内容要求登录，但 Safari 登录状态未通过验证。请确认 Safari 已登录 Vimeo，并为 Sooogood Media Catch 开启“完整磁盘访问”后退出重开；也可以改用已登录的 Chrome 或 Firefox。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dieses Medium erfordert eine Anmeldung, aber der Safari-Anmeldestatus wurde nicht bestätigt. Prüfe, ob Safari bei Vimeo angemeldet ist, gewähre Sooogood Video Catch „Festplattenvollzugriff“ und öffne die App neu; oder nutze ein angemeldetes Chrome oder Firefox."
+            "value": "Dieses Medium erfordert eine Anmeldung, aber der Safari-Anmeldestatus wurde nicht bestätigt. Prüfe, ob Safari bei Vimeo angemeldet ist, gewähre Sooogood Media Catch „Festplattenvollzugriff“ und öffne die App neu; oder nutze ein angemeldetes Chrome oder Firefox."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This media requires sign-in, but Safari's sign-in state failed verification. Make sure Safari is signed in to Vimeo, grant Sooogood Video Catch “Full Disk Access”, then quit and reopen; or use Chrome or Firefox signed in instead."
+            "value": "This media requires sign-in, but Safari's sign-in state failed verification. Make sure Safari is signed in to Vimeo, grant Sooogood Media Catch “Full Disk Access”, then quit and reopen; or use Chrome or Firefox signed in instead."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce média nécessite une connexion, mais l’état de connexion de Safari n’a pas été validé. Vérifiez que Safari est connecté à Vimeo, accordez « l’accès complet au disque » à Sooogood Video Catch, puis quittez et rouvrez ; ou utilisez Chrome ou Firefox connecté."
+            "value": "Ce média nécessite une connexion, mais l’état de connexion de Safari n’a pas été validé. Vérifiez que Safari est connecté à Vimeo, accordez « l’accès complet au disque » à Sooogood Media Catch, puis quittez et rouvrez ; ou utilisez Chrome ou Firefox connecté."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このメディアにはログインが必要ですが、Safari のログイン状態を確認できませんでした。Safari が Vimeo にログインしているか確認し、Sooogood Video Catch に「フルディスクアクセス」を許可してから開き直してください。ログイン済みの Chrome や Firefox を使うこともできます。"
+            "value": "このメディアにはログインが必要ですが、Safari のログイン状態を確認できませんでした。Safari が Vimeo にログインしているか確認し、Sooogood Media Catch に「フルディスクアクセス」を許可してから開き直してください。ログイン済みの Chrome や Firefox を使うこともできます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 미디어는 로그인이 필요하지만 Safari 로그인 상태를 확인하지 못했습니다. Safari가 Vimeo에 로그인되어 있는지 확인하고 Sooogood Video Catch에 '전체 디스크 접근 권한'을 허용한 뒤 다시 여세요. 로그인한 Chrome이나 Firefox를 사용해도 됩니다."
+            "value": "이 미디어는 로그인이 필요하지만 Safari 로그인 상태를 확인하지 못했습니다. Safari가 Vimeo에 로그인되어 있는지 확인하고 Sooogood Media Catch에 '전체 디스크 접근 권한'을 허용한 뒤 다시 여세요. 로그인한 Chrome이나 Firefox를 사용해도 됩니다."
           }
         }
       }
@@ -25121,36 +25121,36 @@
         }
       }
     },
-    "该媒体流受 DRM 保护，Sooogood Video Catch 不会尝试绕过。": {
+    "该媒体流受 DRM 保护，Sooogood Media Catch 不会尝试绕过。": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dieser Medienstream ist DRM-geschützt. Sooogood Video Catch versucht nicht, das zu umgehen."
+            "value": "Dieser Medienstream ist DRM-geschützt. Sooogood Media Catch versucht nicht, das zu umgehen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This media stream is DRM-protected. Sooogood Video Catch will not try to bypass it."
+            "value": "This media stream is DRM-protected. Sooogood Media Catch will not try to bypass it."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce flux média est protégé par DRM. Sooogood Video Catch ne tentera pas de le contourner."
+            "value": "Ce flux média est protégé par DRM. Sooogood Media Catch ne tentera pas de le contourner."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このメディアストリームは DRM で保護されています。Sooogood Video Catch は回避を試みません。"
+            "value": "このメディアストリームは DRM で保護されています。Sooogood Media Catch は回避を試みません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 미디어 스트림은 DRM으로 보호됩니다. Sooogood Video Catch는 우회를 시도하지 않습니다."
+            "value": "이 미디어 스트림은 DRM으로 보호됩니다. Sooogood Media Catch는 우회를 시도하지 않습니다."
           }
         }
       }

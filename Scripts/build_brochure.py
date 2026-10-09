@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Builds the two-page product brochure (A4 landscape) in six languages.
 
-Output: docs/brochure/Sooogood-Video-Catch-<lang>.pdf, rendered by headless
+Output: docs/brochure/Sooogood-Media-Catch-<lang>.pdf, rendered by headless
 Google Chrome from generated HTML. Screenshots come from docs/images/; the
-logo is Resources/Brand/MediaFetchLogo.svg. Colors follow BrandGuidelines.md.
+logo is Resources/Brand/SooogoodMediaCatchLogo.svg. Colors follow BrandGuidelines.md.
 
     python3 Scripts/build_brochure.py            # all languages
     python3 Scripts/build_brochure.py en ja      # selected languages
@@ -188,10 +188,10 @@ def page_html(t: dict, logo: pathlib.Path, images: pathlib.Path) -> str:
             for s, (a, b) in zip(shots, t["caps"])]
     feats = "".join(f'<div class="feat"><b>{e(a)}</b><span>{e(b)}</span></div>' for a, b in t["feats"])
     creator = (ROOT / "Resources" / "Brand" / "creator-logo-white.png").as_uri()  # 瓜皮巨甜 SIMON Li
-    brand = (f'<div class="brand"><img src="{logo.as_uri()}"><div><div class="name">Sooogood Video Catch</div>'
+    brand = (f'<div class="brand"><img src="{logo.as_uri()}"><div><div class="name">Sooogood Media Catch</div>'
              f'<div class="kind">macOS · local-first media toolkit</div></div>'
              f'<img class="creator" src="{creator}" alt="瓜皮巨甜 SIMON Li"></div>')
-    footer = (f'<div class="accent"><span>Sooogood Video Catch · by<img src="{creator}" alt="瓜皮巨甜 SIMON Li"></span>'
+    footer = (f'<div class="accent"><span>Sooogood Media Catch · by<img src="{creator}" alt="瓜皮巨甜 SIMON Li"></span>'
               f'<span>{e(t["credit"])}</span></div>')
     return f"""<!doctype html><html lang="{t['lang']}"><head><meta charset="utf-8">
 <style>{CSS % {'font': FONTS.get(t['lang'], '"Helvetica Neue"')}}{CJK_CSS if t['lang'] in FONTS else ''}</style></head><body>
@@ -215,13 +215,13 @@ def page_html(t: dict, logo: pathlib.Path, images: pathlib.Path) -> str:
 
 def main(languages):
     OUT.mkdir(parents=True, exist_ok=True)
-    logo = ROOT / "Resources" / "Brand" / "MediaFetchLogo.svg"
+    logo = ROOT / "Resources" / "Brand" / "SooogoodMediaCatchLogo.svg"
     images = ROOT / "docs" / "images"
     with tempfile.TemporaryDirectory() as tmp:
         for code in languages:
             source = pathlib.Path(tmp) / f"brochure-{code}.html"
             source.write_text(page_html(TEXT[code], logo, images), encoding="utf-8")
-            target = OUT / f"Sooogood-Video-Catch-{code}.pdf"
+            target = OUT / f"Sooogood-Media-Catch-{code}.pdf"
             subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
                             "--allow-file-access-from-files", f"--print-to-pdf={target}", source.as_uri()],
                            check=True, capture_output=True)

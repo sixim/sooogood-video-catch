@@ -16,7 +16,7 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 IMG = ROOT / "docs" / "images"
-LOGO = (ROOT / "Resources" / "Brand" / "MediaFetchLogo.svg").as_uri()
+LOGO = (ROOT / "Resources" / "Brand" / "SooogoodMediaCatchLogo.svg").as_uri()
 CREATOR = (ROOT / "Resources" / "Brand" / "creator-logo-white.png").as_uri()  # 瓜皮巨甜 SIMON Li
 
 CSS = """
@@ -59,7 +59,7 @@ h1 { font-size: 72px; line-height: 1.06; font-weight: 800; letter-spacing: -1.5p
 
 
 def foot():
-    return (f'<div class="foot"><img src="{LOGO}"><b>Sooogood Video Catch</b> · for macOS'
+    return (f'<div class="foot"><img src="{LOGO}"><b>Sooogood Media Catch</b> · for macOS'
             f'<img class="creator" src="{CREATOR}" alt="瓜皮巨甜 SIMON Li"></div>')
 
 
@@ -130,7 +130,7 @@ SLIDES = [
           '<div class="pills" style="margin-top:40px">'
           + "".join(f'<div class="pill">{l}</div>' for l in ["English", "Français", "Deutsch", "日本語", "한국어", "中文"])
           + '</div><div class="facts" style="bottom:130px">'
-          '<div class="fact"><b>Open source</b><span style="white-space:nowrap">github.com/sixim/sooogood-video-catch</span></div>'
+          '<div class="fact"><b>Open source</b><span style="white-space:nowrap">github.com/sixim/sooogood-media-catch</span></div>'
           '<div class="fact"><b>Via Homebrew</b><span>yt-dlp · FFmpeg · deno</span></div>'
           '</div>'),
 ]

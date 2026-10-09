@@ -351,7 +351,7 @@ public actor SpotifyLoopbackHTTPListener: SpotifyLoopbackListening {
 
         sendResponse(
             status: "200 OK",
-            body: "Spotify connection received. You may close this window and return to Sooogood Video Catch.",
+            body: "Spotify connection received. You may close this window and return to Sooogood Media Catch.",
             connection: connection
         )
         deliverCallback(.success(callbackURL))

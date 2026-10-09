@@ -5,9 +5,9 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Sooogood Video Catch</string>
+	<string>Sooogood Media Catch</string>
 	<key>CFBundleExecutable</key>
-	<string>MediaFetch</string>
+	<string>SooogoodMediaCatch</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIconName</key>
@@ -26,13 +26,13 @@
 		<string>zh-Hans</string>
 	</array>
 	<key>CFBundleName</key>
-	<string>MediaFetch</string>
+	<string>Sooogood Media Catch</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.22.0</string>
+	<string>0.22.1</string>
 	<key>CFBundleVersion</key>
-	<string>34</string>
+	<string>35</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -42,7 +42,7 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Sooogood Video Catch</string>
+	<string>Copyright © 2026 Sooogood Media Catch</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 </dict>

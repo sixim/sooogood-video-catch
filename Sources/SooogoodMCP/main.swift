@@ -1,6 +1,6 @@
 // `sooogood-mcp`: stdio MCP server that forwards tool calls to the running
-// Sooogood Video Catch app. Register with an agent, e.g.
-//   claude mcp add sooogood -- "/Applications/Sooogood Video Catch.app/Contents/MacOS/sooogood-mcp"
+// Sooogood Media Catch app. Register with an agent, e.g.
+//   claude mcp add sooogood -- "/Applications/Sooogood Media Catch.app/Contents/MacOS/sooogood-mcp"
 import Foundation
 import MediaFetchCore
 #if !MEDIAFETCH_STORE_PROFILE

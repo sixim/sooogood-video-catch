@@ -70,7 +70,7 @@ public struct EngineDiagnosis: Codable, Equatable, Sendable {
         case .needsLogin: return String(localized: "该内容仅对已登录账号可见，请在设置中启用对应网站的登录方式。")
         case .tlsFingerprint: return String(localized: "网站识别到非浏览器客户端。请确认 yt-dlp 为最新版本，或使用网站登录状态重试。")
         case .extractorOutdated: return String(localized: "网站结构已变化，请在终端执行 brew upgrade yt-dlp 后重试。")
-        case .drmProtected: return String(localized: "Sooogood Video Catch 不会尝试绕过 DRM。")
+        case .drmProtected: return String(localized: "Sooogood Media Catch 不会尝试绕过 DRM。")
         case .unavailable: return String(localized: "请确认链接仍然有效，且当前账号有观看权限。")
         case .unsupportedURL: return String(localized: "请检查链接是否完整，或该网站是否在 yt-dlp 支持列表内。")
         case .networkTimeout: return String(localized: "请检查网络或代理设置后重试。")

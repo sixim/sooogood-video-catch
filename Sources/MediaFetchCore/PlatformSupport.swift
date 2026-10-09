@@ -92,7 +92,7 @@ public enum StreamingPlatform: String, CaseIterable, Identifiable, Codable, Send
     public var restrictionMessage: String? {
         switch self {
         case .netflix:
-            return String(localized: "Netflix 正片使用 DRM 保护。Sooogood Video Catch 不绕过 DRM，也不会把网页预告片误报成正片下载。")
+            return String(localized: "Netflix 正片使用 DRM 保护。Sooogood Media Catch 不绕过 DRM，也不会把网页预告片误报成正片下载。")
         case .spotify:
             return String(localized: "Spotify 受保护音频不会进入视频下载引擎。请使用“音乐”页面，把 Spotify 曲目与自己拥有的本地或 DRM-free 音频进行匹配和整理。")
         default:

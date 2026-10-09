@@ -144,7 +144,7 @@ public final class ControlClient: @unchecked Sendable {
         }
         guard connected == 0 else {
             close(fd)
-            throw ControlError.failed(String(localized: "Sooogood Video Catch 没有运行"))
+            throw ControlError.failed(String(localized: "Sooogood Media Catch 没有运行"))
         }
         ControlServer.disableSigPipe(fd)
         self.fd = fd
